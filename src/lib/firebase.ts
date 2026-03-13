@@ -5,13 +5,13 @@ import { getStorage } from "firebase/storage";
 
 // Firebase project configuration for Campus2Career
 const firebaseConfig = {
-    apiKey: "REDACTED",
-    authDomain: "virtual-placement-assistant.firebaseapp.com",
-    projectId: "virtual-placement-assistant",
-    storageBucket: "virtual-placement-assistant.firebasestorage.app",
-    messagingSenderId: "691452774636",
-    appId: "1:691452774636:web:2c40b46a5570da834a3dc9",
-    measurementId: "G-Q06DSVF3XV"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase

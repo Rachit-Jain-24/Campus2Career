@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Replace with your actual Gemini API Key from https://aistudio.google.com/
+// Gemini API Key from environment variables
 // For production, this should be in an environment variable
-const API_KEY = "REDACTED";
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
 
 const genAI = new GoogleGenerativeAI(API_KEY);
 
