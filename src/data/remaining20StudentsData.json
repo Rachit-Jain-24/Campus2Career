@@ -1,0 +1,76 @@
+[
+  {
+    "srNo": 11,
+    "sapId": "70572200011",
+    "fullName": "Ruthvik Akula",
+    "leetcode": "ruth_vik",
+    "leetcodeSolved": 20,
+    "projects": [
+      {"id": 1, "title": "Healthcare AI Chatbot", "tech": "Python, NLP, Flask", "description": "Medical consultation bot (Turtil startup)", "year": "2024"},
+      {"id": 2, "title": "Patient Data Analytics", "tech": "Pandas, Plotly", "description": "Medical data dashboard", "year": "2024"},
+      {"id": 3, "title": "Symptom Checker ML", "tech": "Random Forest", "description": "Disease prediction system", "year": "2024"},
+      {"id": 4, "title": "Appointment Scheduler", "tech": "Django, PostgreSQL", "description": "Hospital management", "year": "2024"},
+      {"id": 5, "title": "Medical Image Segmentation", "tech": "U-Net, TensorFlow", "description": "Medical scan analysis", "year": "2024"},
+      {"id": 6, "title": "Drug Interaction Checker", "tech": "Graph DB, Flask", "description": "Medication safety system", "year": "2024"},
+      {"id": 7, "title": "Health Record Management", "tech": "MongoDB, React", "description": "EHR system", "year": "2024"},
+      {"id": 8, "title": "Telemedicine Platform", "tech": "WebRTC, Node.js", "description": "Video consultation", "year": "2024"}
+    ]
+  },
+  {
+    "srNo": 13,
+    "sapId": "70572200013",
+    "fullName": "Anmagandla Snehil",
+    "leetcode": "Snehil_0108",
+    "leetcodeSolved": 31,
+    "projects": [
+      {"id": 1, "title": "Sleep Apnea Syndrome Detector", "tech": "CNN, ECG Signals", "description": "Medical diagnosis using dilated causal convolutions", "year": "2024"},
+      {"id": 2, "title": "IoT Sensor Network", "tech": "Python, IoT, MQTT", "description": "Next-gen computing sensor integration", "year": "2025"},
+      {"id": 3, "title": "Time Series ECG Analyzer", "tech": "LSTM, TensorFlow", "description": "Hierarchical temporal pattern extraction", "year": "2024"},
+      {"id": 4, "title": "AI4Health Platform", "tech": "Python, Flask, ML", "description": "Healthcare AI solutions (2nd position CodeIT)", "year": "2024"},
+      {"id": 5, "title": "CSI Project Expo Winner", "tech": "Python, Data Science", "description": "Data analytics project (3rd position)", "year": "2024"}
+    ]
+  },
+  {
+    "srNo": 14,
+    "sapId": "70572200014",
+    "fullName": "Narahari Abhinav",
+    "leetcode": "Abhinav_54",
+    "leetcodeSolved": 28,
+    "projects": [
+      {"id": 1, "title": "Startup Website Development", "tech": "React, Node.js, MongoDB", "description": "Full-stack website for startup company", "year": "2024"},
+      {"id": 2, "title": "Product Management Dashboard", "tech": "React, TypeScript, Firebase", "description": "PM case study competition project (Top 10)", "year": "2024"},
+      {"id": 3, "title": "E-commerce Analytics", "tech": "Python, Pandas, Plotly", "description": "Business intelligence dashboard", "year": "2024"},
+      {"id": 4, "title": "Inventory Management System", "tech": "Django, PostgreSQL", "description": "Supply chain management", "year": "2024"},
+      {"id": 5, "title": "Customer Behavior Analyzer", "tech": "Python, ML, Streamlit", "description": "User behavior prediction", "year": "2024"}
+    ]
+  },
+  {
+    "srNo": 15,
+    "sapId": "70572200015",
+    "fullName": "Md Sohail",
+    "leetcode": "sohail262",
+    "leetcodeSolved": 35,
+    "projects": [
+      {"id": 1, "title": "Power BI Sales Dashboard", "tech": "Power BI, SQL", "description": "Business analytics dashboard (Client product)", "year": "2024"},
+      {"id": 2, "title": "Power BI HR Analytics", "tech": "Power BI, DAX", "description": "HR metrics dashboard (Client product)", "year": "2024"},
+      {"id": 3, "title": "Webathon Winner Project", "tech": "React, Node.js, MongoDB", "description": "Hackathon winning web application", "year": "2024"},
+      {"id": 4, "title": "Webathon 2025 Project", "tech": "Next.js, TypeScript, Prisma", "description": "Second hackathon win", "year": "2025"}
+    ]
+  },
+  {
+    "srNo": 16,
+    "sapId": "70572200016",
+    "fullName": "Malde Saicharan",
+    "leetcode": "saicharanmalde",
+    "leetcodeSolved": 180,
+    "projects": [
+      {"id": 1, "title": "E-commerce Website", "tech": "React, Node.js, MongoDB", "description": "Full-stack e-commerce platform (Client)", "year": "2024"},
+      {"id": 2, "title": "Portfolio Website", "tech": "React, Tailwind CSS", "description": "Personal portfolio site (Client)", "year": "2024"},
+      {"id": 3, "title": "Restaurant Website", "tech": "Next.js, Sanity CMS", "description": "Restaurant management site (Client)", "year": "2024"},
+      {"id": 4, "title": "Real Estate Platform", "tech": "React, Firebase", "description": "Property listing website (Client)", "year": "2024"},
+      {"id": 5, "title": "Educational Platform", "tech": "MERN Stack", "description": "Online learning platform (Client)", "year": "2024"},
+      {"id": 6, "title": "Mobile Fitness App", "tech": "React Native, Firebase", "description": "Fitness tracking app (Client)", "year": "2024"},
+      {"id": 7, "title": "Cybersecurity Dashboard", "tech": "React, D3.js", "description": "Security monitoring tool (Led Cyber Security Club)", "year": "2024"}
+    ]
+  }
+]

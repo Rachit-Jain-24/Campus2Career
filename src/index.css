@@ -1,0 +1,347 @@
+@import "tailwindcss";
+
+/* ── CSS Custom Properties (Design Tokens from Next.js project) ── */
+@theme {
+  --color-background: hsl(210, 20%, 98%);
+  --color-foreground: hsl(222, 47%, 11%);
+
+  --color-card: hsl(0, 0%, 100%);
+  --color-card-foreground: hsl(222, 47%, 11%);
+
+  /* Primary Theme (NMIMS Red) */
+  --color-primary: hsl(348, 83%, 47%);
+  --color-primary-foreground: hsl(0, 0%, 100%);
+  --color-primary-dark: hsl(348, 83%, 35%);
+  --color-primary-light: hsl(348, 83%, 57%);
+
+  --color-secondary: hsl(210, 20%, 96%);
+  --color-secondary-foreground: hsl(222, 47%, 20%);
+  --color-secondary-accent: hsl(210, 20%, 90%);
+  /* added for vpa-v2 compatibility */
+
+  --color-muted: hsl(210, 20%, 94%);
+  --color-muted-foreground: hsl(215, 16%, 47%);
+
+  --color-accent: hsl(348, 100%, 96%);
+  --color-accent-foreground: hsl(348, 83%, 47%);
+
+  --color-destructive: hsl(0, 84%, 60%);
+  --color-destructive-foreground: hsl(0, 0%, 100%);
+
+  --color-border: hsl(214, 32%, 91%);
+  --color-input: hsl(214, 32%, 91%);
+  --color-ring: hsl(348, 83%, 47%);
+
+  --radius: 0.75rem;
+
+  --color-success: hsl(142, 71%, 45%);
+  --color-warning: hsl(38, 92%, 50%);
+  --color-info: hsl(199, 89%, 48%);
+
+  --color-nmims-red: hsl(348, 83%, 47%);
+  --color-nmims-dark: hsl(222, 47%, 11%);
+  --color-nmims-blue: hsl(217, 91%, 60%);
+
+  /* Compatibility with vpa-v2 custom classes */
+  --font-family-sans: "Inter", "Segoe UI", system-ui, "sans-serif";
+  --background-image-gradient-nmims: linear-gradient(135deg, hsl(348, 83%, 47%), hsl(348, 83%, 35%));
+}
+
+/* ── Base Styles ── */
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-secondary);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-muted-foreground);
+  opacity: 0.4;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted-foreground);
+  opacity: 0.6;
+}
+
+/* ── Gradient Utilities (From Next.js) ── */
+.gradient-primary {
+  background: linear-gradient(135deg, hsl(348, 83%, 47%), hsl(348, 83%, 35%));
+}
+
+.gradient-card {
+  background: linear-gradient(135deg, hsl(0, 0%, 100%), hsl(210, 20%, 98%));
+}
+
+.gradient-success {
+  background: linear-gradient(135deg, hsl(142, 71%, 45%), hsl(142, 71%, 35%));
+}
+
+.gradient-blue {
+  background: linear-gradient(135deg, hsl(217, 91%, 60%), hsl(217, 91%, 45%));
+}
+
+.gradient-green {
+  background: linear-gradient(135deg, hsl(142, 71%, 45%), hsl(142, 71%, 55%));
+}
+
+.gradient-orange {
+  background: linear-gradient(135deg, hsl(38, 92%, 50%), hsl(25, 95%, 53%));
+}
+
+.gradient-purple {
+  background: linear-gradient(135deg, hsl(262, 83%, 58%), hsl(291, 64%, 42%));
+}
+
+@layer components {
+
+  /* ── VPA V2 Components Mapped to Old Theme ── */
+  .card-nmims {
+    @apply bg-card rounded-[0.75rem] border border-border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300;
+  }
+
+  .btn-nmims-primary {
+    @apply bg-primary text-primary-foreground px-6 py-2.5 rounded-[0.75rem] font-bold hover:bg-primary-dark transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-nmims-outline {
+    @apply border-2 border-primary text-primary px-6 py-2.5 rounded-[0.75rem] font-bold hover:bg-accent transition-all flex items-center justify-center gap-2 active:scale-95;
+  }
+
+  .vpa-header {
+    @apply bg-gradient-nmims text-white py-12 px-6 rounded-b-[2rem] shadow-xl;
+  }
+
+  .input-nmims {
+    @apply w-full bg-background border border-input rounded-[0.75rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring transition-all text-foreground;
+  }
+
+  .glass-nmims {
+    @apply bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl;
+  }
+}
+
+/* ── Animations (Combined) ── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 hsl(348, 83%, 47%, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px hsl(348, 83%, 47%, 0);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.4s ease-out forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-in-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ── UI Elements From Next.js ── */
+.tab-active {
+  position: relative;
+  border-bottom: 2px solid var(--color-primary);
+  color: var(--color-primary);
+}
+
+.skill-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.skill-pill:hover {
+  background: var(--color-accent);
+  border-color: var(--color-primary);
+  opacity: 0.8;
+  color: var(--color-primary);
+}
+
+.skill-pill.selected {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* ── SWOC & Year Badges (From Next.js) ── */
+.swoc-strengths {
+  background: linear-gradient(135deg, hsl(142, 71%, 45%, 0.1), hsl(142, 71%, 45%, 0.05));
+  border-color: hsl(142, 71%, 45%, 0.3);
+}
+
+.swoc-weaknesses {
+  background: linear-gradient(135deg, hsl(0, 84%, 60%, 0.1), hsl(0, 84%, 60%, 0.05));
+  border-color: hsl(0, 84%, 60%, 0.3);
+}
+
+.swoc-opportunities {
+  background: linear-gradient(135deg, hsl(199, 89%, 48%, 0.1), hsl(199, 89%, 48%, 0.05));
+  border-color: hsl(199, 89%, 48%, 0.3);
+}
+
+.swoc-challenges {
+  background: linear-gradient(135deg, hsl(38, 92%, 50%, 0.1), hsl(38, 92%, 50%, 0.05));
+  border-color: hsl(38, 92%, 50%, 0.3);
+}
+
+.year-badge-1 {
+  background: linear-gradient(90deg, hsl(142, 71%, 45%), hsl(142, 71%, 55%));
+  color: white;
+}
+
+.year-badge-2 {
+  background: linear-gradient(90deg, hsl(199, 89%, 48%), hsl(217, 91%, 60%));
+  color: white;
+}
+
+.year-badge-3 {
+  background: linear-gradient(90deg, hsl(38, 92%, 50%), hsl(38, 92%, 60%));
+  color: white;
+}
+
+.year-badge-4 {
+  background: linear-gradient(90deg, hsl(348, 83%, 47%), hsl(348, 83%, 57%));
+  color: white;
+}
