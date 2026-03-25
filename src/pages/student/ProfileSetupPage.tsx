@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { LogoutButton } from '../../components/ui/LogoutButton';
@@ -7,9 +7,12 @@ import {
     Github, Linkedin, Code2, Link as LinkIcon,
     ChevronRight, ChevronLeft, CheckCircle2,
     Sparkles, GraduationCap, Heart, Plus, X,
-    Upload, Star, Laptop, Languages, Trophy, Briefcase, Trash2
+    Upload, Star, Laptop, Languages, Trophy, Briefcase, Trash2,
+    AlertCircle, Target, Award, Rocket, Check, Flag
 } from 'lucide-react';
 import { AddProjectModal, AddInternshipModal } from '../../components/ui/ExperienceModals';
+import { Button } from '../../components/ui/Button';
+import { generateStudentBio } from '../../lib/aiService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ProfileData {
@@ -52,89 +55,81 @@ interface ProfileData {
 
 const PROGRAMS = [
     'B.Tech CSE', 'B.Tech CSE (AI/ML)', 'B.Tech CSE (Data Science)',
-    'B.Tech CSE (IoT)', 'B.Tech IT', 'B.Tech ECE', 'B.Tech Mechanical',
-    'BCA', 'BBA', 'B.Com', 'B.Sc (Other)'
+    'B.Tech IT', 'B.Tech IT (Blockchain)', 'B.Tech ECE', 'B.Tech Mechanical',
+    'BCA', 'BBA', 'B.Com', 'M.Tech CSE', 'MBA'
 ];
 
-const DIVISIONS = ['A', 'B', 'C', 'D'];
-
-const SCHOOL_BOARDS = ['CBSE', 'ICSE', 'State Board (AP/TS)', 'IB', 'Other'];
+const DIVISIONS = ['A', 'B', 'C', 'D', 'E'];
+const SCHOOL_BOARDS = ['CBSE', 'ICSE', 'State Board', 'IB', 'Other'];
 
 const TOOLS_SUGGESTIONS = [
-    'Python', 'Java', 'C++', 'JavaScript', 'HTML/CSS',
-    'React', 'Node.js', 'SQL', 'Git', 'VS Code', 'MS Office',
-    'Photoshop', 'Figma', 'Arduino', 'MATLAB'
+    'Python', 'Java', 'C++', 'JavaScript', 'React.js', 'Node.js', 
+    'SQL', 'Git', 'Docker', 'AWS', 'Figma', 'Tableau'
 ];
 
 const HOBBY_SUGGESTIONS = [
-    'Reading', 'Music', 'Sports', 'Gaming', 'Art & Painting',
-    'Photography', 'Cooking', 'Dancing', 'Writing', 'Traveling',
-    'Volunteering', 'Yoga & Fitness'
+    'Competitive Programming', 'Open Source', 'Reading', 'Music', 
+    'Gaming', 'Digital Art', 'Sports', 'Photography'
 ];
 
 const CLUB_SUGGESTIONS = [
-    'Coding Club', 'Robotics Club', 'Drama Club', 'Music Club',
-    'NSS', 'NCC', 'Sports Committee', 'Cultural Committee',
-    'Technical Fest Committee', 'Literary Club', 'E-Cell', 'GDSC'
+    'Coding Club', 'Robotics Club', 'GDSC', 'E-Cell', 'NSS', 
+    'Drama Club', 'Music Society', 'Sports Committee'
 ];
 
-const LANGUAGE_OPTIONS = [
-    'English', 'Hindi', 'Telugu', 'Tamil', 'Marathi',
-    'Kannada', 'Malayalam', 'Bengali', 'Gujarati', 'Punjabi'
-];
+const LANGUAGE_OPTIONS = ['English', 'Hindi', 'Telugu', 'Tamil', 'Marathi', 'Gujarati', 'Bengali', 'Kannada', 'French', 'German'];
 
 const SHORT_TERM_GOALS = [
-    'Improve my CGPA above 8.0',
-    'Learn a programming language from scratch',
-    'Complete a certification in my domain of interest',
-    'Build my first project and put it on GitHub',
-    'Get an internship by end of 2nd year',
-    'Participate in a hackathon or coding competition',
+    'Improve CGPA at least by 0.5',
+    'Build a full-stack project from scratch',
+    'Solve 200+ LeetCode problems',
+    'Secure a paid internship',
+    'Master technical interviewing skills',
+    'Learn a new framework (React/Next.js)'
 ];
 
 const LONG_TERM_GOALS = [
-    'Land a job at a top tech product company (FAANG/MNC)',
-    'Pursue Masters abroad (MS/MBA)',
-    'Start my own startup / entrepreneurship journey',
-    'Get placed in a reputed service-based company',
-    'Become a researcher / pursue PhD',
-    'Work in the Government / PSU sector',
+    'FAANG / Dream Product Company Role',
+    'MS / Masters Abroad',
+    'Entrepreneurship / Start my own venture',
+    'Cybersecurity Specialist Role',
+    'AI / Machine Learning Engineer',
+    'Data Scientist / Analytics Lead'
 ];
 
 const STEPS = [
-    { id: 0, label: 'Personal', icon: User },
+    { id: 0, label: 'Profile', icon: User },
     { id: 1, label: 'Academic', icon: GraduationCap },
-    { id: 2, label: 'Profiles', icon: Laptop },
-    { id: 3, label: 'Interests', icon: Heart },
-    { id: 4, label: 'Goals', icon: Star },
+    { id: 2, label: 'Links', icon: LinkIcon },
+    { id: 3, label: 'Portfolio', icon: Laptop },
+    { id: 4, label: 'Goals', icon: Rocket },
 ];
 
 function TagInput({
-    label, icon: Icon, tags, suggestions, onAdd, onRemove, placeholder
+    label, icon: Icon, tags, suggestions, onAdd, onRemove, placeholder, colorClass
 }: {
     label: string; icon: any; tags: string[];
     suggestions: string[]; onAdd: (t: string) => void;
     onRemove: (t: string) => void; placeholder: string;
+    colorClass?: string;
 }) {
     const [input, setInput] = useState('');
     const filtered = suggestions.filter(s => !tags.includes(s) && s.toLowerCase().includes(input.toLowerCase()));
 
     return (
-        <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <Icon className="h-3.5 w-3.5" /> {label}
+        <div className="space-y-3">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                <Icon className={`h-3.5 w-3.5 ${colorClass || 'text-primary'}`} /> {label}
             </label>
-            {/* Chips */}
-            <div className="flex flex-wrap gap-2 min-h-[36px]">
+            <div className="flex flex-wrap gap-2 min-h-[40px]">
                 {tags.map(t => (
-                    <span key={t} className="inline-flex items-center gap-1.5 bg-primary/10 text-primary border border-primary/20 text-xs font-bold rounded-full px-3 py-1">
+                    <span key={t} className="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-3 py-1.5 shadow-sm hover:border-primary transition-all group">
                         {t}
-                        <button type="button" onClick={() => onRemove(t)}><X className="h-3 w-3" /></button>
+                        <button type="button" onClick={() => onRemove(t)} className="text-slate-300 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
                     </span>
                 ))}
             </div>
-            {/* Input */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 relative">
                 <input
                     type="text"
                     placeholder={placeholder}
@@ -147,24 +142,23 @@ function TagInput({
                             setInput('');
                         }
                     }}
-                    className="input-nmims flex-1 text-sm"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:border-primary transition-all outline-none"
                 />
                 <button
                     type="button"
                     onClick={() => { if (input.trim()) { onAdd(input.trim()); setInput(''); } }}
-                    className="h-10 w-10 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-all"
+                    className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
                 >
                     <Plus className="h-4 w-4" />
                 </button>
             </div>
-            {/* Suggestions */}
             {filtered.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                    {filtered.slice(0, 8).map(s => (
+                    {filtered.slice(0, 6).map(s => (
                         <button
                             key={s} type="button"
                             onClick={() => onAdd(s)}
-                            className="text-[11px] font-bold text-slate-500 border border-dashed border-slate-300 px-2.5 py-1 rounded-full hover:border-primary hover:text-primary transition-all"
+                            className="text-[10px] font-black text-slate-400 bg-white border border-slate-100 px-3 py-1 rounded-lg hover:border-primary hover:text-primary transition-all"
                         >
                             + {s}
                         </button>
@@ -180,6 +174,7 @@ export default function ProfileSetupPage() {
     const navigate = useNavigate();
     const [step, setStep] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
+    const [isGeneratingBio, setIsGeneratingBio] = useState(false);
 
     // Modal states
     const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
@@ -224,14 +219,41 @@ export default function ProfileSetupPage() {
         set(key, (data[key] as string[]).filter(x => x !== val));
     };
 
+    const readinessScore = useMemo(() => {
+        let score = 0;
+        if (data.fullName.length > 3) score += 5;
+        if (data.phone.length >= 10) score += 5;
+        if (data.bio.length > 20) score += 10;
+        if (data.cgpa && parseFloat(data.cgpa) > 0) score += 10;
+        if (data.githubUrl.includes('github.com')) score += 15;
+        if (data.linkedinUrl.includes('linkedin.com')) score += 15;
+        if (data.leetcodeUrl.includes('leetcode.com')) score += 15;
+        if (data.projects.length > 0) score += 15;
+        return Math.min(100, score);
+    }, [data]);
+
+    const handleGenerateBio = async () => {
+        setIsGeneratingBio(true);
+        try {
+            const bio = await generateStudentBio({
+                name: data.fullName || user?.name || "Student",
+                program: data.program || "Engineering",
+                year: user?.currentYear || 1,
+                skills: data.knownTools.length > 0 ? data.knownTools : ["Technology", "Problem Solving"],
+                interests: data.languages.length > 0 ? data.languages : ["Innovation"]
+            });
+            set('bio', bio);
+        } catch (error) {
+            console.error("Bio Generation Failed:", error);
+        } finally {
+            setIsGeneratingBio(false);
+        }
+    };
+
     const handleComplete = async () => {
         if (!user) return;
         setIsSaving(true);
-
         try {
-            // Construct the updated user object
-            // In a real app, we'd have a separate 'profiles' collection, 
-            // but for simplicity here we merge into the user doc or mock the save.
             const updatedUserData = {
                 ...user,
                 name: data.fullName,
@@ -241,557 +263,437 @@ export default function ProfileSetupPage() {
                 branch: data.program,
                 rollNo: data.rollNo,
                 leetcode: data.leetcodeUrl ? data.leetcodeUrl.split('/').filter(Boolean).pop() : '',
-                interests: data.knownTools,
+                interests: [...data.knownTools, ...data.languages],
                 goals: [data.shortTermGoal, data.longTermGoal],
                 projects: data.projects,
                 internships: data.internships,
-                assessmentResults: {
-                    ...user.assessmentResults,
-                    cgpa: data.cgpa,
-                },
-                // We mark that profile setup is done
                 profileCompleted: true,
+                academicData: {
+                    cgpa: data.cgpa,
+                    backlog: data.backlog,
+                    class12: { board: data.class12Board, percent: data.class12Percent },
+                    class10: { board: data.class10Board, percent: data.class10Percent }
+                },
+                socialLinks: {
+                    github: data.githubUrl,
+                    linkedin: data.linkedinUrl,
+                    portfolio: data.portfolioUrl
+                }
             };
-
             await updateUser(updatedUserData);
-
-            // Artificial delay for UX
-            await new Promise(r => setTimeout(r, 1500));
             navigate('/student/dashboard');
         } catch (error) {
             console.error('Failed to save profile:', error);
-            alert('Failed to save profile. Please try again.');
+            alert('Something went wrong. Please check your connection.');
         } finally {
             setIsSaving(false);
         }
     };
 
     const canProceed = () => {
-        if (step === 0) {
-            const isValidPhone = /^\d{10}$/.test(data.phone.replace(/\D/g, ''));
-            return data.fullName && isValidPhone && data.hometown && data.state;
-        }
-        if (step === 1) return data.program && data.rollNo && data.class10Percent && data.class12Percent && data.class10Board && data.class12Board && ((user?.currentYear || 1) > 1 ? !!data.cgpa : true);
-        if (step === 2) {
-            const isValidGithub = !data.githubUrl || data.githubUrl.includes('github.com');
-            const isValidLinkedin = !data.linkedinUrl || data.linkedinUrl.includes('linkedin.com');
-            const isValidLeetcode = !data.leetcodeUrl || data.leetcodeUrl.includes('leetcode.com');
-
-            return data.githubUrl && isValidGithub &&
-                data.linkedinUrl && isValidLinkedin &&
-                data.leetcodeUrl && isValidLeetcode &&
-                data.portfolioUrl;
-        }
-        if (step === 3) return data.knownTools.length > 0 || data.hobbies.length > 0;
+        if (step === 0) return data.fullName && data.phone.length >= 10 && data.hometown;
+        if (step === 1) return data.program && data.rollNo && data.class10Percent && data.class12Percent;
+        if (step === 2) return data.githubUrl && data.linkedinUrl && data.leetcodeUrl;
+        if (step === 3) return data.knownTools.length > 0 || (user?.currentYear || 1) === 1;
         if (step === 4) return data.shortTermGoal && data.longTermGoal;
         return true;
     };
 
+    const renderProgressBar = () => {
+        return (
+            <div className="flex items-center justify-between mb-12 px-2 relative">
+                <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -translate-y-1/2 z-0"></div>
+                {STEPS.map((s) => {
+                    const StepIcon = s.icon;
+                    return (
+                        <div key={s.id} className="relative z-10 flex flex-col items-center gap-2 cursor-pointer group" onClick={() => step > s.id && setStep(s.id)}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 shadow-sm border-2 ${
+                                step === s.id ? 'bg-primary border-primary text-white scale-110' : 
+                                step > s.id ? 'bg-green-500 border-green-500 text-white' : 
+                                'bg-white border-slate-200 text-slate-400'
+                            }`}>
+                                {step > s.id ? <Check className="w-5 h-5" /> : <StepIcon className="w-4 h-4" />}
+                            </div>
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${
+                                step === s.id ? 'text-primary' : 'text-slate-400'
+                            }`}>
+                                {s.label}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
     return (
-        <div className="min-h-screen bg-secondary flex flex-col">
-            {/* ── Header ── */}
-            <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-                <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg bg-gradient-nmims flex items-center justify-center">
-                            <GraduationCap className="h-4 w-4 text-white" />
-                        </div>
-                        <div>
-                            <span className="font-black text-primary text-sm tracking-tight">CAMPUS2CAREER</span>
-                            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest">Profile Setup</p>
-                        </div>
-                    </div>
-
-                    {/* Step Pills */}
-                    <div className="hidden md:flex items-center gap-1">
-                        {STEPS.map((s, i) => {
-                            const Icon = s.icon;
-                            return (
-                                <div key={s.id} className="flex items-center gap-1">
-                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all
-                                        ${step === s.id ? 'bg-primary text-white shadow-sm' :
-                                            step > s.id ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-400'}`}>
-                                        {step > s.id ? <CheckCircle2 className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
-                                        {s.label}
-                                    </div>
-                                    {i < STEPS.length - 1 && (
-                                        <div className={`h-0.5 w-4 rounded-full ${step > s.id ? 'bg-green-300' : 'bg-slate-200'}`} />
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    <LogoutButton />
+        <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+            <header className="bg-white border-b border-slate-200 py-4 px-6 fixed top-0 w-full z-50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <GraduationCap className="h-6 w-6 text-primary" />
+                    <span className="font-black text-primary tracking-tighter text-xl">CAMPUS2CAREER</span>
                 </div>
-
-                {/* Mobile Progress Bar */}
-                <div className="md:hidden h-1 bg-slate-100">
-                    <div
-                        className="h-full bg-gradient-nmims transition-all duration-500"
-                        style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
-                    />
+                <div className="flex items-center gap-6">
+                    <div className="hidden sm:flex flex-col items-end">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Profile Readiness</p>
+                        <div className="w-32 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                             <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${readinessScore}%` }} />
+                        </div>
+                    </div>
+                    <LogoutButton />
                 </div>
             </header>
 
-            {/* ── Main ── */}
-            <main className="flex-1 flex items-start justify-center py-8 px-4">
-                <div className="w-full max-w-2xl">
-
-                    {/* Card */}
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-100/80 overflow-hidden">
-
-                        {/* Card Header */}
-                        <div className="bg-gradient-nmims p-6 text-white">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 bg-white/15 rounded-2xl flex items-center justify-center">
-                                    {(() => { const S = STEPS[step].icon; return <S className="h-5 w-5" />; })()}
-                                </div>
-                                <div>
-                                    <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Step {step + 1} of {STEPS.length}</p>
-                                    <h2 className="text-xl font-black tracking-tight">
-                                        {step === 0 && 'Personal Details'}
-                                        {step === 1 && 'Academic Background'}
-                                        {step === 2 && 'Online Presence'}
-                                        {step === 3 && 'Skills & Interests'}
-                                        {step === 4 && 'Career Goals'}
-                                    </h2>
-                                </div>
+            <main className="flex-1 flex max-w-5xl mx-auto w-full pt-24 pb-12 px-6 gap-8">
+                {/* ── Sidebar ── */}
+                <aside className="hidden lg:block w-64 space-y-6">
+                    <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm space-y-4">
+                        <div className="w-20 h-20 bg-slate-100 rounded-full mx-auto flex items-center justify-center border-4 border-white shadow-md relative group">
+                            <User className="h-10 w-10 text-slate-300" />
+                            <div className="absolute inset-0 bg-primary/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                <Upload className="h-5 w-5" />
                             </div>
-                            <p className="text-white/60 text-xs mt-2 font-medium">
-                                {step === 0 && 'Tell us a bit about yourself. This helps personalize your Campus2Career experience.'}
-                                {step === 1 && 'Your academic details help us tailor recommendations and track your progress.'}
-                                {step === 2 && 'Connect your online profiles for a complete digital portfolio. (All optional)'}
-                                {step === 3 && 'Add your tools, languages, hobbies and clubs — every detail counts!'}
-                                {step === 4 && 'Set your short and long-term career goals. Your roadmap starts here.'}
-                            </p>
+                        </div>
+                        <div className="text-center">
+                            <h3 className="font-black text-slate-800 line-clamp-1">{data.fullName || user?.name || 'Your Name'}</h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{data.program || 'Student'}</p>
+                        </div>
+                        <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+                            <div className="text-center flex-1">
+                                <p className="text-lg font-black text-primary">{readinessScore}%</p>
+                                <p className="text-[8px] text-slate-400 font-black uppercase tracking-widest">Complete</p>
+                            </div>
+                            <div className="w-px h-8 bg-slate-100 mx-4" />
+                            <div className="text-center flex-1">
+                                <p className="text-lg font-black text-slate-800">{data.projects.length}</p>
+                                <p className="text-[8px] text-slate-400 font-black uppercase tracking-widest">Projects</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-primary/5 border border-primary/20 p-6 rounded-[2rem] space-y-3">
+                        <div className="flex items-center gap-2 text-primary">
+                            <Sparkles className="h-4 w-4" />
+                            <p className="text-[10px] font-black uppercase tracking-widest">Pro Tip</p>
+                        </div>
+                        <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                            A profile score above <span className="text-primary font-bold">80%</span> increases your placement visibility by <span className="text-green-600 font-bold">3x</span>.
+                        </p>
+                    </div>
+                </aside>
+
+                {/* ── Content ── */}
+                <div className="flex-1 max-w-2xl">
+                    {renderProgressBar()}
+
+                    <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl shadow-slate-200/50 p-8 sm:p-12 relative overflow-hidden animate-in fade-in zoom-in duration-500">
+                        {/* Step Icon Backdrop */}
+                        <div className="absolute -top-12 -right-12 opacity-[0.03] scale-[4] rotate-12 pointer-events-none text-primary">
+                            {(() => { 
+                                const StepIcon = STEPS[step]?.icon; 
+                                return StepIcon ? <StepIcon /> : <Sparkles />; 
+                            })()}
                         </div>
 
-                        <div className="p-6 sm:p-8 space-y-6">
-
-                            {/* ── Step 0: Personal ── */}
-                            {step === 0 && (
-                                <div className="space-y-5">
-                                    <div className="grid sm:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                                <User className="h-3.5 w-3.5" /> Full Name *
-                                            </label>
-                                            <input className="input-nmims" placeholder="As per college records" value={data.fullName}
-                                                onChange={e => set('fullName', e.target.value)} />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                                <Phone className="h-3.5 w-3.5" /> Phone Number *
-                                            </label>
-                                            <input className="input-nmims" placeholder="10 digit number" value={data.phone}
-                                                onChange={e => set('phone', e.target.value)} type="tel" maxLength={15} />
-                                            {data.phone && !/^\d{10}$/.test(data.phone.replace(/\D/g, '')) && (
-                                                <p className="text-[10px] text-red-500 font-bold px-1 mt-0.5">Please enter a valid 10-digit number</p>
-                                            )}
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                                <Home className="h-3.5 w-3.5" /> Hometown *
-                                            </label>
-                                            <input className="input-nmims" placeholder="City / Town" value={data.hometown}
-                                                onChange={e => set('hometown', e.target.value)} />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                                <MapPin className="h-3.5 w-3.5" /> State *
-                                            </label>
-                                            <input className="input-nmims" placeholder="e.g. Telangana" value={data.state}
-                                                onChange={e => set('state', e.target.value)} />
-                                        </div>
-                                    </div>
-
+                        {/* ── Step 0: Personal ── */}
+                        {step === 0 && (
+                            <div className="space-y-8 relative">
+                                <div className="text-center space-y-2 mb-4">
+                                    <h2 className="text-3xl font-black text-slate-900">Personal Details</h2>
+                                    <p className="text-slate-500 text-sm">Let recruiters know who you are.</p>
+                                </div>
+                                <div className="grid sm:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                            <BookOpen className="h-3.5 w-3.5" /> About Yourself
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <User className="h-3.5 w-3.5 text-primary" /> Full Name
                                         </label>
-                                        <textarea
-                                            rows={3}
-                                            className="input-nmims resize-none"
-                                            placeholder="Write a short bio about yourself — your background, what drives you, and what you hope to achieve at NMIMS..."
-                                            value={data.bio}
-                                            onChange={e => set('bio', e.target.value)}
-                                        />
-                                        <p className="text-[11px] text-slate-400">{data.bio.length}/300 characters</p>
+                                        <input className="input-nmims" placeholder="Enter Full Name" value={data.fullName} onChange={e => set('fullName', e.target.value)} />
                                     </div>
-
-                                    <TagInput
-                                        label="Languages Known"
-                                        icon={Languages}
-                                        tags={data.languages}
-                                        suggestions={LANGUAGE_OPTIONS}
-                                        onAdd={v => addTag('languages', v)}
-                                        onRemove={v => removeTag('languages', v)}
-                                        placeholder="Add language..."
-                                    />
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <Phone className="h-3.5 w-3.5 text-primary" /> Phone
+                                        </label>
+                                        <input className="input-nmims" placeholder="10-digit Mobile" value={data.phone} onChange={e => set('phone', e.target.value)} maxLength={10} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <Home className="h-3.5 w-3.5 text-primary" /> Hometown
+                                        </label>
+                                        <input className="input-nmims" placeholder="City" value={data.hometown} onChange={e => set('hometown', e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <MapPin className="h-3.5 w-3.5 text-primary" /> State
+                                        </label>
+                                        <input className="input-nmims" placeholder="State" value={data.state} onChange={e => set('state', e.target.value)} />
+                                    </div>
                                 </div>
-                            )}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <BookOpen className="h-3.5 w-3.5 text-primary" /> Professional Bio
+                                        </label>
+                                        <button 
+                                            className={`text-[10px] text-primary font-bold flex items-center gap-1 hover:underline disabled:opacity-50 disabled:animate-pulse`}
+                                            onClick={handleGenerateBio}
+                                            disabled={isGeneratingBio}
+                                        >
+                                            <Sparkles className={`h-3 w-3 ${isGeneratingBio ? 'animate-spin' : ''}`} /> 
+                                            {isGeneratingBio ? 'Generating...' : 'AI Suggest'}
+                                        </button>
+                                    </div>
+                                    <textarea className="input-nmims h-24 resize-none pt-4" placeholder="Briefly describe your passions and professional interests..." value={data.bio} onChange={e => set('bio', e.target.value)} />
+                                </div>
+                                <TagInput label="Languages" icon={Languages} tags={data.languages} suggestions={LANGUAGE_OPTIONS} onAdd={v => addTag('languages', v)} onRemove={v => removeTag('languages', v)} placeholder="Add Language..." colorClass="text-green-500" />
+                            </div>
+                        )}
 
-                            {/* ── Step 1: Academic ── */}
-                            {step === 1 && (
-                                <div className="space-y-5">
+                        {/* ── Step 1: Academics ── */}
+                        {step === 1 && (
+                            <div className="space-y-8 relative">
+                                <div className="text-center space-y-2 mb-4">
+                                    <h2 className="text-3xl font-black text-slate-900">Academic History</h2>
+                                    <p className="text-slate-500 text-sm">NMIMS internal records and baseline.</p>
+                                </div>
+                                <div className="grid sm:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Enrollment Branch</label>
+                                        <select className="input-nmims" value={data.program} onChange={e => set('program', e.target.value)}>
+                                            <option value="">Select Branch</option>
+                                            {PROGRAMS.map(p => <option key={p} value={p}>{p}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Division</label>
+                                        <select className="input-nmims" value={data.division} onChange={e => set('division', e.target.value)}>
+                                            <option value="">Select Division</option>
+                                            {DIVISIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">SAP / Roll Number</label>
+                                        <input className="input-nmims" placeholder="e.g. 70572212345" value={data.rollNo} onChange={e => set('rollNo', e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current CGPA</label>
+                                        <input className="input-nmims" type="number" step="0.01" max="10" placeholder="e.g. 8.45" value={data.cgpa} onChange={e => set('cgpa', e.target.value)} />
+                                    </div>
+                                </div>
+
+                                <div className="p-6 rounded-3xl bg-slate-50 border border-slate-100 flex flex-col gap-6">
+                                    <div className="flex items-center gap-2">
+                                        <Award className="h-4 w-4 text-primary" />
+                                        <p className="text-[10px] font-black text-primary uppercase tracking-widest">Baseline Education</p>
+                                    </div>
                                     <div className="grid sm:grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Program *</label>
-                                            <select className="input-nmims" value={data.program} onChange={e => set('program', e.target.value)}>
-                                                <option value="">Select Program</option>
-                                                {PROGRAMS.map(p => <option key={p}>{p}</option>)}
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">12th Board</label>
+                                            <select className="input-nmims" value={data.class12Board} onChange={e => set('class12Board', e.target.value)}>
+                                                <option value="">Select Board</option>
+                                                {SCHOOL_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
                                             </select>
                                         </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Division</label>
-                                            <select className="input-nmims" value={data.division} onChange={e => set('division', e.target.value)}>
-                                                <option value="">Select Division</option>
-                                                {DIVISIONS.map(d => <option key={d}>{d}</option>)}
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">10th Board</label>
+                                            <select className="input-nmims" value={data.class10Board} onChange={e => set('class10Board', e.target.value)}>
+                                                <option value="">Select Board</option>
+                                                {SCHOOL_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
                                             </select>
                                         </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Roll Number *</label>
-                                            <input className="input-nmims" placeholder="e.g. C25001" value={data.rollNo}
-                                                onChange={e => set('rollNo', e.target.value)} />
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Class 12 %</label>
+                                            <input className="input-nmims" placeholder="85.4" type="number" value={data.class12Percent} onChange={e => set('class12Percent', e.target.value)} />
                                         </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current CGPA {(user?.currentYear || 1) > 1 && '*'}</label>
-                                            <input className="input-nmims" placeholder={((user?.currentYear || 1) === 1) ? "e.g. 8.5 (skip if Sem 1)" : "e.g. 8.5"} value={data.cgpa}
-                                                onChange={e => set('cgpa', e.target.value)} type="number" step="0.1" min="0" max="10" />
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Class 10 %</label>
+                                            <input className="input-nmims" placeholder="92.1" type="number" value={data.class10Percent} onChange={e => set('class10Percent', e.target.value)} />
                                         </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Active Backlogs</label>
-                                            <select className="input-nmims" value={data.backlog} onChange={e => set('backlog', e.target.value)}>
-                                                {['0', '1', '2', '3', '4', '5+'].map(b => <option key={b}>{b}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
-                                        <p className="text-xs font-black text-primary uppercase tracking-widest mb-3">Previous Education</p>
-                                        <div className="grid md:grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Class 12 Board *</label>
-                                                <select className="input-nmims" value={data.class12Board} onChange={e => set('class12Board', e.target.value)}>
-                                                    <option value="">Select Board</option>
-                                                    {SCHOOL_BOARDS.map(b => <option key={b}>{b}</option>)}
-                                                </select>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Class 12 % *</label>
-                                                <input className="input-nmims" placeholder="e.g. 85.6" value={data.class12Percent}
-                                                    onChange={e => set('class12Percent', e.target.value)} type="number" min="0" max="100" step="0.1" />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Class 10 Board *</label>
-                                                <select className="input-nmims" value={data.class10Board} onChange={e => set('class10Board', e.target.value)}>
-                                                    <option value="">Select Board</option>
-                                                    {SCHOOL_BOARDS.map(b => <option key={b}>{b}</option>)}
-                                                </select>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Class 10 % *</label>
-                                                <input className="input-nmims" placeholder="e.g. 90.2" value={data.class10Percent}
-                                                    onChange={e => set('class10Percent', e.target.value)} type="number" min="0" max="100" step="0.1" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start gap-3 p-3.5 rounded-xl bg-amber-50 border border-amber-200">
-                                        <Sparkles className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                                        <p className="text-xs text-amber-700 font-medium leading-relaxed">
-                                            <span className="font-black">Data Privacy:</span> Academic data is only visible to your faculty mentor and placement coordinator. Never shared externally.
-                                        </p>
                                     </div>
                                 </div>
-                            )}
+                            </div>
+                        )}
 
-                            {/* ── Step 2: Online Presence ── */}
-                            {step === 2 && (
-                                <div className="space-y-5">
-                                    <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 mb-2">
-                                        <p className="text-xs text-amber-700 font-bold">These 4 profiles are <span className="text-primary font-black uppercase">Strictly Mandatory</span> to proceed. If you haven't created an account yet, click the link to create one!</p>
-                                    </div>
-
-                                    {[
-                                        { label: 'GitHub Profile', key: 'githubUrl', icon: Github, placeholder: 'https://github.com/yourusername', color: 'text-slate-800', url: 'https://github.com/signup', desc: 'Version control platform. Essential for showcasing your code and open-source contributions to recruiters.' },
-                                        { label: 'LinkedIn Profile', key: 'linkedinUrl', icon: Linkedin, placeholder: 'https://linkedin.com/in/yourprofile', color: 'text-blue-700', url: 'https://www.linkedin.com/signup', desc: 'Professional networking. Used by recruiters to scout talent and check background.' },
-                                        { label: 'LeetCode Profile', key: 'leetcodeUrl', icon: Code2, placeholder: 'https://leetcode.com/yourusername', color: 'text-orange-600', url: 'https://leetcode.com/accounts/login/', desc: 'Coding practice platform. High solving stats help in cracking technical rounds.' },
-                                        { label: 'Portfolio / Website', key: 'portfolioUrl', icon: LinkIcon, placeholder: 'https://yourportfolio.com (or N/A)', color: 'text-violet-600', url: 'https://app.netlify.com/signup', desc: 'Your personal website to host your projects, resume, and contact details.' },
-                                    ].map(({ label, key, icon: Icon, placeholder, color, url, desc }) => (
-                                        <div key={key} className="space-y-1.5 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                                            <div className="flex justify-between items-center mb-2">
-                                                <label className={`text-sm font-black uppercase tracking-wider flex items-center gap-1.5 ${color}`}>
-                                                    <Icon className="h-4 w-4" /> {label} *
-                                                </label>
-                                                <a href={url} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-primary hover:text-primary-dark underline cursor-pointer">
-                                                    Create account →
-                                                </a>
-                                            </div>
-                                            {((user?.currentYear || 1) === 1) && (
-                                                <p className="text-[11px] text-slate-500 font-medium mb-3">{desc}</p>
-                                            )}
-                                            <input
-                                                className="input-nmims"
-                                                type={key === 'portfolioUrl' ? "text" : "url"}
-                                                placeholder={placeholder}
-                                                value={(data as any)[key]}
-                                                onChange={e => set(key as any, e.target.value)}
-                                            />
-                                            {key === 'githubUrl' && (data as any)[key] && !(data as any)[key].includes('github.com') && (
-                                                <p className="text-[10px] text-red-500 font-bold px-1 mt-1">Must contain 'github.com'</p>
-                                            )}
-                                            {key === 'linkedinUrl' && (data as any)[key] && !(data as any)[key].includes('linkedin.com') && (
-                                                <p className="text-[10px] text-red-500 font-bold px-1 mt-1">Must contain 'linkedin.com'</p>
-                                            )}
-                                            {key === 'leetcodeUrl' && (data as any)[key] && !(data as any)[key].includes('leetcode.com') && (
-                                                <p className="text-[10px] text-red-500 font-bold px-1 mt-1">Must contain 'leetcode.com'</p>
-                                            )}
-                                        </div>
-                                    ))}
-
-                                    <div className="flex items-start gap-3 p-3.5 rounded-xl bg-blue-50 border border-blue-200">
-                                        <Upload className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
-                                        <p className="text-xs text-blue-700 font-medium leading-relaxed">
-                                            <span className="font-black">Resume Upload</span> is available in your My Profile section after setup. You can skip this for now.
-                                        </p>
-                                    </div>
+                        {/* ── Step 2: Connections ── */}
+                        {step === 2 && (
+                            <div className="space-y-8 relative">
+                                <div className="text-center space-y-2 mb-4">
+                                    <h2 className="text-3xl font-black text-slate-900">Online Presence</h2>
+                                    <p className="text-slate-500 text-sm">Essential for placement analytics and verification.</p>
                                 </div>
-                            )}
-
-                            {/* ── Step 3: Skills & Experience ── */}
-                            {step === 3 && (
-                                <div className="space-y-6">
-                                    <TagInput
-                                        label="Tools & Technologies You Know"
-                                        icon={Laptop}
-                                        tags={data.knownTools}
-                                        suggestions={TOOLS_SUGGESTIONS}
-                                        onAdd={v => addTag('knownTools', v)}
-                                        onRemove={v => removeTag('knownTools', v)}
-                                        placeholder="Type a tool name..."
-                                    />
-
-                                    <TagInput
-                                        label="Hobbies & Passions"
-                                        icon={Heart}
-                                        tags={data.hobbies}
-                                        suggestions={HOBBY_SUGGESTIONS}
-                                        onAdd={v => addTag('hobbies', v)}
-                                        onRemove={v => removeTag('hobbies', v)}
-                                        placeholder="Type a hobby..."
-                                    />
-
-                                    <TagInput
-                                        label="Clubs & Committees (or planning to join)"
-                                        icon={Trophy}
-                                        tags={data.clubs}
-                                        suggestions={CLUB_SUGGESTIONS}
-                                        onAdd={v => addTag('clubs', v)}
-                                        onRemove={v => removeTag('clubs', v)}
-                                        placeholder="Type a club name..."
-                                    />
-
-                                    {/* ── Year-Based Dynamic Experience Sections ── */}
-                                    {((user?.currentYear || 1) >= 2) && (
-                                        <div className="p-5 rounded-2xl bg-indigo-50 border border-indigo-100 space-y-4">
-                                            <div className="flex items-start gap-3">
-                                                <Sparkles className="h-4 w-4 text-indigo-500 mt-0.5" />
-                                                <div>
-                                                    <p className="text-sm font-bold text-indigo-900">Project Portfolio</p>
-                                                    <p className="text-xs text-indigo-700 mt-1">Since you are past your 1st year, Placecom requires you to list at least one project. You can add this later in your dashboard.</p>
-                                                </div>
-                                            </div>
-
-                                            {/* Render existing projects */}
-                                            {data.projects.length > 0 && (
-                                                <div className="space-y-2 mt-3">
-                                                    {data.projects.map((proj, idx) => (
-                                                        <div key={idx} className="flex justify-between items-center bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
-                                                            <div>
-                                                                <p className="text-xs font-bold text-slate-800">{proj.title}</p>
-                                                                <p className="text-[10px] font-medium text-slate-500 line-clamp-1">{proj.description}</p>
-                                                            </div>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => set('projects', data.projects.filter((_, i) => i !== idx))}
-                                                                className="text-red-400 hover:text-red-600 transition-colors p-1"
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </button>
+                                <div className="space-y-4">
+                                    { [
+                                        { id: 'githubUrl', icon: Github, label: 'GitHub', color: 'text-slate-800', border: 'border-slate-800/10' },
+                                        { id: 'linkedinUrl', icon: Linkedin, label: 'LinkedIn', color: 'text-blue-600', border: 'border-blue-600/10' },
+                                        { id: 'leetcodeUrl', icon: Code2, label: 'LeetCode', color: 'text-orange-500', border: 'border-orange-500/10' }
+                                    ].map(link => {
+                                        const LinkIconComp = link.icon;
+                                        return (
+                                            <div key={link.id} className={`p-4 rounded-2xl bg-white border ${link.border} shadow-sm space-y-2 transition-all hover:shadow-md`}>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`p-2 rounded-xl bg-slate-50 ${link.color}`}>
+                                                            <LinkIconComp className="h-5 w-5" />
                                                         </div>
-                                                    ))}
+                                                        <span className="text-sm font-bold text-slate-800">{link.label} Profile</span>
+                                                    </div>
+                                                    {(data as any)[link.id]?.includes(link.label.toLowerCase()) ? (
+                                                         <span className="flex items-center gap-1 text-[10px] font-black text-green-500 uppercase tracking-widest">
+                                                            <Check className="h-3 w-3" /> Connected
+                                                         </span>
+                                                    ) : (
+                                                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Not Connected</span>
+                                                    )}
                                                 </div>
-                                            )}
-
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsProjectModalOpen(true)}
-                                                className="w-full py-2.5 bg-white border border-indigo-200 rounded-xl text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-colors"
-                                            >
-                                                + Add Major Project
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {((user?.currentYear || 1) >= 3) && (
-                                        <div className="p-5 rounded-2xl bg-teal-50 border border-teal-100 space-y-4">
-                                            <div className="flex items-start gap-3">
-                                                <Briefcase className="h-4 w-4 text-teal-500 mt-0.5" />
-                                                <div>
-                                                    <p className="text-sm font-bold text-teal-900">Internship Record</p>
-                                                    <p className="text-xs text-teal-700 mt-1">3rd and 4th-year students must log any official internships. You can also log this via the main dashboard.</p>
-                                                </div>
+                                                <input className="w-full bg-slate-50/50 border-none rounded-lg px-2 py-1.5 text-xs text-slate-600 outline-none focus:bg-slate-50" placeholder={`https://${link.label.toLowerCase()}.com/username`} value={(data as any)[link.id]} onChange={e => set(link.id as any, e.target.value)} />
                                             </div>
-
-                                            {/* Render existing internships */}
-                                            {data.internships.length > 0 && (
-                                                <div className="space-y-2 mt-3">
-                                                    {data.internships.map((intern, idx) => (
-                                                        <div key={idx} className="flex justify-between items-center bg-white p-3 rounded-xl border border-teal-100 shadow-sm">
-                                                            <div>
-                                                                <p className="text-xs font-bold text-slate-800">{intern.role} @ {intern.company}</p>
-                                                                <p className="text-[10px] font-medium text-slate-500">{intern.period}</p>
-                                                            </div>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => set('internships', data.internships.filter((_, i) => i !== idx))}
-                                                                className="text-red-400 hover:text-red-600 transition-colors p-1"
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsInternshipModalOpen(true)}
-                                                className="w-full py-2.5 bg-white border border-teal-200 rounded-xl text-xs font-bold text-teal-600 hover:bg-teal-50 transition-colors"
-                                            >
-                                                + Log Internship
-                                            </button>
-                                        </div>
-                                    )}
+                                        );
+                                    })}
                                 </div>
-                            )}
+                                <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200">
+                                    <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
+                                    <p className="text-[11px] text-amber-800 font-medium leading-relaxed">Ensure profiles are public. Recruiters will skip profiles they cannot access at a click.</p>
+                                </div>
+                            </div>
+                        )}
 
-                            {/* ── Step 4: Career Goals ── */}
-                            {step === 4 && (
+                        {/* ── Step 3: Portfolio ── */}
+                        {step === 3 && (
+                            <div className="space-y-8 relative">
+                                <div className="text-center space-y-2 mb-4">
+                                    <h2 className="text-3xl font-black text-slate-900">Skills & Projects</h2>
+                                    <p className="text-slate-500 text-sm">Show, don't just tell. Log your best work here.</p>
+                                </div>
+                                <TagInput label="Technical Tools" icon={Laptop} tags={data.knownTools} suggestions={TOOLS_SUGGESTIONS} onAdd={v => addTag('knownTools', v)} onRemove={v => removeTag('knownTools', v)} placeholder="Python, React, etc." colorClass="text-blue-500" />
+                                
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <Trophy className="h-4 w-4 text-indigo-500" /> Featured Projects
+                                        </p>
+                                        <button onClick={() => setIsProjectModalOpen(true)} className="text-[10px] font-black text-primary hover:underline">+ Add New</button>
+                                    </div>
+                                    <div className="grid gap-3">
+                                        {data.projects.length > 0 ? data.projects.map((p, i) => (
+                                            <div key={p.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between group">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                                                        <Rocket className="h-5 w-5 text-indigo-500" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-slate-800">{p.title}</h4>
+                                                        <p className="text-[10px] text-slate-500 line-clamp-1">{p.description}</p>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => set('projects', data.projects.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-2"><Trash2 className="h-4 w-4" /></button>
+                                            </div>
+                                        )) : (
+                                            <div className="p-12 text-center border-2 border-dashed border-slate-100 rounded-3xl space-y-2">
+                                                <p className="text-xs text-slate-400 font-bold">No projects added yet.</p>
+                                                <p className="text-[10px] text-slate-300 font-medium">Add projects to increase your profile score.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                {((user?.currentYear || 1) >= 3) && (
+                                    <div className="space-y-4">
+                                         <div className="flex items-center justify-between">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                                <Briefcase className="h-4 w-4 text-emerald-500" /> Internships
+                                            </p>
+                                            <button onClick={() => setIsInternshipModalOpen(true)} className="text-[10px] font-black text-primary hover:underline">+ Log Work</button>
+                                        </div>
+                                        <div className="grid gap-3">
+                                            {data.internships.map((int, i) => (
+                                                <div key={int.id} className="p-4 rounded-2xl bg-emerald-50/30 border border-emerald-100 flex items-center justify-between group">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                                                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-sm font-bold text-emerald-900">{int.role} @ {int.company}</h4>
+                                                            <p className="text-[10px] text-emerald-600 font-medium">{int.period}</p>
+                                                        </div>
+                                                    </div>
+                                                    <button onClick={() => set('internships', data.internships.filter((_, idx) => idx !== i))} className="text-emerald-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-2"><Trash2 className="h-4 w-4" /></button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="pt-6 border-t border-slate-100">
+                                    <div className="grid sm:grid-cols-2 gap-6">
+                                        <TagInput label="Hobbies & Interests" icon={Heart} tags={data.hobbies} suggestions={HOBBY_SUGGESTIONS} onAdd={v => addTag('hobbies', v)} onRemove={v => removeTag('hobbies', v)} placeholder="Reading, Gaming..." colorClass="text-rose-500" />
+                                        <TagInput label="Clubs & Societies" icon={Star} tags={data.clubs} suggestions={CLUB_SUGGESTIONS} onAdd={v => addTag('clubs', v)} onRemove={v => removeTag('clubs', v)} placeholder="GDSC, NSS..." colorClass="text-amber-500" />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── Step 4: Motivation ── */}
+                        {step === 4 && (
+                            <div className="space-y-8 relative">
+                                <div className="text-center space-y-2 mb-4">
+                                    <h2 className="text-3xl font-black text-slate-900">Career Vision</h2>
+                                    <p className="text-slate-500 text-sm">Setting targets helps us tailor your daily roadmaps.</p>
+                                </div>
                                 <div className="space-y-6">
                                     <div className="space-y-3">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                            <Star className="h-3.5 w-3.5" /> Short-Term Goal (by end of 2nd year) *
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <Target className="h-4 w-4 text-primary" /> Short-Term Goal
                                         </label>
                                         <div className="grid gap-2">
                                             {SHORT_TERM_GOALS.map(goal => (
-                                                <button
-                                                    key={goal} type="button"
-                                                    onClick={() => set('shortTermGoal', goal)}
-                                                    className={`p-3.5 rounded-xl text-left text-sm font-medium border-2 transition-all flex items-center justify-between gap-3
-                                                        ${data.shortTermGoal === goal
-                                                            ? 'border-primary bg-primary/5 text-primary'
-                                                            : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-300'}`}
-                                                >
-                                                    <span>{goal}</span>
-                                                    {data.shortTermGoal === goal && <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />}
-                                                </button>
+                                                <button key={goal} onClick={() => set('shortTermGoal', goal)} className={`p-4 rounded-2xl text-left text-xs font-bold transition-all border-2 ${data.shortTermGoal === goal ? 'border-primary bg-primary/5 text-primary' : 'border-slate-50 bg-slate-50/50 text-slate-500 hover:border-slate-200'}`}>{goal}</button>
                                             ))}
                                         </div>
                                     </div>
-
                                     <div className="space-y-3">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                            <GraduationCap className="h-3.5 w-3.5" /> Long-Term Goal (after graduation) *
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <Flag className="h-4 w-4 text-indigo-500" /> Long-Term Vision
                                         </label>
                                         <div className="grid gap-2">
                                             {LONG_TERM_GOALS.map(goal => (
-                                                <button
-                                                    key={goal} type="button"
-                                                    onClick={() => set('longTermGoal', goal)}
-                                                    className={`p-3.5 rounded-xl text-left text-sm font-medium border-2 transition-all flex items-center justify-between gap-3
-                                                        ${data.longTermGoal === goal
-                                                            ? 'border-primary bg-primary/5 text-primary'
-                                                            : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-300'}`}
-                                                >
-                                                    <span>{goal}</span>
-                                                    {data.longTermGoal === goal && <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />}
-                                                </button>
+                                                <button key={goal} onClick={() => set('longTermGoal', goal)} className={`p-4 rounded-2xl text-left text-xs font-bold transition-all border-2 ${data.longTermGoal === goal ? 'border-indigo-500 bg-indigo-50/50 text-indigo-700' : 'border-slate-50 bg-slate-50/50 text-slate-500 hover:border-slate-200'}`}>{goal}</button>
                                             ))}
                                         </div>
                                     </div>
                                 </div>
-                            )}
-
-                        </div>
-
-                        {/* ── Footer Navigation ── */}
-                        <div className="px-6 sm:px-8 pb-6 flex items-center justify-between gap-3 border-t border-slate-100 pt-5">
-                            <button
-                                type="button"
-                                onClick={() => step > 0 ? setStep(s => s - 1) : navigate(-1)}
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 font-bold text-sm hover:border-slate-300 hover:bg-slate-50 transition-all"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                                {step === 0 ? 'Back' : 'Previous'}
-                            </button>
-
-                            <div className="flex-1 flex justify-center">
-                                <div className="flex gap-1.5">
-                                    {STEPS.map(s => (
-                                        <div key={s.id} className={`h-1.5 rounded-full transition-all duration-300 ${step === s.id ? 'w-6 bg-primary' : step > s.id ? 'w-3 bg-green-400' : 'w-3 bg-slate-200'}`} />
-                                    ))}
-                                </div>
                             </div>
+                        )}
 
+                        {/* ── Footer Nav ── */}
+                        <div className="mt-12 flex gap-4">
+                            <Button variant="outline" className="flex-1 py-4" onClick={() => step > 0 ? setStep(s => s - 1) : navigate(-1)} disabled={isSaving}>
+                                <ChevronLeft className="w-4 h-4 mr-2" /> Back
+                            </Button>
                             {step < STEPS.length - 1 ? (
                                 <button
-                                    type="button"
                                     onClick={() => setStep(s => s + 1)}
                                     disabled={!canProceed()}
-                                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-dark transition-all shadow-sm shadow-primary/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-[2] py-4 bg-primary text-white font-black text-sm rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale"
                                 >
-                                    Next <ChevronRight className="h-4 w-4" />
+                                    Next Step <ChevronRight className="w-4 h-4" />
                                 </button>
                             ) : (
                                 <button
-                                    type="button"
                                     onClick={handleComplete}
                                     disabled={!canProceed() || isSaving}
-                                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-dark transition-all shadow-sm shadow-primary/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-[2] py-4 bg-slate-900 text-white font-black text-sm rounded-2xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 flex items-center justify-center gap-2"
                                 >
-                                    {isSaving ? (
-                                        <><span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving...</>
-                                    ) : (
-                                        <><Sparkles className="h-4 w-4" /> Go to Dashboard</>
-                                    )}
+                                    {isSaving ? "Finalizing..." : "Finish Setup"} <Sparkles className="w-4 h-4 text-yellow-400" />
                                 </button>
                             )}
                         </div>
                     </div>
-
-                    <p className="text-center text-xs text-slate-400 font-medium mt-4">
-                        NMIMS Hyderabad • Campus2Career • 2026
-                    </p>
                 </div>
-            </main >
+            </main>
 
-            {/* Modals */}
-            < AddProjectModal
-                isOpen={isProjectModalOpen}
-                onClose={() => setIsProjectModalOpen(false)
-                }
-                onSave={(project) => set('projects', [...data.projects, project])}
-            />
-
-            < AddInternshipModal
-                isOpen={isInternshipModalOpen}
-                onClose={() => setIsInternshipModalOpen(false)}
-                onSave={(internship) => set('internships', [...data.internships, internship])}
-            />
-
-        </div >
+            <AddProjectModal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} onSave={(project) => set('projects', [...data.projects, project])} />
+            <AddInternshipModal isOpen={isInternshipModalOpen} onClose={() => setIsInternshipModalOpen(false)} onSave={(internship) => set('internships', [...data.internships, internship])} />
+            
+            <footer className="py-8 text-center text-slate-400 text-[10px] font-bold tracking-[0.2em] uppercase">
+                NMIMS HYDERABAD • CAREER READINESS ENGINE • 2026
+            </footer>
+        </div>
     );
 }

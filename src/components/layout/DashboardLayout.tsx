@@ -20,8 +20,8 @@ export function DashboardLayout({ children, role, userName, userYear, userProgra
     // Prefer explicit props, fall back to auth context
     const resolvedRole = role ?? ((user as any)?.role as UserRole) ?? "student";
     const resolvedName = userName ?? user?.name ?? "User";
-    const resolvedYear = userYear ?? (user as any)?.year;
-    const resolvedProgram = userProgram ?? (user as any)?.program;
+    const resolvedYear = userYear ?? (user as any)?.currentYear;
+    const resolvedProgram = userProgram ?? (user as any)?.branch;
 
     return (
         <div className="min-h-screen bg-background">

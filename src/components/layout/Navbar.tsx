@@ -33,8 +33,8 @@ export function Navbar({ userName: propUserName, role: propRole, userYear: propY
     // Prefer context values; fall back to props (for pages that still pass them directly)
     const displayName = user?.name ?? propUserName ?? "User";
     const displayRole = ((user as any)?.role ?? propRole ?? "student") as UserRole;
-    const displayYear = (user as any)?.year ?? propYear;
-    const displayProgram = (user as any)?.program ?? propProgram;
+    const displayYear = (user as any)?.currentYear ?? propYear;
+    const displayProgram = (user as any)?.branch ?? propProgram;
 
     const initials = displayName
         .split(" ")

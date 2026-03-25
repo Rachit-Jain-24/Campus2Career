@@ -45,14 +45,17 @@ export interface SkillGapAnalysis {
   avgSalary: string;
 }
 
-function normalizeSkillName(skill: string): string {
+function normalizeSkillName(skill: unknown): string {
+  if (typeof skill !== 'string') return '';
   return skill.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
 }
 
-function hasSkill(userSkills: string[], requiredSkill: string): boolean {
+function hasSkill(userSkills: unknown[], requiredSkill: unknown): boolean {
   const normalizedRequired = normalizeSkillName(requiredSkill);
+  if (!normalizedRequired) return false;
   return userSkills.some(userSkill => {
     const normalizedUser = normalizeSkillName(userSkill);
+    if (!normalizedUser) return false;
     return normalizedUser.includes(normalizedRequired) || normalizedRequired.includes(normalizedUser);
   });
 }
@@ -131,9 +134,12 @@ export function analyzeSkillGap(
   const coreSkills = benchmark.requiredSkills.filter(s => s.category === 'core').length;
   const importantSkills = benchmark.requiredSkills.filter(s => s.category === 'important').length;
   
-  const coreScore = ((coreSkills - missingCoreSkills.length) / coreSkills) * 40;
-  const importantScore = ((importantSkills - missingImportantSkills.length) / importantSkills) * 30;
-  const niceToHaveScore = ((totalSkills - coreSkills - importantSkills - missingNiceToHaveSkills.length) / (totalSkills - coreSkills - importantSkills)) * 10;
+  const coreScore = coreSkills > 0 ? ((coreSkills - missingCoreSkills.length) / coreSkills) * 40 : 40;
+  const importantScore = importantSkills > 0 ? ((importantSkills - missingImportantSkills.length) / importantSkills) * 30 : 30;
+  const niceToHaveCount = totalSkills - coreSkills - importantSkills;
+  const niceToHaveScore = niceToHaveCount > 0
+    ? ((niceToHaveCount - missingNiceToHaveSkills.length) / niceToHaveCount) * 10
+    : 10;
   
   const leetCodeScore = Math.min((leetCodeSolved / benchmark.avgLeetCodeProblems) * 10, 10);
   const projectScore = Math.min((projectCount / benchmark.avgProjects) * 5, 5);

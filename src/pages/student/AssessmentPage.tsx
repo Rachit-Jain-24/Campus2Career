@@ -232,11 +232,39 @@ function computeResult(answers: Record<string, any>) {
     const hasDesign = careerAns.some(([, v]) => v === 'design' || v === 'designer');
     const hasWeb = careerAns.some(([, v]) => v === 'webdev');
 
-    if (hasAI) return { title: 'AI / ML Engineer Track', emoji: '🤖', color: 'bg-violet-600', desc: 'You show a strong inclination towards Artificial Intelligence. Focus on Python, ML frameworks, and mathematics.' };
-    if (hasData) return { title: 'Data Analyst / Data Scientist Track', emoji: '📊', color: 'bg-blue-600', desc: 'You are drawn to patterns and insights. Build skills in SQL, Python, Excel, and Statistics.' };
-    if (hasDesign) return { title: 'Product / UX Designer Track', emoji: '🎨', color: 'bg-pink-600', desc: 'Your creative instincts shine. Learn Figma, UI principles, and user research methods.' };
-    if (hasWeb) return { title: 'Full-Stack Developer Track', emoji: '💻', color: 'bg-emerald-600', desc: 'You enjoy building products. Master React, Node.js, and databases to become a full-stack developer.' };
-    return { title: 'Generalist Tech Track', emoji: '🚀', color: 'bg-primary', desc: 'You have broad interests. Explore multiple domains in Year 1 before specializing.' };
+    if (hasAI) return { title: 'AI/ML Engineer', emoji: '🤖', color: 'bg-violet-600', desc: 'You show a strong inclination towards Artificial Intelligence. Focus on Python, ML frameworks, and mathematics.' };
+    if (hasData) return { title: 'Data Scientist', emoji: '📊', color: 'bg-blue-600', desc: 'You are drawn to patterns and insights. Build skills in SQL, Python, Excel, and Statistics.' };
+    if (hasDesign) return { title: 'Product / UX Designer', emoji: '🎨', color: 'bg-pink-600', desc: 'Your creative instincts shine. Learn Figma, UI principles, and user research methods.' };
+    if (hasWeb) return { title: 'Full-Stack Developer', emoji: '💻', color: 'bg-emerald-600', desc: 'You enjoy building products. Master React, Node.js, and databases to become a full-stack developer.' };
+    return { title: 'Generalist Tech', emoji: '🚀', color: 'bg-primary', desc: 'You have broad interests. Explore multiple domains in Year 1 before specializing.' };
+}
+
+function computeSWOC(answers: Record<string, any>) {
+    const strengths = [];
+    const weaknesses = [];
+    const opportunities = [];
+    const challenges = [];
+
+    // Simple Strengths/Weaknesses logic
+    if (answers['ci_1'] === 'builder') strengths.push('Strong technical builder mindset');
+    if (answers['ci_1'] === 'analyst') strengths.push('Data-driven analytical thinker');
+    if (answers['p_1'] === 'leader') strengths.push('Natural leadership & delegation skills');
+    if (answers['b_2'] === 'problem_solver') strengths.push('Advanced logical problem solving');
+    if (answers['b_3'] === 'diplomatic') strengths.push('Strong team diplomacy & communication');
+
+    if (answers['b_4'] === 'procrastinator') weaknesses.push('Time management & procrastination');
+    if (answers['p_2'] === 'introvert') weaknesses.push('Tendency to work in silos');
+    if (answers['ci_6'] < 3) weaknesses.push('Public speaking & presentation anxiety');
+    if (answers['b_5'] < 3) weaknesses.push('Reluctance to seek early feedback');
+
+    opportunities.push('High demand for NMIMS CSE graduates');
+    opportunities.push('Emerging tech stacks in chosen track');
+    if (answers['p_3'] === 'adventurous') opportunities.push('Potential for startup leadership');
+
+    challenges.push('Highly competitive placement landscape');
+    challenges.push('Balancing rigorous academics with skill building');
+
+    return { strengths, weaknesses, opportunities, challenges };
 }
 
 // ─── Components ───────────────────────────────────────────────────────────────
@@ -308,12 +336,16 @@ export default function AssessmentPage() {
         setSaving(true);
         try {
             const track = computeResult(answers);
+            const swoc = computeSWOC(answers);
 
             const updatedUserData = {
                 ...user,
                 careerTrack: track.title,
                 careerTrackEmoji: track.emoji,
-                assessmentResults: answers,
+                assessmentResults: {
+                    ...answers,
+                    swoc: swoc
+                },
                 assessmentCompleted: true
             };
 

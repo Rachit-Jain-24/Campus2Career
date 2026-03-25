@@ -19,7 +19,7 @@ export default function LoginPage() {
         setError('');
         try {
             await login(sapId, password);
-            navigate('/onboarding');
+            navigate('/');
         } catch (err: any) {
             setError(err.message || 'Login failed. Please check your credentials.');
         }

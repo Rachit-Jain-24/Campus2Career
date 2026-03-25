@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import type { IntelligentRoadmap } from './roadmapGenerator';
 
 // Gemini API Key from environment variables
 // For production, this should be in an environment variable
@@ -356,5 +357,145 @@ export async function evaluateInterviewAnswer(
             improvements: ["Provide more technical depth."],
             suggestedAnswer: "A complete answer would directly address the core concepts."
         };
+    }
+}
+
+interface StudentProfile {
+    sapId: string;
+    currentYear: number;
+    techSkills: string[];
+    leetcodeStats?: { totalSolved: number };
+    projects?: unknown[];
+    internships?: unknown[];
+    cgpa?: string;
+}
+
+export async function generateSyllabusRoadmap(
+    syllabusText: string,
+    studentProfile: StudentProfile,
+    targetRole: string
+): Promise<IntelligentRoadmap> {
+    const {
+        currentYear,
+        techSkills,
+        leetcodeStats,
+        projects,
+        internships,
+        cgpa
+    } = studentProfile;
+
+    // Import inline to avoid circular module evaluation
+    const { generateIntelligentRoadmap } = await import('./roadmapGenerator');
+
+    // Fallback helper
+    const fallback = () =>
+        generateIntelligentRoadmap(
+            currentYear,
+            targetRole,
+            techSkills,
+            leetcodeStats?.totalSolved ?? 0,
+            projects?.length ?? 0,
+            internships?.length ?? 0,
+            parseFloat(cgpa ?? '0') || 0
+        );
+
+    if (!API_KEY) {
+        return fallback();
+    }
+
+    // Truncate syllabus to avoid token limits while keeping key content
+    const truncatedSyllabus = syllabusText.length > 6000
+        ? syllabusText.slice(0, 6000) + '\n...[truncated]'
+        : syllabusText;
+
+    const leetcodeSolved = leetcodeStats?.totalSolved ?? 0;
+    const projectCount = projects?.length ?? 0;
+    const internshipCount = internships?.length ?? 0;
+    const cgpaNum = parseFloat(cgpa ?? '0') || 0;
+
+    // Estimate progress based on profile
+    const estimatedProgress = Math.min(90, Math.round(
+        (Math.min(leetcodeSolved / 150, 1) * 25) +
+        (Math.min(projectCount / 4, 1) * 25) +
+        (Math.min(internshipCount / 2, 1) * 25) +
+        (Math.min(cgpaNum / 10, 1) * 25)
+    ));
+
+    const prompt = `You are a senior placement advisor at a top engineering college. A student has shared their semester syllabus and profile. Your job is to create a HIGHLY SPECIFIC career roadmap that directly references the subjects in their syllabus and maps each one to industry skills needed for their target role.
+
+SEMESTER SYLLABUS (read carefully — your roadmap MUST reference these subjects):
+---
+${truncatedSyllabus}
+---
+
+STUDENT PROFILE:
+- Target Role: ${targetRole}
+- Current Year of Study: Year ${currentYear}
+- Existing Tech Skills: ${techSkills.length > 0 ? techSkills.join(', ') : 'None listed'}
+- LeetCode Problems Solved: ${leetcodeSolved}
+- Projects Built: ${projectCount}
+- Internships Done: ${internshipCount}
+- CGPA: ${cgpaNum > 0 ? cgpaNum : 'Not provided'}
+
+CRITICAL INSTRUCTIONS:
+1. roadmapSteps MUST be based on the actual subjects in the syllabus above. Reference subject names directly.
+2. Each roadmapStep should explain HOW that subject connects to the ${targetRole} role.
+3. skillsToMaster should be skills that COMPLEMENT the syllabus subjects for ${targetRole}.
+4. projectsToBuild should use technologies from the syllabus subjects.
+5. subjectIndustryMap MUST list every subject found in the syllabus.
+6. overallProgress should reflect the student's current profile strength (0-100).
+
+Return ONLY valid JSON, no markdown, no extra text:
+{
+  "targetRole": "${targetRole}",
+  "currentYear": ${currentYear},
+  "overallProgress": ${estimatedProgress},
+  "roadmapSteps": [
+    { "title": "Leverage [Subject from syllabus] for ${targetRole}", "desc": "Specific advice connecting this subject to industry...", "iconKey": "Code2", "priority": "critical", "timeframe": "This semester" },
+    { "title": "...", "desc": "...", "iconKey": "Target", "priority": "high", "timeframe": "2 months" }
+  ],
+  "skillsToMaster": ["skill directly related to syllabus subjects"],
+  "certifications": ["cert relevant to ${targetRole}"],
+  "projectsToBuild": ["project using syllabus subject technologies"],
+  "milestones": ["milestone tied to syllabus completion"],
+  "academicFocus": ["specific advice for this semester's subjects"],
+  "internshipGoals": "internship goal specific to ${targetRole} and current year",
+  "curriculumMapping": [
+    { "year": ${currentYear}, "focus": "Current Semester Focus", "subject": "Subject from syllabus", "reason": "Why this matters for ${targetRole}" }
+  ],
+  "nextMilestone": "Most important next step based on syllabus",
+  "estimatedTimeToReady": "Realistic estimate based on current year and profile",
+  "subjectIndustryMap": [
+    { "subject": "EXACT subject name from syllabus", "industryRelevance": "high", "supplementarySkills": ["skill1", "skill2", "skill3"] }
+  ]
+}
+
+iconKey must be one of: Code2, LayoutGrid, Briefcase, Target, Compass, GraduationCap, Server, BookOpen
+priority must be one of: critical, high, medium`;
+
+    try {
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+        const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('TIMEOUT')), 30000)
+        );
+
+        const geminiPromise = model.generateContent(prompt);
+
+        const result = await Promise.race([geminiPromise, timeoutPromise]);
+        const text = (await result.response).text().replace(/```json|```/g, '').trim();
+
+        try {
+            return JSON.parse(text) as IntelligentRoadmap;
+        } catch (parseError) {
+            console.error('generateSyllabusRoadmap: failed to parse Gemini response', parseError);
+            return fallback();
+        }
+    } catch (error) {
+        if (error instanceof Error && error.message === 'TIMEOUT') {
+            return fallback();
+        }
+        console.error('generateSyllabusRoadmap: Gemini call failed', error);
+        return fallback();
     }
 }

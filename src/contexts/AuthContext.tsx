@@ -213,9 +213,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             // Determine document ID. Students use sapId, Admins use uid.
             // (Assuming existing structure where student docId === sapId)
-            const docId = newUser.role === 'student' ? (newUser as StudentUser).sapId : newUser.uid;
+            const docId = newUser.role === 'student' 
+                ? (newUser as StudentUser).sapId || newUser.uid 
+                : newUser.uid;
 
+            if (!docId) {
+                console.error('UpdateUser Error: No valid document ID found (missing sapId and uid)', newUser);
+                throw new Error('Authentication Error: Could not identify user record to update.');
+            }
+
+            // Sync to Firestore
             await setDoc(doc(db, 'users', docId), newUser, { merge: true });
+            
+            // Sync to local state
             setUser(newUser);
             localStorage.setItem('c2c_user', JSON.stringify(newUser));
         } catch (error) {

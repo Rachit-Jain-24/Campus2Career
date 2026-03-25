@@ -22,6 +22,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { useNavigate } from 'react-router-dom';
 import { fetchLeetCodeStats } from '../../lib/leetcode';
+import type { StudentUser } from '../../types/auth';
 
 export default function StudentDashboard() {
     const { user, updateUser } = useAuth();
@@ -68,7 +69,7 @@ export default function StudentDashboard() {
         if (internshipsCount >= 2) ps += 35;
         else if (internshipsCount === 1) ps += 25;
 
-        const githubProjectsCount = user.projects?.filter(p => !!p.link).length || 0;
+        const githubProjectsCount = (user as StudentUser).projects?.filter(p => !!p.link).length || 0;
         if (githubProjectsCount >= 2) ps += 20;
 
         if (solved >= 200) ps += 25;
@@ -142,7 +143,7 @@ export default function StudentDashboard() {
 
     // Dynamic Quick Stats based on Year
     const getQuickStats = () => {
-        const stats = [];
+        const stats: any[] = [];
 
         // Always include LeetCode as it's a core focus for all years
         stats.push({
@@ -288,7 +289,7 @@ export default function StudentDashboard() {
     ];
 
     // Dynamic SWOC
-    const derivedSwoc = user?.assessmentResults?.swoc || {
+    const derivedSwoc = (user?.assessmentResults as any)?.swoc || {
         strengths: ["Strong academic background", "Enrolled in specialized program"],
         weaknesses: ["Needs to uncover core technical interests", "Limited practical exposure"],
         opportunities: ["Explore multiple technology stacks", "Participate in hackathons"],
@@ -303,7 +304,7 @@ export default function StudentDashboard() {
     } : derivedSwoc;
 
     // Dynamic Skills Based on Actual Profile
-    const techSkills = user?.techSkills || [];
+    const techSkills: string[] = user?.techSkills || (user as any)?.interests || [];
 
     // NEW FEATURE: Skill Gap Engine
     const detectCareerTrack = () => {
@@ -335,7 +336,7 @@ export default function StudentDashboard() {
 
     // Generate Dynamic Recommended Actions
     const getRecommendedActions = () => {
-        const actions = [];
+        const actions: any[] = [];
         const solved = user?.leetcodeStats?.totalSolved || 0;
         const projects = user?.projects?.length || 0;
         const skillsCount = user?.techSkills?.length || 0;
@@ -373,7 +374,7 @@ export default function StudentDashboard() {
 
     // NEW FEATURE: AI Roadmap Generator
     const generateNextStepsRoadmap = () => {
-        const steps = [];
+        const steps: string[] = [];
         const solved = user?.leetcodeStats?.totalSolved || 0;
         const projects = user?.projects?.length || 0;
         const internships = user?.internships?.length || 0;
@@ -407,7 +408,7 @@ export default function StudentDashboard() {
             <div className="space-y-6">
 
                 {/* Career Discovery Banner */}
-                {!(user as any)?.careerTrack ? (
+                {!(user as StudentUser)?.careerTrack ? (
                     <div className="relative rounded-2xl bg-gradient-to-r from-violet-600/20 via-primary/15 to-transparent border border-primary/30 p-5 overflow-hidden animate-fade-in-up">
                         <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-primary/10" />
                         <div className="absolute right-4 bottom-0 h-16 w-16 rounded-full bg-violet-500/10" />
@@ -434,7 +435,7 @@ export default function StudentDashboard() {
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 w-fit">
                             <Target className="h-4 w-4 text-primary" />
-                            <span className="text-sm font-medium text-slate-700">Your Goal: <span className="text-primary font-bold">{(user as any).careerTrack}</span></span>
+                            <span className="text-sm font-medium text-slate-700">Your Goal: <span className="text-primary font-bold">{(user as StudentUser).careerTrack}</span></span>
                             <span className="text-slate-300">|</span>
                             <button onClick={() => navigate('/student/assessment')} className="text-xs font-bold text-primary hover:underline underline-offset-2">Change →</button>
                         </div>
@@ -451,7 +452,7 @@ export default function StudentDashboard() {
                                     <div>
                                         <p className="font-bold text-base text-slate-800">🤖 AI-Powered Skill Gap Analysis</p>
                                         <p className="text-sm text-slate-500 mt-0.5">
-                                            Compare your skills against industry benchmarks for {(user as any).careerTrack}. Get personalized recommendations to become placement-ready.
+                                            Compare your skills against industry benchmarks for {(user as StudentUser).careerTrack}. Get personalized recommendations to become placement-ready.
                                         </p>
                                     </div>
                                 </div>
@@ -563,7 +564,7 @@ export default function StudentDashboard() {
                             <h3 className="font-black text-slate-800 flex items-center gap-2">
                                 <Zap className="h-4 w-4 text-primary" /> Roadmap Progress
                             </h3>
-                            <button className="text-xs font-bold text-slate-500 hover:text-primary transition-colors flex items-center">
+                            <button onClick={() => navigate('/student/roadmap')} className="text-xs font-bold text-slate-500 hover:text-primary transition-colors flex items-center">
                                 Full Roadmap <ChevronRight className="h-3.5 w-3.5 ml-1" />
                             </button>
                         </div>
@@ -593,7 +594,7 @@ export default function StudentDashboard() {
                             <h3 className="font-black text-slate-800 flex items-center gap-2">
                                 <Flame className="h-4 w-4 text-orange-500" /> SWOC Analysis
                             </h3>
-                            <button className="text-xs font-bold text-slate-500 hover:text-orange-500 transition-colors flex items-center">
+                            <button onClick={() => navigate('/student/assessment')} className="text-xs font-bold text-slate-500 hover:text-orange-500 transition-colors flex items-center">
                                 Full SWOC <ChevronRight className="h-3.5 w-3.5 ml-1" />
                             </button>
                         </div>
@@ -672,18 +673,21 @@ export default function StudentDashboard() {
                             </h3>
                         </div>
                         <div className="p-5 flex-1 space-y-3 overflow-y-auto">
-                            {recommendedActions.map((action) => (
-                                <div key={action.id} onClick={() => navigate(action.link)} className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-4 hover:border-primary/30 transition-colors cursor-pointer shadow-sm group">
-                                    <div className={`p-3 rounded-xl flex-shrink-0 ${action.bg}`}>
-                                        <action.icon className={`h-5 w-5 ${action.color}`} />
+                            {recommendedActions.map((action) => {
+                                const ActionIcon = action.icon;
+                                return (
+                                    <div key={action.id} onClick={() => navigate(action.link)} className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-4 hover:border-primary/30 transition-colors cursor-pointer shadow-sm group">
+                                        <div className={`p-3 rounded-xl flex-shrink-0 ${action.bg}`}>
+                                            <ActionIcon className={`h-5 w-5 ${action.color}`} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-bold text-sm text-slate-800 group-hover:text-primary transition-colors">{action.title}</p>
+                                            <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{action.desc}</p>
+                                        </div>
+                                        <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-primary transition-colors" />
                                     </div>
-                                    <div className="flex-1">
-                                        <p className="font-bold text-sm text-slate-800 group-hover:text-primary transition-colors">{action.title}</p>
-                                        <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{action.desc}</p>
-                                    </div>
-                                    <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-primary transition-colors" />
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
 

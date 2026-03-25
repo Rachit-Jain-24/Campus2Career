@@ -141,6 +141,40 @@ export const industryBenchmarks: Record<string, RoleBenchmark> = {
     minCGPA: 7.5,
     industryDemand: 'high',
     avgSalary: '₹8-16 LPA'
+  },
+  'Cybersecurity Engineer': {
+    role: 'Cybersecurity Engineer',
+    requiredSkills: [
+      { skill: 'Networking', importance: 5, category: 'core', avgYearsToMaster: 1.5 },
+      { skill: 'Linux', importance: 5, category: 'core', avgYearsToMaster: 1 },
+      { skill: 'Ethical Hacking', importance: 5, category: 'core', avgYearsToMaster: 2 },
+      { skill: 'Cryptography', importance: 4, category: 'important', avgYearsToMaster: 1 },
+      { skill: 'Security Auditing', importance: 4, category: 'important', avgYearsToMaster: 1.5 },
+      { skill: 'Firewalls', importance: 4, category: 'important', avgYearsToMaster: 0.5 },
+    ],
+    avgLeetCodeProblems: 50,
+    avgProjects: 3,
+    avgInternships: 1,
+    minCGPA: 7.5,
+    industryDemand: 'high',
+    avgSalary: '₹7-15 LPA'
+  },
+  'Product / UX Designer': {
+    role: 'Product / UX Designer',
+    requiredSkills: [
+      { skill: 'Figma', importance: 5, category: 'core', avgYearsToMaster: 1 },
+      { skill: 'User Research', importance: 5, category: 'core', avgYearsToMaster: 1 },
+      { skill: 'Prototyping', importance: 5, category: 'core', avgYearsToMaster: 1 },
+      { skill: 'UI Principles', importance: 4, category: 'important', avgYearsToMaster: 1.5 },
+      { skill: 'Wireframing', importance: 4, category: 'important', avgYearsToMaster: 0.5 },
+      { skill: 'Adobe XD', importance: 3, category: 'nice-to-have', avgYearsToMaster: 0.5 },
+    ],
+    avgLeetCodeProblems: 20,
+    avgProjects: 5,
+    avgInternships: 2,
+    minCGPA: 7.0,
+    industryDemand: 'high',
+    avgSalary: '₹6-14 LPA'
   }
 };
 

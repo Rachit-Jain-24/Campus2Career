@@ -15,6 +15,12 @@ export interface CurriculumMapping {
     reason: string;
 }
 
+export interface SubjectIndustryEntry {
+    subject: string;
+    industryRelevance: 'high' | 'medium' | 'low';
+    supplementarySkills: string[];
+}
+
 export interface IntelligentRoadmap {
     targetRole: string;
     currentYear: number;
@@ -29,6 +35,7 @@ export interface IntelligentRoadmap {
     curriculumMapping: CurriculumMapping[];
     nextMilestone: string;
     estimatedTimeToReady: string;
+    subjectIndustryMap?: SubjectIndustryEntry[];
 }
 
 // Curriculum mapping for NMIMS CSE (DS) program
