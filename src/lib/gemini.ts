@@ -262,68 +262,146 @@ export async function generateInterviewQuestions(
     targetRole: string = "Software Engineer",
     resumeDescription: string = ""
 ): Promise<string[]> {
-    if (!API_KEY) {
-        if (mode === 'hr') return ["Tell me about yourself.", "What are your strengths and weaknesses?", "Describe a time you faced a conflict in a team.", "Where do you see yourself in 5 years?", "Why do you want to work here?"];
-        if (mode === 'project') return ["Walk me through the architecture of your most complex project.", "What was the most challenging bug you fixed?", "How did you make technology stack choices for your project?", "If you could rebuild your project, what would you do differently?", "How do you handle scalability?"];
-        return ["Explain the difference between Array and LinkedList.", "What is the time complexity of QuickSort?", "How does a Hash Map work under the hood?", "Explain the concept of closures.", "What are the SOLID principles?"];
-    }
+    const modeLabel = mode === 'hr' ? 'HR / Behavioral' : mode === 'project' ? 'Project Deep-Dive' : 'Technical';
+
+    const genericFallbacks: Record<string, string[]> = {
+        hr: [
+            "Tell me about yourself and your journey into software engineering.",
+            "Describe a situation where you had to learn a new technology under a tight deadline. How did you approach it?",
+            "Tell me about a time you disagreed with a teammate. How did you resolve it?",
+            "Where do you see yourself in 3 years, and how does this role fit that vision?",
+            "What's the most complex problem you've solved, and what was your thought process?"
+        ],
+        project: [
+            "Walk me through the architecture of your most technically challenging project.",
+            "What was the hardest bug you ever debugged? How did you find and fix it?",
+            "How did you decide on the tech stack for your main project? What trade-offs did you consider?",
+            "If you could rebuild your best project from scratch, what would you do differently and why?",
+            "How did you handle data consistency and error states in your project?"
+        ],
+        technical: [
+            `Explain how you would design a URL shortener like bit.ly. Walk me through the system design.`,
+            `What is the difference between a process and a thread? When would you use each?`,
+            `Explain the CAP theorem and give a real-world example of a system that prioritizes each combination.`,
+            `How does JavaScript's event loop work? What is the difference between microtasks and macrotasks?`,
+            `Given an array of integers, find the two numbers that sum to a target. What's the optimal solution?`
+        ]
+    };
+
+    if (!API_KEY) return genericFallbacks[mode] || genericFallbacks.technical;
 
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const prompt = `
-            You are an expert technical interviewer for top-tier tech companies.
-            Generate EXACTLY 5 highly personalized interview questions for a student based heavily on the provided Resume Text.
-            
-            Mode: ${mode === 'hr' ? 'HR / Behavioral Interview' : mode === 'project' ? 'Project / Experience Deep-Dive Interview' : 'Technical / Core CS Interview'}
-            Student Target Role: ${targetRole}
-            Student Skills: ${skills.join(', ')}
-            
-            RAW RESUME TEXT:
-            ${resumeDescription ? `"""${resumeDescription}"""` : 'Not provided. Ask generic questions based on skills.'}
-            
-            CRITICAL INSTRUCTION:
-            If RAW RESUME TEXT is provided, you MUST extract specific projects, internship experiences, or technical implementations mentioned in the text and ask highly specific questions about them.
-            Do NOT ask generic questions if resume text is present. Formulate questions like: 
-            - "In your resume, you mentioned building [Specific Project]. How did you handle [Specific Challenge]?"
-            - "I see you worked as a [Role] at [Company]. Can you explain how you used [Technology] there?"
-            ${mode === 'technical' ? '- "You listed [Skill] on your resume. How does [advanced concept of Skill] work under the hood?"' : ''}
-            
-            Return ONLY a valid JSON array of 5 string questions. DO NOT include any markdown formatting, object keys, or other text.
-            Example: ["Question 1?", "Question 2?", "Question 3?", "Question 4?", "Question 5?"]
-        `;
+
+        const resumeSection = resumeDescription?.trim()
+            ? `RESUME (read every word — questions MUST reference specific items from this):
+"""
+${resumeDescription.slice(0, 4000)}
+"""`
+            : `No resume provided. Generate role-specific questions based on skills.`;
+
+        const prompt = `You are a senior technical interviewer at a top-tier tech company (Google/Microsoft/Amazon level). Your job is to conduct a ${modeLabel} interview.
+
+CANDIDATE PROFILE:
+- Target Role: ${targetRole}
+- Skills: ${skills.join(', ') || 'Not specified'}
+${resumeSection}
+
+INTERVIEW TYPE: ${modeLabel}
+
+STRICT RULES:
+${resumeDescription?.trim() ? `
+1. You MUST read the resume carefully and ask questions about SPECIFIC projects, companies, technologies, and experiences mentioned.
+2. Reference exact project names, company names, or technologies from the resume.
+3. Ask "how" and "why" questions about their actual work, not hypotheticals.
+4. For technical mode: ask about the internals of technologies they listed (e.g., "You used Redis — explain how Redis handles persistence").
+5. For project mode: ask about architecture decisions, challenges, and trade-offs in their actual projects.
+6. For HR mode: ask behavioral questions grounded in their actual experiences.
+` : `
+1. Generate industry-standard questions for a ${targetRole} ${modeLabel} interview.
+2. Questions should be specific, not generic — ask about real scenarios and trade-offs.
+3. Include at least one system design or architecture question for technical mode.
+`}
+7. Questions must be progressively harder (start medium, end hard).
+8. NO generic questions like "What are your strengths?" or "Tell me about yourself" for technical/project modes.
+
+Return ONLY a valid JSON array of exactly 5 question strings. No markdown, no keys, no explanation.
+["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]`;
 
         const result = await model.generateContent(prompt);
         const text = (await result.response).text().replace(/```json|```/g, "").trim();
         const parsed = JSON.parse(text);
-        if (Array.isArray(parsed) && parsed.length >= 5) {
-            return parsed.slice(0, 5);
-        }
-        throw new Error("Invalid response format");
+        if (Array.isArray(parsed) && parsed.length >= 5) return parsed.slice(0, 5);
+        throw new Error("Invalid format");
     } catch (error) {
-        console.error("Failed to generate questions:", error);
-        return ["What is your strongest technical skill and why?", "Describe a time you solved a complex problem.", "How do you keep up with new technologies?", "Explain a project you are proud of.", "Where do you see yourself in 3 years?"];
+        console.error("generateInterviewQuestions failed:", error);
+        return genericFallbacks[mode] || genericFallbacks.technical;
     }
 }
 
-export async function analyzeSpeech(transcript: string, durationSeconds: number): Promise<InterviewEvaluation['communicationMetrics']> {
+export async function generateFollowUpQuestion(
+    originalQuestion: string,
+    answer: string,
+    mode: string,
+    targetRole: string
+): Promise<string | null> {
+    if (!API_KEY || !answer?.trim() || answer.trim().length < 20) return null;
     try {
-        const response = await fetch("http://localhost:8000/api/analyze-speech", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ transcript, durationSeconds })
-        });
-        if (!response.ok) throw new Error("Speech analysis failed");
-        return await response.json();
-    } catch (error) {
-        console.error("Speech Analysis Error:", error);
-        return {
-            communicationScore: 7,
-            confidenceScore: 7,
-            fillerWordCount: 0,
-            speechSpeed: 100,
-            clarity: "Medium"
-        };
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const prompt = `You are interviewing a candidate for ${targetRole}.
+
+Original question: "${originalQuestion}"
+Candidate's answer: "${answer.slice(0, 1000)}"
+
+Generate ONE sharp follow-up question that:
+- Digs deeper into something specific they mentioned
+- Challenges an assumption or asks for more detail
+- Is natural and conversational (like a real interviewer would ask)
+- Is NOT a repeat of the original question
+
+Return ONLY the follow-up question as a plain string. No JSON, no quotes, no explanation.`;
+
+        const result = await model.generateContent(prompt);
+        const text = (await result.response).text().trim();
+        return text.length > 10 ? text : null;
+    } catch {
+        return null;
     }
+}
+
+// Local speech analysis — no backend needed
+export function analyzeSpeechLocally(transcript: string, durationSeconds: number): InterviewEvaluation['communicationMetrics'] {
+    const words = transcript.trim().split(/\s+/).filter(Boolean);
+    const wordCount = words.length;
+    const speechSpeed = durationSeconds > 0 ? Math.round((wordCount / durationSeconds) * 60) : 0;
+
+    const fillerWords = ['um', 'uh', 'like', 'you know', 'basically', 'literally', 'actually', 'so', 'right', 'okay'];
+    const fillerWordCount = fillerWords.reduce((count, filler) => {
+        const regex = new RegExp(`\\b${filler}\\b`, 'gi');
+        return count + (transcript.match(regex)?.length || 0);
+    }, 0);
+
+    const avgWordsPerSentence = wordCount / Math.max(1, (transcript.match(/[.!?]+/g)?.length || 1));
+    const clarity = avgWordsPerSentence < 25 && fillerWordCount < 5 ? 'High' : avgWordsPerSentence < 35 ? 'Medium' : 'Low';
+
+    const confidenceScore = Math.min(10, Math.max(1,
+        10 - (fillerWordCount * 0.5) - (speechSpeed > 180 ? 2 : speechSpeed < 80 ? 1 : 0)
+    ));
+    const communicationScore = Math.min(10, Math.max(1,
+        (wordCount > 50 ? 7 : wordCount > 20 ? 5 : 3) + (clarity === 'High' ? 2 : clarity === 'Medium' ? 1 : 0)
+    ));
+
+    return {
+        communicationScore: Math.round(communicationScore * 10) / 10,
+        confidenceScore: Math.round(confidenceScore * 10) / 10,
+        fillerWordCount,
+        speechSpeed,
+        clarity
+    };
+}
+
+export async function analyzeSpeech(transcript: string, durationSeconds: number): Promise<InterviewEvaluation['communicationMetrics']> {
+    return analyzeSpeechLocally(transcript, durationSeconds);
 }
 
 export async function evaluateInterviewAnswer(
@@ -333,30 +411,52 @@ export async function evaluateInterviewAnswer(
     mode: string = "technical",
     resumeDescription: string = ""
 ): Promise<InterviewEvaluation> {
-    try {
-        const response = await fetch("http://localhost:8000/api/evaluate-interview-answer", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                question,
-                transcript,
-                skills,
-                mode,
-                apiKey: API_KEY,
-                resumeDescription
-            })
-        });
+    const fallback: InterviewEvaluation = {
+        technicalScore: transcript.trim().length > 50 ? 5 : 2,
+        strengths: transcript.trim().length > 50 ? ["Provided a response to the question."] : ["Attempted to answer."],
+        improvements: ["Add more technical depth and specific examples.", "Structure your answer using STAR method or explain your reasoning step by step."],
+        suggestedAnswer: "A strong answer would directly address the core concept, give a concrete example, and explain trade-offs."
+    };
 
-        if (!response.ok) throw new Error("AI Evaluation failed");
-        return await response.json();
+    if (!API_KEY || !transcript?.trim() || transcript.trim().length < 10) return fallback;
+
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const prompt = `You are a senior interviewer evaluating a candidate's answer. Be honest and specific — not encouraging for the sake of it.
+
+INTERVIEW MODE: ${mode === 'hr' ? 'HR/Behavioral' : mode === 'project' ? 'Project Deep-Dive' : 'Technical'}
+TARGET ROLE: ${skills.length ? `Skills: ${skills.join(', ')}` : 'Software Engineer'}
+${resumeDescription?.trim() ? `RESUME CONTEXT: ${resumeDescription.slice(0, 500)}` : ''}
+
+QUESTION: "${question}"
+
+CANDIDATE'S ANSWER: "${transcript.slice(0, 2000)}"
+
+Evaluate this answer and return ONLY valid JSON:
+{
+  "technicalScore": <integer 1-10>,
+  "strengths": ["specific strength 1", "specific strength 2"],
+  "improvements": ["specific improvement 1", "specific improvement 2"],
+  "suggestedAnswer": "A concise model answer (2-4 sentences) showing what an ideal response looks like"
+}
+
+Scoring guide:
+- 9-10: Exceptional — covers all aspects, gives examples, mentions trade-offs
+- 7-8: Good — covers main points but misses depth or examples
+- 5-6: Average — partially correct but vague or incomplete
+- 3-4: Weak — misses key concepts or gives incorrect information
+- 1-2: Very poor — off-topic or no meaningful content
+
+Be specific in strengths/improvements — reference what they actually said.`;
+
+        const result = await model.generateContent(prompt);
+        const text = (await result.response).text().replace(/```json|```/g, "").trim();
+        const parsed = JSON.parse(text);
+        if (parsed.technicalScore && parsed.strengths && parsed.improvements) return parsed;
+        throw new Error("Invalid format");
     } catch (error) {
-        console.error("Answer evaluation failed:", error);
-        return {
-            technicalScore: 5,
-            strengths: ["Attempted to answer the prompt."],
-            improvements: ["Provide more technical depth."],
-            suggestedAnswer: "A complete answer would directly address the core concepts."
-        };
+        console.error("evaluateInterviewAnswer failed:", error);
+        return fallback;
     }
 }
 
