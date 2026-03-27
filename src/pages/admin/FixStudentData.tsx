@@ -92,7 +92,7 @@ export default function FixStudentData() {
                     <button
                         onClick={handleRunFix}
                         disabled={isRunning}
-                        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                        className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-foreground py-3 px-6 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                     >
                         {isRunning ? (
                             <>

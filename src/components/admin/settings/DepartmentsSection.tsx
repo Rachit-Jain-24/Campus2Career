@@ -60,7 +60,7 @@ export const DepartmentsSection: React.FC<DepartmentsSectionProps> = ({
             <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                     <thead>
-                        <tr className="text-slate-400 border-b border-slate-800/50">
+                        <tr className="text-muted-foreground border-b border-border/50">
                             <th className="px-4 py-3 font-medium">Code</th>
                             <th className="px-4 py-3 font-medium">Display Name</th>
                             <th className="px-4 py-3 font-medium">Status</th>
@@ -69,14 +69,14 @@ export const DepartmentsSection: React.FC<DepartmentsSectionProps> = ({
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
                         {data.map((dept) => (
-                            <tr key={dept.id} className="hover:bg-slate-800/30 transition-colors">
+                            <tr key={dept.id} className="hover:bg-secondary/30 transition-colors">
                                 <td className="px-4 py-3">
                                     {editingId === dept.id ? (
                                         <input
                                             type="text"
                                             value={editCode}
                                             onChange={(e) => setEditCode(e.target.value)}
-                                            className="w-20 px-2 py-1 bg-slate-950 border border-indigo-500 rounded text-sm text-white focus:outline-none"
+                                            className="w-20 px-2 py-1 bg-background border border-indigo-500 rounded text-sm text-foreground focus:outline-none"
                                         />
                                     ) : (
                                         <span className="font-mono text-indigo-400 font-bold">{dept.code}</span>
@@ -88,10 +88,10 @@ export const DepartmentsSection: React.FC<DepartmentsSectionProps> = ({
                                             type="text"
                                             value={editName}
                                             onChange={(e) => setEditName(e.target.value)}
-                                            className="w-full px-2 py-1 bg-slate-950 border border-indigo-500 rounded text-sm text-white focus:outline-none"
+                                            className="w-full px-2 py-1 bg-background border border-indigo-500 rounded text-sm text-foreground focus:outline-none"
                                         />
                                     ) : (
-                                        <span className="text-white font-medium">{dept.displayName}</span>
+                                        <span className="text-foreground font-medium">{dept.displayName}</span>
                                     )}
                                 </td>
                                 <td className="px-4 py-3">
@@ -99,7 +99,7 @@ export const DepartmentsSection: React.FC<DepartmentsSectionProps> = ({
                                         onClick={() => onUpdate(dept.id, { isActive: !dept.isActive })}
                                         className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${dept.isActive
                                                 ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
-                                                : 'bg-slate-700/50 text-slate-500 hover:bg-slate-700'
+                                                : 'bg-secondary/70 text-muted-foreground hover:bg-secondary'
                                             }`}
                                     >
                                         {dept.isActive ? 'Active' : 'Inactive'}
@@ -112,13 +112,13 @@ export const DepartmentsSection: React.FC<DepartmentsSectionProps> = ({
                                                 <button onClick={() => confirmEdit(dept.id)} className="p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors">
                                                     <Check className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => setEditingId(null)} className="p-1.5 text-slate-400 hover:bg-slate-700 rounded-lg transition-colors">
+                                                <button onClick={() => setEditingId(null)} className="p-1.5 text-muted-foreground hover:bg-secondary rounded-lg transition-colors">
                                                     <X className="w-4 h-4" />
                                                 </button>
                                             </>
                                         ) : (
                                             <>
-                                                <button onClick={() => startEdit(dept)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
+                                                <button onClick={() => startEdit(dept)} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors">
                                                     <Edit2 className="w-4 h-4" />
                                                 </button>
                                                 <button onClick={() => onRemove(dept.id)} className="p-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors">
@@ -136,31 +136,31 @@ export const DepartmentsSection: React.FC<DepartmentsSectionProps> = ({
 
             {/* Add Department */}
             {isAdding ? (
-                <div className="flex items-end gap-3 p-4 bg-slate-950/50 border border-slate-800 rounded-lg">
+                <div className="flex items-end gap-3 p-4 bg-background/50 border border-border rounded-lg">
                     <div className="space-y-1.5 flex-shrink-0">
-                        <label className="text-xs font-semibold text-slate-400">Code</label>
+                        <label className="text-xs font-semibold text-muted-foreground">Code</label>
                         <input
                             type="text"
                             value={newCode}
                             onChange={(e) => setNewCode(e.target.value)}
                             placeholder="e.g. EE"
-                            className="w-24 px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                            className="w-24 px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder-slate-600 focus:outline-none focus:border-indigo-500"
                         />
                     </div>
                     <div className="space-y-1.5 flex-1">
-                        <label className="text-xs font-semibold text-slate-400">Display Name</label>
+                        <label className="text-xs font-semibold text-muted-foreground">Display Name</label>
                         <input
                             type="text"
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
                             placeholder="e.g. B.Tech - Electrical Engineering"
-                            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder-slate-600 focus:outline-none focus:border-indigo-500"
                         />
                     </div>
-                    <button onClick={handleAdd} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors">
+                    <button onClick={handleAdd} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-foreground rounded-lg text-sm font-medium transition-colors">
                         Add
                     </button>
-                    <button onClick={() => setIsAdding(false)} className="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg text-sm font-medium transition-colors">
+                    <button onClick={() => setIsAdding(false)} className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg text-sm font-medium transition-colors">
                         Cancel
                     </button>
                 </div>

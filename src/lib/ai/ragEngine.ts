@@ -1,3 +1,4 @@
+// ragengine
 import type { KnowledgeChunk, RAGResult } from './types';
 import type { StudentUser } from '@/types/auth';
 import { industryBenchmarks } from '@/data/industryBenchmarks';

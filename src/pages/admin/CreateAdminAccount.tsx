@@ -21,8 +21,9 @@ export default function CreateAdminAccount() {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const uid = userCredential.user.uid;
 
-            // Step 2: Create Firestore document
-            await setDoc(doc(db, 'users', uid), {
+            // Step 2: Create Firestore document in 'admins' collection
+            await setDoc(doc(db, 'admins', email), {
+                id: email, // Changed to readable email for ID
                 uid: uid,
                 email: email,
                 name: name,
@@ -69,7 +70,7 @@ export default function CreateAdminAccount() {
                     {/* Header */}
                     <div className="text-center mb-8">
                         <div className="w-16 h-16 bg-gradient-to-br from-primary to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <Shield className="h-8 w-8 text-white" />
+                            <Shield className="h-8 w-8 text-foreground" />
                         </div>
                         <h1 className="text-2xl font-bold text-slate-900">Create Admin Account</h1>
                         <p className="text-sm text-muted-foreground mt-2">
@@ -153,7 +154,7 @@ export default function CreateAdminAccount() {
                         <button
                             type="submit"
                             disabled={isCreating}
-                            className="w-full bg-gradient-to-r from-primary to-blue-600 text-white font-semibold py-3 rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full bg-gradient-to-r from-primary to-blue-600 text-foreground font-semibold py-3 rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {isCreating ? (
                                 <>

@@ -1,0 +1,39 @@
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { RoleLayout } from '../components/role/RoleLayout';
+import { RoleGuard } from '../components/admin/auth/RoleGuard';
+import { DEAN_NAV } from '../config/roles/roleNavigation';
+
+import { DeanDashboard } from '../pages/admin/role/DeanDashboard';
+import { AdminDashboard } from '../pages/admin/AdminDashboard';
+import { UsersPage } from '../pages/admin/UsersPage';
+import { StudentsPage } from '../pages/admin/StudentsPage';
+import { BatchAnalytics } from '../pages/admin/BatchAnalytics';
+import { ReportsPage } from '../pages/admin/ReportsPage';
+import { SettingsPage } from '../pages/admin/SettingsPage';
+import { AuditLogsPage } from '../pages/admin/AuditLogsPage';
+
+const DeanShell: React.FC = () => (
+    <RoleLayout
+        navItems={DEAN_NAV}
+        portalTitle="Dean Portal"
+        accentColor="bg-purple-600"
+        loginPath="/login/dean"
+    />
+);
+
+export const DeanPortalRoutes: React.FC = () => (
+    <Routes>
+        <Route element={<RoleGuard allowedRoles={['dean']}><DeanShell /></RoleGuard>}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<DeanDashboard />} />
+            <Route path="overview" element={<AdminDashboard />} />
+            <Route path="users" element={<UsersPage />} />
+            <Route path="students" element={<StudentsPage />} />
+            <Route path="batch-analytics" element={<BatchAnalytics />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="audit-logs" element={<AuditLogsPage />} />
+        </Route>
+    </Routes>
+);

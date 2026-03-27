@@ -22,7 +22,7 @@ export const KPICards: React.FC<KPICardsProps> = ({ stats }) => {
             subtitle: `of ${stats.totalStudents} total pool`,
             icon: PieChart,
             color: 'text-brand-500',
-            bg: 'bg-brand-500/10',
+            bg: 'bg-primary/10',
             border: 'border-brand-500/20'
         },
         {
@@ -109,16 +109,16 @@ export const KPICards: React.FC<KPICardsProps> = ({ stats }) => {
             {displayedCards.map((card, idx) => {
                 const Icon = card.icon;
                 return (
-                    <div key={idx} className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition-all duration-200 group">
+                    <div key={idx} className="bg-card border border-border rounded-xl p-5 hover:border-border transition-all duration-200 group">
                         <div className="flex justify-between items-start mb-4">
                             <div className={`p-3 rounded-xl ${card.bg} ${card.border} border group-hover:scale-110 transition-transform`}>
                                 <Icon className={`w-6 h-6 ${card.color}`} />
                             </div>
                         </div>
                         <div>
-                            <div className="text-sm font-medium text-slate-400 mb-1">{card.title}</div>
-                            <div className="text-2xl font-black text-white">{card.value}</div>
-                            <div className="text-xs text-slate-500 mt-1 font-medium">{card.subtitle}</div>
+                            <div className="text-sm font-medium text-muted-foreground mb-1">{card.title}</div>
+                            <div className="text-2xl font-black text-foreground">{card.value}</div>
+                            <div className="text-xs text-muted-foreground mt-1 font-medium">{card.subtitle}</div>
                         </div>
                     </div>
                 );

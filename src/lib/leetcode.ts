@@ -52,19 +52,33 @@ export async function fetchLeetCodeStats(username: string): Promise<LeetCodeData
                 }
             }
 
+            const acStats = data.matchedUserStats?.acSubmissionNum || [];
+            const getCount = (diff: string) => acStats.find((s: any) => s.difficulty === diff)?.count || 0;
+            
+            const totalStats = data.matchedUserStats?.totalSubmissionNum || [];
+            const acAllSubmissions = acStats.find((s: any) => s.difficulty === 'All')?.submissions || 0;
+            const totalSubmissions = totalStats.find((s: any) => s.difficulty === 'All')?.submissions || 0;
+            
+            let accRate = parseFloat(data.acceptanceRate);
+            if (isNaN(accRate) || !accRate) {
+                accRate = totalSubmissions > 0 ? (acAllSubmissions / totalSubmissions) * 100 : 0;
+            }
+
+            const getQCount = (diff: string) => data.allQuestionsCount?.find((q: any) => q.difficulty === diff)?.count || 0;
+
             return {
-                totalSolved: data.totalSolved || 0,
-                easySolved: data.easySolved || 0,
-                mediumSolved: data.mediumSolved || 0,
-                hardSolved: data.hardSolved || 0,
-                totalEasy: data.totalEasy || 1000,
-                totalMedium: data.totalMedium || 1000,
-                totalHard: data.totalHard || 500,
+                totalSolved: data.totalSolved || getCount('All') || 0,
+                easySolved: data.easySolved !== undefined ? data.easySolved : getCount('Easy'),
+                mediumSolved: data.mediumSolved !== undefined ? data.mediumSolved : getCount('Medium'),
+                hardSolved: data.hardSolved !== undefined ? data.hardSolved : getCount('Hard'),
+                totalEasy: data.totalEasy !== undefined ? data.totalEasy : (getQCount('Easy') || 1000),
+                totalMedium: data.totalMedium !== undefined ? data.totalMedium : (getQCount('Medium') || 1000),
+                totalHard: data.totalHard !== undefined ? data.totalHard : (getQCount('Hard') || 500),
                 ranking: data.ranking || 0,
-                acceptanceRate: parseFloat(data.acceptanceRate) || 0,
+                acceptanceRate: accRate || 0,
                 streak: streak,
                 submissionCalendar: JSON.stringify(calendar),
-                recentSubmissions: data.recentSubmissions || []
+                recentSubmissions: data.recentSubmissions || data.recentSubmissionList || []
             };
         }
     } catch (error) {

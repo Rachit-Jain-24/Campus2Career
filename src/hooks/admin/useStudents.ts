@@ -142,20 +142,41 @@ export const useStudents = () => {
     const exportToCSV = useCallback(() => {
         if (processedStudents.length === 0) return;
 
-        const headers = ['SAP ID', 'Full Name', 'Email', 'Department', 'Year', 'CGPA', 'Readiness Score', 'Career Goal', 'Placement Status', 'Eligibility', 'Resume'];
-        const csvRows = processedStudents.map(s => [
-            s.sapId,
-            `"${s.fullName}"`, // Wrap in quotes in case of commas
-            s.email,
-            `"${s.department}"`,
-            s.currentYear,
-            s.cgpa,
-            `${s.readinessScore}%`,
-            `"${s.careerGoal}"`,
-            s.placementStatus,
-            s.eligibilityStatus,
-            s.resumeStatus
-        ].join(','));
+        const headers = [
+            'SAP ID', 'Full Name', 'Email', 'Contact', 'Department', 'Year', 
+            'CGPA', 'Readiness Score', 'Career Goal', 'Placement Status', 
+            'Eligibility', 'Resume', 'Internship Status', 'LeetCode Solved',
+            'Projects', 'Offers', 'Bio', 'Skills', 'Certifications', 'Achievements'
+        ];
+
+        const csvRows = processedStudents.map(s => {
+            const skills = (s.skills || []).map(skill => typeof skill === 'string' ? skill : (skill as any).name || '').join('; ');
+            const certs = (s.certifications || []).map(cert => typeof cert !== 'string' ? cert.name : cert).join('; ');
+            const achs = (s.achievements || []).map(ach => ach.title).join('; ');
+
+            return [
+                s.sapId,
+                `"${s.fullName}"`, 
+                s.email,
+                s.contact || 'N/A',
+                `"${s.department}"`,
+                s.currentYear,
+                s.cgpa,
+                `${s.readinessScore}%`,
+                `"${s.careerGoal}"`,
+                s.placementStatus,
+                s.eligibilityStatus,
+                s.resumeStatus,
+                s.internshipCompleted ? 'Completed' : 'Pending',
+                s.leetcodeStats?.totalSolved || 0,
+                s.projectsCount || 0,
+                s.offersCount || 0,
+                `"${(s.bio || '').replace(/"/g, '""')}"`, // Handle quotes in bio
+                `"${skills}"`,
+                `"${certs}"`,
+                `"${achs}"`
+            ].join(',');
+        });
 
         const csvString = [headers.join(','), ...csvRows].join('\n');
 

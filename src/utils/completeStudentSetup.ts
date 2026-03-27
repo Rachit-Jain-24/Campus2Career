@@ -22,7 +22,7 @@ export async function completeStudentSetup() {
     };
     
     try {
-        const usersRef = collection(db, 'users');
+        const usersRef = collection(db, 'students');
         const querySnapshot = await getDocs(usersRef);
         
         for (const docSnapshot of querySnapshot.docs) {

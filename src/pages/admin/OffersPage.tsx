@@ -46,13 +46,13 @@ export const OffersPage: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
-                        <div className="p-2 bg-brand-500/20 rounded-lg border border-brand-500/30">
-                            <IndianRupee className="w-6 h-6 text-brand-400" />
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
+                            <IndianRupee className="w-6 h-6 text-primary" />
                         </div>
                         Offer Management
                     </h1>
-                    <p className="text-slate-400 mt-2">
+                    <p className="text-muted-foreground mt-2">
                         Track, record, and verify placement offers and compensation packages.
                     </p>
                 </div>
@@ -60,7 +60,7 @@ export const OffersPage: React.FC = () => {
                 {compareOffers.length > 0 && (
                     <button
                         onClick={() => setIsCompareModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-500/20 animate-fade-in"
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-foreground rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-500/20 animate-fade-in"
                     >
                         <Scale className="w-4 h-4" />
                         Compare Selected ({compareOffers.length})
@@ -104,22 +104,22 @@ export const OffersPage: React.FC = () => {
             />
 
             {totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl">
-                    <div className="text-sm text-slate-400 font-medium">
-                        Showing page <span className="text-white">{page}</span> of <span className="text-white">{totalPages}</span>
+                <div className="flex items-center justify-between px-4 py-3 bg-secondary/50 border border-border/50 rounded-xl">
+                    <div className="text-sm text-muted-foreground font-medium">
+                        Showing page <span className="text-foreground">{page}</span> of <span className="text-foreground">{totalPages}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setPage(p => Math.max(1, p - 1))}
                             disabled={page === 1}
-                            className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="p-2 rounded-lg bg-secondary border border-border text-foreground hover:text-foreground hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             Previous
                         </button>
                         <button
                             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                             disabled={page === totalPages}
-                            className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="p-2 rounded-lg bg-secondary border border-border text-foreground hover:text-foreground hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             Next
                         </button>

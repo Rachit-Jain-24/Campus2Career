@@ -28,19 +28,19 @@ export const OfferFiltersBar: React.FC<OfferFiltersBarProps> = ({
     };
 
     return (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 space-y-4">
+        <div className="bg-card border border-border rounded-xl p-4 sm:p-5 space-y-4">
 
             <div className="flex flex-col sm:flex-row gap-4 justify-between">
 
                 {/* Search */}
                 <div className="relative flex-1 sm:max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
                         type="text"
                         placeholder="Search student, company, role..."
                         value={filters.searchQuery}
                         onChange={(e) => updateFilter('searchQuery', e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-brand-500 transition-colors placeholder:text-slate-500"
+                        className="w-full pl-9 pr-4 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground"
                     />
                 </div>
 
@@ -48,7 +48,7 @@ export const OfferFiltersBar: React.FC<OfferFiltersBarProps> = ({
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleExport}
-                        className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-slate-300 border border-slate-700 hover:text-white hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-secondary text-foreground border border-border hover:text-foreground hover:bg-secondary rounded-lg text-sm font-medium transition-colors"
                     >
                         <Download className="w-4 h-4" />
                         <span className="hidden sm:inline">Export</span>
@@ -57,7 +57,7 @@ export const OfferFiltersBar: React.FC<OfferFiltersBarProps> = ({
                     {canManageOffers && (
                         <button
                             onClick={onCreateOffer}
-                            className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-brand-500/20"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-brand-500 text-foreground rounded-lg text-sm font-medium transition-colors shadow-lg shadow-brand-500/20"
                         >
                             <Plus className="w-4 h-4" />
                             <span className="hidden sm:inline">Record Offer</span>
@@ -67,8 +67,8 @@ export const OfferFiltersBar: React.FC<OfferFiltersBarProps> = ({
             </div>
 
             {/* Dropdowns */}
-            <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-800/50">
-                <div className="flex items-center gap-2 text-slate-400">
+            <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-border/50">
+                <div className="flex items-center gap-2 text-muted-foreground">
                     <Filter className="w-4 h-4" />
                     <span className="text-sm font-medium">Filters:</span>
                 </div>
@@ -76,7 +76,7 @@ export const OfferFiltersBar: React.FC<OfferFiltersBarProps> = ({
                 <select
                     value={filters.status}
                     onChange={(e) => updateFilter('status', e.target.value as any)}
-                    className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-300 focus:outline-none focus:border-brand-500"
+                    className="px-3 py-1.5 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-primary"
                 >
                     <option value="all">All Statuses</option>
                     <option value="issued">Issued</option>
@@ -89,7 +89,7 @@ export const OfferFiltersBar: React.FC<OfferFiltersBarProps> = ({
                 <select
                     value={filters.department}
                     onChange={(e) => updateFilter('department', e.target.value)}
-                    className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-300 focus:outline-none focus:border-brand-500"
+                    className="px-3 py-1.5 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-primary"
                 >
                     <option value="all">All Departments</option>
                     <option value="Computer Engineering">Computer Engineering</option>
@@ -101,7 +101,7 @@ export const OfferFiltersBar: React.FC<OfferFiltersBarProps> = ({
                 <select
                     value={filters.year}
                     onChange={(e) => updateFilter('year', e.target.value)}
-                    className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-300 focus:outline-none focus:border-brand-500"
+                    className="px-3 py-1.5 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-primary"
                 >
                     <option value="all">All Years</option>
                     <option value="Final Year">Final Year</option>
@@ -112,13 +112,13 @@ export const OfferFiltersBar: React.FC<OfferFiltersBarProps> = ({
 
                 <button
                     onClick={resetFilters}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg text-sm font-medium transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg text-sm font-medium transition-colors"
                 >
                     <RotateCcw className="w-3.5 h-3.5" />
                     Reset
                 </button>
 
-                <div className="px-3 py-1.5 bg-brand-500/10 border border-brand-500/20 text-brand-400 rounded-lg text-sm font-bold ml-2">
+                <div className="px-3 py-1.5 bg-primary/10 border border-brand-500/20 text-primary rounded-lg text-sm font-bold ml-2">
                     {totalResults} {totalResults === 1 ? 'Offer' : 'Offers'}
                 </div>
             </div>

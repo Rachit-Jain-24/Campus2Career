@@ -30,39 +30,39 @@ export const DriveTable: React.FC<DriveTableProps> = ({
     const getSortIcon = (field: DriveSortField) => {
         if (sortConfig.field !== field) return <ChevronDown className="w-4 h-4 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />;
         return sortConfig.order === 'asc'
-            ? <ChevronUp className="w-4 h-4 text-brand-400" />
-            : <ChevronDown className="w-4 h-4 text-brand-400" />;
+            ? <ChevronUp className="w-4 h-4 text-primary" />
+            : <ChevronDown className="w-4 h-4 text-primary" />;
     };
 
     const getStatusTheme = (status: string) => {
         switch (status) {
             case 'completed': return { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20', Icon: CheckCircle2, label: 'Completed' };
-            case 'ongoing': return { bg: 'bg-brand-500/10', text: 'text-brand-400', border: 'border-brand-500/20', Icon: PlayCircle, label: 'Ongoing' };
+            case 'ongoing': return { bg: 'bg-primary/10', text: 'text-primary', border: 'border-brand-500/20', Icon: PlayCircle, label: 'Ongoing' };
             case 'registration_open': return { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/20', Icon: Users, label: 'Reg Open' };
             case 'upcoming': return { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20', Icon: Clock, label: 'Upcoming' };
             case 'cancelled': return { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20', Icon: XCircle, label: 'Cancelled' };
             case 'draft':
-            default: return { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/20', Icon: Edit3, label: 'Draft' };
+            default: return { bg: 'bg-slate-500/10', text: 'text-muted-foreground', border: 'border-slate-500/20', Icon: Edit3, label: 'Draft' };
         }
     };
 
     if (isLoading) {
         return (
-            <div className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl p-8 flex flex-col items-center justify-center min-h-[400px]">
+            <div className="w-full bg-secondary/50 border border-border/50 rounded-xl p-8 flex flex-col items-center justify-center min-h-[400px]">
                 <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
-                <p className="mt-4 text-slate-400 font-medium">Loading placement drives...</p>
+                <p className="mt-4 text-muted-foreground font-medium">Loading placement drives...</p>
             </div>
         );
     }
 
     if (drives.length === 0) {
         return (
-            <div className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl p-12 flex flex-col items-center justify-center text-center min-h-[400px]">
-                <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4 border border-slate-700">
-                    <Calendar className="w-8 h-8 text-slate-500" />
+            <div className="w-full bg-secondary/50 border border-border/50 rounded-xl p-12 flex flex-col items-center justify-center text-center min-h-[400px]">
+                <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mb-4 border border-border">
+                    <Calendar className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">No Drives Found</h3>
-                <p className="text-slate-400 max-w-sm">
+                <h3 className="text-xl font-bold text-foreground mb-2">No Drives Found</h3>
+                <p className="text-muted-foreground max-w-sm">
                     No active or past placement drives match your active filters.
                 </p>
             </div>
@@ -70,13 +70,13 @@ export const DriveTable: React.FC<DriveTableProps> = ({
     }
 
     return (
-        <div className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden shadow-xl shadow-black/20">
+        <div className="w-full bg-secondary/50 border border-border/50 rounded-xl overflow-hidden shadow-xl shadow-black/20">
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[1000px]">
                     <thead>
-                        <tr className="bg-slate-900/50 border-b border-slate-700/50 text-xs uppercase tracking-wider text-slate-400 font-semibold">
+                        <tr className="bg-card/50 border-b border-border/50 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                             <th
-                                className="px-5 py-4 cursor-pointer group hover:bg-slate-800/50 transition-colors w-1/3"
+                                className="px-5 py-4 cursor-pointer group hover:bg-secondary/50 transition-colors w-1/3"
                                 onClick={() => handleSort('title')}
                             >
                                 <div className="flex items-center justify-between">
@@ -84,12 +84,12 @@ export const DriveTable: React.FC<DriveTableProps> = ({
                                 </div>
                             </th>
                             <th
-                                className="px-5 py-4 cursor-pointer group hover:bg-slate-800/50 transition-colors"
+                                className="px-5 py-4 cursor-pointer group hover:bg-secondary/50 transition-colors"
                             >
                                 <div className="flex items-center gap-2">Metrics & Scope</div>
                             </th>
                             <th
-                                className="px-5 py-4 cursor-pointer group hover:bg-slate-800/50 transition-colors"
+                                className="px-5 py-4 cursor-pointer group hover:bg-secondary/50 transition-colors"
                                 onClick={() => handleSort('status')}
                             >
                                 <div className="flex items-center gap-2">Timeline Status {getSortIcon('status')}</div>
@@ -106,29 +106,29 @@ export const DriveTable: React.FC<DriveTableProps> = ({
                             return (
                                 <tr
                                     key={drive.id}
-                                    className="hover:bg-slate-800/80 transition-colors group cursor-pointer"
+                                    className="hover:bg-secondary/80 transition-colors group cursor-pointer"
                                     onClick={() => onViewDrive(drive)}
                                 >
                                     {/* Drive Details */}
                                     <td className="px-5 py-5">
                                         <div className="flex items-start gap-3">
-                                            <div className="w-10 h-10 flex-shrink-0 bg-slate-900 border border-slate-700 rounded-lg flex items-center justify-center p-1.5 opacity-80 group-hover:opacity-100 transition-opacity mt-1">
+                                            <div className="w-10 h-10 flex-shrink-0 bg-card border border-border rounded-lg flex items-center justify-center p-1.5 opacity-80 group-hover:opacity-100 transition-opacity mt-1">
                                                 {drive.companyLogoUrl ? (
                                                     <img src={drive.companyLogoUrl} alt={drive.companyName} className="max-w-full max-h-full object-contain" />
                                                 ) : (
-                                                    <Building2 className="w-5 h-5 text-slate-500" />
+                                                    <Building2 className="w-5 h-5 text-muted-foreground" />
                                                 )}
                                             </div>
                                             <div className="min-w-0">
-                                                <div className="font-bold text-white group-hover:text-brand-300 transition-colors text-sm mb-0.5 line-clamp-1">
+                                                <div className="font-bold text-foreground group-hover:text-brand-300 transition-colors text-sm mb-0.5 line-clamp-1">
                                                     {drive.title}
                                                 </div>
-                                                <div className="text-xs text-brand-400 font-medium mb-1 truncate">
+                                                <div className="text-xs text-primary font-medium mb-1 truncate">
                                                     {drive.companyName} • {drive.jobRole}
                                                 </div>
-                                                <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                                                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                                                     <span className="capitalize">{drive.mode.replace('-', ' ')}</span>
-                                                    <span className="w-1 h-1 rounded-full bg-slate-700"></span>
+                                                    <span className="w-1 h-1 rounded-full bg-secondary"></span>
                                                     <span className="truncate">{drive.location}</span>
                                                 </div>
                                             </div>
@@ -139,21 +139,21 @@ export const DriveTable: React.FC<DriveTableProps> = ({
                                     <td className="px-5 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-4">
                                             <div>
-                                                <div className="text-xs text-slate-500 mb-1">Package</div>
+                                                <div className="text-xs text-muted-foreground mb-1">Package</div>
                                                 <div className="text-sm font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded inline-block">
                                                     {drive.packageRange}
                                                 </div>
                                             </div>
                                             <div>
-                                                <div className="text-xs text-slate-500 mb-1 leading-tight text-center">Applicants</div>
+                                                <div className="text-xs text-muted-foreground mb-1 leading-tight text-center">Applicants</div>
                                                 <div className="flex items-center gap-1.5 justify-center">
-                                                    <Users className="w-3.5 h-3.5 text-slate-400" />
+                                                    <Users className="w-3.5 h-3.5 text-muted-foreground" />
                                                     <span className="text-sm font-bold text-slate-200">{drive.applicantCount}</span>
                                                 </div>
                                             </div>
                                             {drive.shortlistedCount > 0 && (
                                                 <div>
-                                                    <div className="text-xs text-slate-500 mb-1 leading-tight text-center">Shortlists</div>
+                                                    <div className="text-xs text-muted-foreground mb-1 leading-tight text-center">Shortlists</div>
                                                     <div className="flex items-center gap-1.5 justify-center">
                                                         <span className="text-sm font-bold text-brand-300">{drive.shortlistedCount}</span>
                                                     </div>
@@ -172,7 +172,7 @@ export const DriveTable: React.FC<DriveTableProps> = ({
                                                     <span className="ml-1 w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" title="Registration currently active"></span>
                                                 )}
                                             </span>
-                                            <div className="text-[10px] text-slate-500 font-medium">
+                                            <div className="text-[10px] text-muted-foreground font-medium">
                                                 Reg End: {drive.registrationEnd.toLocaleDateString()}
                                             </div>
                                         </div>
@@ -186,7 +186,7 @@ export const DriveTable: React.FC<DriveTableProps> = ({
                                                     e.stopPropagation();
                                                     onViewDrive(drive);
                                                 }}
-                                                className="p-2 bg-slate-800 hover:bg-brand-600 border border-slate-700 hover:border-brand-500 text-slate-400 hover:text-white rounded-lg transition-all"
+                                                className="p-2 bg-secondary hover:bg-primary border border-border hover:border-brand-500 text-muted-foreground hover:text-foreground rounded-lg transition-all"
                                                 title="View Details"
                                             >
                                                 <Eye className="w-4 h-4" />
@@ -198,7 +198,7 @@ export const DriveTable: React.FC<DriveTableProps> = ({
                                                         e.stopPropagation();
                                                         onEditDrive(drive);
                                                     }}
-                                                    className="p-2 bg-slate-800 hover:bg-amber-600 border border-slate-700 hover:border-amber-500 text-slate-400 hover:text-white rounded-lg transition-all"
+                                                    className="p-2 bg-secondary hover:bg-amber-600 border border-border hover:border-amber-500 text-muted-foreground hover:text-foreground rounded-lg transition-all"
                                                     title="Edit Drive Configuration"
                                                 >
                                                     <Pencil className="w-4 h-4" />
@@ -213,7 +213,7 @@ export const DriveTable: React.FC<DriveTableProps> = ({
                 </table>
             </div>
 
-            <div className="p-3 bg-slate-900/30 border-t border-slate-700/50 text-[11px] text-slate-500 flex justify-between items-center sm:hidden">
+            <div className="p-3 bg-card/30 border-t border-border/50 text-[11px] text-muted-foreground flex justify-between items-center sm:hidden">
                 Swipe left to view complete details
             </div>
         </div>

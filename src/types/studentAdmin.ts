@@ -26,9 +26,12 @@ export interface AdminStudentProfile {
     // Deep profile details for the Drawer
     contact?: string;
     skills?: string[];
-    certifications?: string[];
+    certifications?: (string | { id: string | number; name: string; issuer: string; year?: string; link?: string })[];
     projectsCount?: number;
     offersCount?: number;
+    achievements?: { id: string | number; title: string; description: string; year?: string }[];
+    bio?: string;
+    leetcodeStats?: { totalSolved: number; easySolved: number; mediumSolved: number; hardSolved: number };
     lastUpdated?: Date;
 }
 

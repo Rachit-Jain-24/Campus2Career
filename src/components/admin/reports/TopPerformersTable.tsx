@@ -15,7 +15,7 @@ const statusColor = (status: string) => {
         case 'completed': return 'text-emerald-400 bg-emerald-500/10';
         case 'ongoing': return 'text-blue-400 bg-blue-500/10';
         case 'registration_open': return 'text-indigo-400 bg-indigo-500/10';
-        default: return 'text-slate-400 bg-slate-500/10';
+        default: return 'text-muted-foreground bg-slate-500/10';
     }
 };
 
@@ -35,9 +35,9 @@ export const TopPerformersTable: React.FC<TopPerformersTableProps> = ({ tables }
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 {/* Top Recruiters */}
-                <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col h-full">
-                    <div className="px-5 py-4 border-b border-slate-800/80 bg-slate-900/50 flex justify-between items-center">
-                        <h3 className="font-bold text-white flex items-center gap-2">
+                <div className="bg-card border border-border rounded-xl overflow-hidden flex flex-col h-full">
+                    <div className="px-5 py-4 border-b border-border/80 bg-card/50 flex justify-between items-center">
+                        <h3 className="font-bold text-foreground flex items-center gap-2">
                             <Trophy className="w-4 h-4 text-amber-500" />
                             Top Volume Recruiters
                         </h3>
@@ -45,7 +45,7 @@ export const TopPerformersTable: React.FC<TopPerformersTableProps> = ({ tables }
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm whitespace-nowrap">
                             <thead>
-                                <tr className="bg-slate-900/40 text-slate-400 border-b border-slate-800/50">
+                                <tr className="bg-card/40 text-muted-foreground border-b border-border/50">
                                     <th className="px-5 py-3 font-medium">#</th>
                                     <th className="px-5 py-3 font-medium">Company</th>
                                     <th className="px-5 py-3 font-medium">Offers</th>
@@ -55,23 +55,23 @@ export const TopPerformersTable: React.FC<TopPerformersTableProps> = ({ tables }
                             </thead>
                             <tbody className="divide-y divide-slate-800/50">
                                 {tables.topCompanies.map((company, idx) => (
-                                    <tr key={company.id} className="hover:bg-slate-800/30 transition-colors">
+                                    <tr key={company.id} className="hover:bg-secondary/30 transition-colors">
                                         <td className="px-5 py-3">
-                                            <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 text-xs font-bold">
+                                            <div className="w-7 h-7 rounded-lg bg-secondary border border-border flex items-center justify-center text-muted-foreground text-xs font-bold">
                                                 {idx + 1}
                                             </div>
                                         </td>
                                         <td className="px-5 py-3">
-                                            <div className="font-bold text-white">{company.companyName}</div>
-                                            <div className="text-[11px] text-slate-500">{company.industry}</div>
+                                            <div className="font-bold text-foreground">{company.companyName}</div>
+                                            <div className="text-[11px] text-muted-foreground">{company.industry}</div>
                                         </td>
                                         <td className="px-5 py-3">
-                                            <span className="inline-block px-2 py-1 bg-brand-500/10 text-brand-400 font-bold rounded">
+                                            <span className="inline-block px-2 py-1 bg-primary/10 text-primary font-bold rounded">
                                                 {company.offersCount}
                                             </span>
                                         </td>
                                         <td className="px-5 py-3 text-right">
-                                            <span className="text-slate-300 font-medium">{company.avgPackage} LPA</span>
+                                            <span className="text-foreground font-medium">{company.avgPackage} LPA</span>
                                         </td>
                                         <td className="px-5 py-3 text-right">
                                             <span className="text-emerald-400 font-bold">{company.highestPackage} LPA</span>
@@ -79,7 +79,7 @@ export const TopPerformersTable: React.FC<TopPerformersTableProps> = ({ tables }
                                     </tr>
                                 ))}
                                 {tables.topCompanies.length === 0 && (
-                                    <tr><td colSpan={5} className="px-5 py-8 text-center text-slate-500">No company data available</td></tr>
+                                    <tr><td colSpan={5} className="px-5 py-8 text-center text-muted-foreground">No company data available</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -87,9 +87,9 @@ export const TopPerformersTable: React.FC<TopPerformersTableProps> = ({ tables }
                 </div>
 
                 {/* Department Leaders */}
-                <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col h-full">
-                    <div className="px-5 py-4 border-b border-slate-800/80 bg-slate-900/50 flex justify-between items-center">
-                        <h3 className="font-bold text-white flex items-center gap-2">
+                <div className="bg-card border border-border rounded-xl overflow-hidden flex flex-col h-full">
+                    <div className="px-5 py-4 border-b border-border/80 bg-card/50 flex justify-between items-center">
+                        <h3 className="font-bold text-foreground flex items-center gap-2">
                             <GraduationCap className="w-4 h-4 text-indigo-500" />
                             Department Leaders
                         </h3>
@@ -97,7 +97,7 @@ export const TopPerformersTable: React.FC<TopPerformersTableProps> = ({ tables }
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm whitespace-nowrap">
                             <thead>
-                                <tr className="bg-slate-900/40 text-slate-400 border-b border-slate-800/50">
+                                <tr className="bg-card/40 text-muted-foreground border-b border-border/50">
                                     <th className="px-5 py-3 font-medium">Department</th>
                                     <th className="px-5 py-3 font-medium">Total / Placed</th>
                                     <th className="px-5 py-3 font-medium">Avg CTC</th>
@@ -106,19 +106,19 @@ export const TopPerformersTable: React.FC<TopPerformersTableProps> = ({ tables }
                             </thead>
                             <tbody className="divide-y divide-slate-800/50">
                                 {tables.departmentStats.map((dept) => (
-                                    <tr key={dept.department} className="hover:bg-slate-800/30 transition-colors">
+                                    <tr key={dept.department} className="hover:bg-secondary/30 transition-colors">
                                         <td className="px-5 py-3 font-medium text-slate-200">
                                             {dept.department.replace('B.Tech - ', '').replace('MBA - ', '')}
                                         </td>
-                                        <td className="px-5 py-3 text-slate-400">
-                                            <span className="text-white font-medium">{dept.placedStudents}</span> / {dept.totalStudents}
+                                        <td className="px-5 py-3 text-muted-foreground">
+                                            <span className="text-foreground font-medium">{dept.placedStudents}</span> / {dept.totalStudents}
                                         </td>
-                                        <td className="px-5 py-3 text-slate-300">
+                                        <td className="px-5 py-3 text-foreground">
                                             {dept.averagePackage > 0 ? `${dept.averagePackage} LPA` : '—'}
                                         </td>
                                         <td className="px-5 py-3 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                                <div className="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
                                                     <div
                                                         className="h-full bg-indigo-500 rounded-full"
                                                         style={{ width: `${dept.placementPercentage}%` }}
@@ -130,7 +130,7 @@ export const TopPerformersTable: React.FC<TopPerformersTableProps> = ({ tables }
                                     </tr>
                                 ))}
                                 {tables.departmentStats.length === 0 && (
-                                    <tr><td colSpan={4} className="px-5 py-8 text-center text-slate-500">No department data available</td></tr>
+                                    <tr><td colSpan={4} className="px-5 py-8 text-center text-muted-foreground">No department data available</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -140,9 +140,9 @@ export const TopPerformersTable: React.FC<TopPerformersTableProps> = ({ tables }
             </div>
 
             {/* Row 2: Drive Performance */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-800/80 bg-slate-900/50 flex justify-between items-center">
-                    <h3 className="font-bold text-white flex items-center gap-2">
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-border/80 bg-card/50 flex justify-between items-center">
+                    <h3 className="font-bold text-foreground flex items-center gap-2">
                         <Rocket className="w-4 h-4 text-fuchsia-500" />
                         Drive Performance Summary
                     </h3>
@@ -150,7 +150,7 @@ export const TopPerformersTable: React.FC<TopPerformersTableProps> = ({ tables }
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm whitespace-nowrap">
                         <thead>
-                            <tr className="bg-slate-900/40 text-slate-400 border-b border-slate-800/50">
+                            <tr className="bg-card/40 text-muted-foreground border-b border-border/50">
                                 <th className="px-5 py-3 font-medium">Drive</th>
                                 <th className="px-5 py-3 font-medium">Company</th>
                                 <th className="px-5 py-3 font-medium">Applicants</th>
@@ -161,11 +161,11 @@ export const TopPerformersTable: React.FC<TopPerformersTableProps> = ({ tables }
                         </thead>
                         <tbody className="divide-y divide-slate-800/50">
                             {tables.drivePerformance.map((drive) => (
-                                <tr key={drive.id} className="hover:bg-slate-800/30 transition-colors">
-                                    <td className="px-5 py-3 font-medium text-white">{drive.driveTitle}</td>
-                                    <td className="px-5 py-3 text-slate-300">{drive.companyName}</td>
-                                    <td className="px-5 py-3 text-slate-400">{drive.applicants}</td>
-                                    <td className="px-5 py-3 text-slate-400">{drive.shortlisted}</td>
+                                <tr key={drive.id} className="hover:bg-secondary/30 transition-colors">
+                                    <td className="px-5 py-3 font-medium text-foreground">{drive.driveTitle}</td>
+                                    <td className="px-5 py-3 text-foreground">{drive.companyName}</td>
+                                    <td className="px-5 py-3 text-muted-foreground">{drive.applicants}</td>
+                                    <td className="px-5 py-3 text-muted-foreground">{drive.shortlisted}</td>
                                     <td className="px-5 py-3">
                                         <span className="inline-block px-2 py-1 bg-emerald-500/10 text-emerald-400 font-bold rounded text-xs">
                                             {drive.offersIssued}
@@ -179,7 +179,7 @@ export const TopPerformersTable: React.FC<TopPerformersTableProps> = ({ tables }
                                 </tr>
                             ))}
                             {tables.drivePerformance.length === 0 && (
-                                <tr><td colSpan={6} className="px-5 py-8 text-center text-slate-500">No drive data available</td></tr>
+                                <tr><td colSpan={6} className="px-5 py-8 text-center text-muted-foreground">No drive data available</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -187,20 +187,20 @@ export const TopPerformersTable: React.FC<TopPerformersTableProps> = ({ tables }
             </div>
 
             {/* Row 3: Recent Outcomes */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-800/80 bg-slate-900/50 flex justify-between items-center">
-                    <h3 className="font-bold text-white flex items-center gap-2">
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-border/80 bg-card/50 flex justify-between items-center">
+                    <h3 className="font-bold text-foreground flex items-center gap-2">
                         <Building2 className="w-4 h-4 text-emerald-500" />
                         Recent Placement Outcomes
                     </h3>
-                    <button className="text-xs text-brand-400 hover:text-brand-300 font-medium flex items-center gap-1 transition-colors">
+                    <button className="text-xs text-primary hover:text-brand-300 font-medium flex items-center gap-1 transition-colors">
                         View All <ExternalLink className="w-3 h-3" />
                     </button>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm whitespace-nowrap">
                         <thead>
-                            <tr className="bg-slate-900/40 text-slate-400 border-b border-slate-800/50">
+                            <tr className="bg-card/40 text-muted-foreground border-b border-border/50">
                                 <th className="px-5 py-3 font-medium">Candidate</th>
                                 <th className="px-5 py-3 font-medium">Company</th>
                                 <th className="px-5 py-3 font-medium">Role</th>
@@ -211,14 +211,14 @@ export const TopPerformersTable: React.FC<TopPerformersTableProps> = ({ tables }
                         </thead>
                         <tbody className="divide-y divide-slate-800/50">
                             {tables.recentOutcomes.map((outcome) => (
-                                <tr key={outcome.id} className="hover:bg-slate-800/30 transition-colors">
-                                    <td className="px-5 py-3 font-bold text-white">{outcome.studentName}</td>
-                                    <td className="px-5 py-3 text-slate-300">{outcome.companyName}</td>
-                                    <td className="px-5 py-3 text-slate-400">{outcome.role}</td>
+                                <tr key={outcome.id} className="hover:bg-secondary/30 transition-colors">
+                                    <td className="px-5 py-3 font-bold text-foreground">{outcome.studentName}</td>
+                                    <td className="px-5 py-3 text-foreground">{outcome.companyName}</td>
+                                    <td className="px-5 py-3 text-muted-foreground">{outcome.role}</td>
                                     <td className="px-5 py-3">
                                         <span className="text-emerald-400 font-bold">{outcome.ctc} LPA</span>
                                     </td>
-                                    <td className="px-5 py-3 text-slate-500">{formatDate(outcome.date)}</td>
+                                    <td className="px-5 py-3 text-muted-foreground">{formatDate(outcome.date)}</td>
                                     <td className="px-5 py-3">
                                         <span className={`inline-block px-2 py-1 rounded text-xs font-medium capitalize ${statusColor(outcome.status)}`}>
                                             {outcome.status.replace('_', ' ')}
@@ -227,7 +227,7 @@ export const TopPerformersTable: React.FC<TopPerformersTableProps> = ({ tables }
                                 </tr>
                             ))}
                             {tables.recentOutcomes.length === 0 && (
-                                <tr><td colSpan={6} className="px-5 py-8 text-center text-slate-500">No recent outcomes</td></tr>
+                                <tr><td colSpan={6} className="px-5 py-8 text-center text-muted-foreground">No recent outcomes</td></tr>
                             )}
                         </tbody>
                     </table>

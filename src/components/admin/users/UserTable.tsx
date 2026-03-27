@@ -17,9 +17,9 @@ interface UserTableProps {
 const statusStyle = (s: string) => {
     switch (s) {
         case 'active': return 'text-emerald-400 bg-emerald-500/10';
-        case 'inactive': return 'text-slate-400 bg-slate-700/50';
+        case 'inactive': return 'text-muted-foreground bg-secondary/70';
         case 'suspended': return 'text-rose-400 bg-rose-500/10';
-        default: return 'text-slate-400 bg-slate-700/50';
+        default: return 'text-muted-foreground bg-secondary/70';
     }
 };
 
@@ -31,7 +31,7 @@ const roleStyle = (r: string) => {
         case 'program_chair': return 'text-blue-400 bg-blue-500/10';
         case 'placement_officer': return 'text-emerald-400 bg-emerald-500/10';
         case 'faculty': return 'text-indigo-400 bg-indigo-500/10';
-        default: return 'text-slate-400 bg-slate-700/50';
+        default: return 'text-muted-foreground bg-secondary/70';
     }
 };
 
@@ -39,7 +39,7 @@ const SortHeader: React.FC<{
     label: string; field: UserSortField; sort: UserSortConfig; toggleSort: (f: UserSortField) => void;
 }> = ({ label, field, sort, toggleSort }) => (
     <th
-        className="px-4 py-3 font-medium cursor-pointer hover:text-white transition-colors select-none"
+        className="px-4 py-3 font-medium cursor-pointer hover:text-foreground transition-colors select-none"
         onClick={() => toggleSort(field)}
     >
         <span className="flex items-center gap-1">
@@ -70,11 +70,11 @@ export const UserTable: React.FC<UserTableProps> = ({
     };
 
     return (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm whitespace-nowrap">
                     <thead>
-                        <tr className="bg-slate-900/60 text-slate-400 border-b border-slate-800/50">
+                        <tr className="bg-card/60 text-muted-foreground border-b border-border/50">
                             <SortHeader label="Name" field="name" sort={sort} toggleSort={toggleSort} />
                             <SortHeader label="Email" field="email" sort={sort} toggleSort={toggleSort} />
                             <SortHeader label="Role" field="role" sort={sort} toggleSort={toggleSort} />
@@ -87,51 +87,51 @@ export const UserTable: React.FC<UserTableProps> = ({
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
                         {users.map(u => (
-                            <tr key={u.id} className="hover:bg-slate-800/30 transition-colors group">
+                            <tr key={u.id} className="hover:bg-secondary/30 transition-colors group">
                                 <td className="px-4 py-3">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 flex items-center justify-center text-foreground text-xs font-bold flex-shrink-0">
                                             {u.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
                                         </div>
-                                        <span className="font-medium text-white">{u.name}</span>
+                                        <span className="font-medium text-foreground">{u.name}</span>
                                     </div>
                                 </td>
-                                <td className="px-4 py-3 text-slate-400 text-xs font-mono">{u.email}</td>
+                                <td className="px-4 py-3 text-muted-foreground text-xs font-mono">{u.email}</td>
                                 <td className="px-4 py-3">
                                     <span className={`px-2 py-0.5 rounded text-xs font-bold capitalize ${roleStyle(u.role)}`}>
                                         {u.role.replace(/_/g, ' ')}
                                     </span>
                                 </td>
-                                <td className="px-4 py-3 text-slate-300 text-xs max-w-[160px] truncate">{u.department}</td>
+                                <td className="px-4 py-3 text-foreground text-xs max-w-[160px] truncate">{u.department}</td>
                                 <td className="px-4 py-3">
                                     <span className={`px-2 py-1 rounded text-xs font-bold capitalize ${statusStyle(u.status)}`}>
                                         {u.status}
                                     </span>
                                 </td>
-                                <td className="px-4 py-3 text-slate-500 text-xs">{formatDate(u.createdAt)}</td>
-                                <td className="px-4 py-3 text-slate-500 text-xs">{formatRelative(u.lastLogin)}</td>
+                                <td className="px-4 py-3 text-muted-foreground text-xs">{formatDate(u.createdAt)}</td>
+                                <td className="px-4 py-3 text-muted-foreground text-xs">{formatRelative(u.lastLogin)}</td>
                                 <td className="px-4 py-3">
                                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => onViewDetails(u)} title="View Details" className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors">
+                                        <button onClick={() => onViewDetails(u)} title="View Details" className="p-1.5 text-muted-foreground hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors">
                                             <Eye className="w-4 h-4" />
                                         </button>
-                                        <button onClick={() => onEdit(u)} title="Edit User" className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors">
+                                        <button onClick={() => onEdit(u)} title="Edit User" className="p-1.5 text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors">
                                             <Edit2 className="w-4 h-4" />
                                         </button>
                                         {u.status === 'active' ? (
-                                            <button onClick={() => onStatusChange(u, 'inactive')} title="Deactivate" className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors">
+                                            <button onClick={() => onStatusChange(u, 'inactive')} title="Deactivate" className="p-1.5 text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors">
                                                 <UserX className="w-4 h-4" />
                                             </button>
                                         ) : u.status === 'suspended' ? (
-                                            <button onClick={() => onStatusChange(u, 'active')} title="Reactivate" className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors">
+                                            <button onClick={() => onStatusChange(u, 'active')} title="Reactivate" className="p-1.5 text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors">
                                                 <UserCheck className="w-4 h-4" />
                                             </button>
                                         ) : (
                                             <>
-                                                <button onClick={() => onStatusChange(u, 'active')} title="Activate" className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors">
+                                                <button onClick={() => onStatusChange(u, 'active')} title="Activate" className="p-1.5 text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors">
                                                     <UserCheck className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => onStatusChange(u, 'suspended')} title="Suspend" className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors">
+                                                <button onClick={() => onStatusChange(u, 'suspended')} title="Suspend" className="p-1.5 text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors">
                                                     <Ban className="w-4 h-4" />
                                                 </button>
                                             </>
@@ -142,7 +142,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                         ))}
                         {users.length === 0 && (
                             <tr>
-                                <td colSpan={8} className="px-4 py-12 text-center text-slate-500">
+                                <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
                                     No users match the current filters.
                                 </td>
                             </tr>
@@ -153,11 +153,11 @@ export const UserTable: React.FC<UserTableProps> = ({
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="px-4 py-3 border-t border-slate-800/50 flex justify-between items-center">
-                    <span className="text-xs text-slate-500">Page {currentPage} of {totalPages}</span>
+                <div className="px-4 py-3 border-t border-border/50 flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages}</span>
                     <div className="flex items-center gap-1">
                         <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage <= 1}
-                            className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >Previous</button>
                         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                             const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
@@ -165,12 +165,12 @@ export const UserTable: React.FC<UserTableProps> = ({
                             if (page > totalPages) return null;
                             return (
                                 <button key={page} onClick={() => onPageChange(page)}
-                                    className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${page === currentPage ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                                    className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${page === currentPage ? 'bg-indigo-600 text-foreground' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
                                 >{page}</button>
                             );
                         })}
                         <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage >= totalPages}
-                            className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >Next</button>
                     </div>
                 </div>

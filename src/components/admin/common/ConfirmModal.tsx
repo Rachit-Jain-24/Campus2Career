@@ -31,7 +31,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             case 'danger':
                 return 'bg-destructive text-destructive-foreground hover:bg-destructive/90';
             case 'warning':
-                return 'bg-warning text-white hover:bg-warning/90';
+                return 'bg-warning text-foreground hover:bg-warning/90';
             default:
                 return 'bg-primary text-primary-foreground hover:bg-primary-dark';
         }

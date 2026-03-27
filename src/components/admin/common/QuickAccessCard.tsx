@@ -6,7 +6,7 @@ export const DatabaseToolsQuickAccess: React.FC = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
+        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-foreground shadow-lg">
             <div className="flex items-start justify-between mb-4">
                 <div className="p-3 bg-white/20 rounded-lg">
                     <Database className="h-6 w-6" />

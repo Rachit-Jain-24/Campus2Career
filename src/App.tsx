@@ -20,10 +20,35 @@ import UpdateBatchData from './pages/UpdateBatchData';
 import SwitchAccount from './pages/SwitchAccount';
 import CheckAccount from './pages/CheckAccount';
 import CreateAdminAccount from './pages/admin/CreateAdminAccount';
+import FixUserFields from './pages/FixUserFields';
+import FixStudent35 from './pages/admin/FixStudent35';
+import SeedAdminData from './pages/admin/SeedAdminData';
+
+// Legacy admin routes (kept for backward compat)
 import { AdminRoutes } from './routes/AdminRoutes';
+
+// New role-based portal routes
+import { AdminPortalRoutes } from './routes/AdminPortalRoutes';
+import { DeanPortalRoutes } from './routes/DeanPortalRoutes';
+import { DirectorPortalRoutes } from './routes/DirectorPortalRoutes';
+import { ProgramChairPortalRoutes } from './routes/ProgramChairPortalRoutes';
+import { FacultyPortalRoutes } from './routes/FacultyPortalRoutes';
+import { PlacementPortalRoutes } from './routes/PlacementPortalRoutes';
+
+// Role login pages
+import PortalSelector from './pages/role-login/PortalSelector';
+import AdminLoginPage from './pages/role-login/AdminLoginPage';
+import DeanLoginPage from './pages/role-login/DeanLoginPage';
+import DirectorLoginPage from './pages/role-login/DirectorLoginPage';
+import ProgramChairLoginPage from './pages/role-login/ProgramChairLoginPage';
+import FacultyLoginPage from './pages/role-login/FacultyLoginPage';
+import PlacementLoginPage from './pages/role-login/PlacementLoginPage';
+
 import { useAuth } from './contexts/AuthContext';
 import { ProtectedRoute, GuestRoute } from './components/ProtectedRoute';
-import type { StudentUser } from '@/types/auth';
+import { SystemAdminRoute } from './components/SystemAdminRoute';
+import { getDefaultAdminRoute } from './config/admin/roleRoutes';
+import type { StudentUser } from './types/auth';
 
 const ChatWidget = lazy(() =>
   import('./components/AICareerAdvisor/ChatWidget').then((m) => ({ default: m.ChatWidget }))
@@ -43,61 +68,61 @@ function App() {
     );
   }
 
-  // Determine fallback path mostly for root (/) routing when user isn't matching other explicit routes
   const getDefaultPath = () => {
     if (!user) return '/login';
-
-    // Check if user is admin (any admin role)
-    if (user.role && user.role !== 'student') return '/admin/dashboard';
-
+    if (user.role && user.role !== 'student') return getDefaultAdminRoute(user.role);
     if (!user.careerDiscoveryCompleted) return '/career-discovery';
     if (!user.profileCompleted) return '/student/profile-setup';
     if (!user.assessmentCompleted) return '/student/assessment';
-
     return '/student/dashboard';
   };
 
   return (
     <>
       <Routes>
+        {/* ── Student auth ── */}
         <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
         <Route path="/signup" element={<GuestRoute><SignupPage /></GuestRoute>} />
 
-        {/* Switch Account Page */}
+        {/* ── Role-based login pages (always public) ── */}
+        <Route path="/login/admin" element={<AdminLoginPage />} />
+        <Route path="/login/dean" element={<DeanLoginPage />} />
+        <Route path="/login/director" element={<DirectorLoginPage />} />
+        <Route path="/login/program-chair" element={<ProgramChairLoginPage />} />
+        <Route path="/login/faculty" element={<FacultyLoginPage />} />
+        <Route path="/login/placement-officer" element={<PlacementLoginPage />} />
+        <Route path="/portal" element={<PortalSelector />} />
+
+        {/* ── Role-based portals ── */}
+        <Route path="/admin/*" element={<ProtectedRoute allowedRole="admin"><AdminPortalRoutes /></ProtectedRoute>} />
+        <Route path="/dean/*" element={<ProtectedRoute allowedRole="admin"><DeanPortalRoutes /></ProtectedRoute>} />
+        <Route path="/director/*" element={<ProtectedRoute allowedRole="admin"><DirectorPortalRoutes /></ProtectedRoute>} />
+        <Route path="/program-chair/*" element={<ProtectedRoute allowedRole="admin"><ProgramChairPortalRoutes /></ProtectedRoute>} />
+        <Route path="/faculty/*" element={<ProtectedRoute allowedRole="admin"><FacultyPortalRoutes /></ProtectedRoute>} />
+        <Route path="/placement/*" element={<ProtectedRoute allowedRole="admin"><PlacementPortalRoutes /></ProtectedRoute>} />
+
+        {/* ── Legacy admin portal (kept for backward compat) ── */}
+        <Route path="/admin-legacy/*" element={<AdminRoutes />} />
+
+        {/* ── Utility tools — restricted to system_admin only ── */}
         <Route path="/switch-account" element={<SwitchAccount />} />
+        <Route path="/create-admin" element={<SystemAdminRoute><CreateAdminAccount /></SystemAdminRoute>} />
+        <Route path="/check-account" element={<SystemAdminRoute><CheckAccount /></SystemAdminRoute>} />
+        <Route path="/seed-students" element={<SystemAdminRoute><SeedStudents /></SystemAdminRoute>} />
+        <Route path="/seed-remaining-20" element={<SystemAdminRoute><SeedRemaining20 /></SystemAdminRoute>} />
+        <Route path="/update-batch-data" element={<SystemAdminRoute><UpdateBatchData /></SystemAdminRoute>} />
+        <Route path="/admin-legacy/seed-demo" element={<SystemAdminRoute><SeedDemoData /></SystemAdminRoute>} />
+        <Route path="/admin-legacy/seed-batch" element={<SystemAdminRoute><SeedBatchData /></SystemAdminRoute>} />
 
-        {/* Admin Routes - Complete Admin Portal */}
-        <Route path="/admin/*" element={<AdminRoutes />} />
-        
-        {/* Public Admin Account Creation */}
-        <Route path="/create-admin" element={<CreateAdminAccount />} />
-        
-        {/* Public Check Account Page */}
-        <Route path="/check-account" element={<CheckAccount />} />
-        
-        {/* Public Seed Students Page (No Login Required) */}
-        <Route path="/seed-students" element={<SeedStudents />} />
-        
-        {/* Public Seed Remaining 20 Students */}
-        <Route path="/seed-remaining-20" element={<SeedRemaining20 />} />
-        
-        {/* Public Update Batch Data Page (No Login Required) */}
-        <Route path="/update-batch-data" element={<UpdateBatchData />} />
-        
-        {/* Legacy Admin Seed Routes (keep for backward compatibility) */}
-        <Route path="/admin-legacy/seed-demo" element={<SeedDemoData />} />
-        <Route path="/admin-legacy/seed-batch" element={<ProtectedRoute allowedRole="admin"><SeedBatchData /></ProtectedRoute>} />
+        {/* ── vpa-v2 specific fix routes ── */}
+        <Route path="/fix-user-fields" element={<FixUserFields />} />
+        <Route path="/fix-student-35" element={<FixStudent35 />} />
+        <Route path="/seed-admin-data" element={<SystemAdminRoute><SeedAdminData /></SystemAdminRoute>} />
 
-        {/* Onboarding Flow: Redirect if already completed */}
+        {/* ── Student routes ── */}
         <Route path="/career-discovery" element={<ProtectedRoute allowedRole="student"><CareerDiscoveryPage /></ProtectedRoute>} />
-
-        {/* Student Profile Setup (post-onboarding): Redirect if already completed  */}
         <Route path="/student/profile-setup" element={<ProtectedRoute allowedRole="student"><ProfileSetupPage /></ProtectedRoute>} />
-
-        {/* Career & Personality Assessment */}
         <Route path="/student/assessment" element={<ProtectedRoute allowedRole="student" requireProfileSetup><AssessmentPage /></ProtectedRoute>} />
-
-        {/* Main Student Dashboard */}
         <Route path="/student/dashboard" element={<ProtectedRoute allowedRole="student" requireAssessment><StudentDashboard /></ProtectedRoute>} />
         <Route path="/student/leetcode" element={<ProtectedRoute allowedRole="student" requireAssessment><LeetCodeTracker /></ProtectedRoute>} />
         <Route path="/student/roadmap" element={<ProtectedRoute allowedRole="student" requireAssessment><RoadmapPage /></ProtectedRoute>} />
@@ -106,8 +131,13 @@ function App() {
         <Route path="/student/skill-gap-analysis" element={<ProtectedRoute allowedRole="student" requireAssessment><SkillGapAnalysisPage /></ProtectedRoute>} />
         <Route path="/student/profile" element={<ProtectedRoute allowedRole="student" requireAssessment><ProfilePage /></ProtectedRoute>} />
 
-        {/* Default Route */}
+        {/* ── Default redirect ── */}
         <Route path="/" element={<Navigate to={getDefaultPath()} replace />} />
+
+        {/* Convenience aliases */}
+        <Route path="/student-login" element={<LoginPage />} />
+        <Route path="/admin-login" element={<AdminLoginPage />} />
+        <Route path="/dean-login" element={<DeanLoginPage />} />
       </Routes>
 
       {user?.role === 'student' && user?.assessmentCompleted === true && (

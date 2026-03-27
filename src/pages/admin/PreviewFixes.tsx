@@ -67,7 +67,7 @@ export default function PreviewFixes() {
                     <button
                         onClick={handlePreview}
                         disabled={isRunning}
-                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-foreground py-3 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                     >
                         {isRunning ? (
                             <>
@@ -133,7 +133,7 @@ export default function PreviewFixes() {
                                 <div className="pt-6 border-t-2 border-blue-200">
                                     <button
                                         onClick={() => navigate('/admin/fix-student-data')}
-                                        className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition-all flex items-center justify-center gap-2"
+                                        className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-foreground py-3 px-6 rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition-all flex items-center justify-center gap-2"
                                     >
                                         <CheckCircle className="w-5 h-5" />
                                         Apply These Fixes

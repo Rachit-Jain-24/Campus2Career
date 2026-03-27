@@ -40,14 +40,14 @@ export const DatabaseTools: React.FC = () => {
                 <div className="flex gap-3">
                     <button
                         onClick={() => navigate('/admin/preview-fixes')}
-                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-foreground rounded-lg hover:bg-blue-700 transition-colors font-semibold"
                     >
                         <Search className="h-5 w-5" />
                         Preview Changes
                     </button>
                     <button
                         onClick={() => navigate('/admin/fix-student-data')}
-                        className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+                        className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-foreground rounded-lg hover:bg-purple-700 transition-colors font-semibold"
                     >
                         <Wrench className="h-5 w-5" />
                         Apply Fixes

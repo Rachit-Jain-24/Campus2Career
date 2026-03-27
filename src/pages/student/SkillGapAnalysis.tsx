@@ -63,20 +63,20 @@ export default function SkillGapAnalysisPage() {
 
                 {/* Career Track Status */}
                 {!(user as any)?.careerTrack ? (
-                    <Card className="border-yellow-200 bg-yellow-50/50">
+                    <Card className="border-primary/20 bg-primary/5">
                         <CardContent className="pt-6">
                             <div className="flex items-start gap-4">
-                                <div className="rounded-xl bg-yellow-100 p-3">
-                                    <Target className="h-6 w-6 text-yellow-600" />
+                                <div className="rounded-xl bg-primary/10 p-3 shadow-sm border border-primary/10">
+                                    <Target className="h-6 w-6 text-primary" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-lg mb-1">Complete Career Discovery First</h3>
-                                    <p className="text-sm text-muted-foreground mb-4">
+                                    <h3 className="font-bold text-lg mb-1 text-slate-800">Complete Career Discovery First</h3>
+                                    <p className="text-sm text-slate-600 mb-4 font-medium">
                                         Take the career assessment to set your target role and get personalized skill gap analysis.
                                     </p>
                                     <button
                                         onClick={() => navigate('/student/assessment')}
-                                        className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
+                                        className="bg-primary hover:bg-primary-dark text-white px-5 py-2 rounded-xl text-sm font-black transition-all shadow-md active:scale-95"
                                     >
                                         Start Career Discovery →
                                     </button>
@@ -85,30 +85,30 @@ export default function SkillGapAnalysisPage() {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 w-fit">
+                    <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 w-fit shadow-sm">
                         <Target className="h-5 w-5 text-primary" />
                         <span className="text-sm font-medium text-slate-700">
-                            Your Career Goal: <span className="text-primary font-bold">{(user as any).careerTrack}</span>
+                            Your Career Goal: <span className="text-primary font-black uppercase tracking-tight">{(user as any).careerTrack}</span>
                         </span>
                     </div>
                 )}
 
                 {/* Profile Completion Check */}
                 {!hasBasicProfile && (
-                    <Card className="border-orange-200 bg-orange-50/50">
+                    <Card className="border-slate-200 bg-slate-50/50">
                         <CardContent className="pt-6">
                             <div className="flex items-start gap-4">
-                                <div className="rounded-xl bg-orange-100 p-3">
-                                    <TrendingUp className="h-6 w-6 text-orange-600" />
+                                <div className="rounded-xl bg-slate-100 p-3 shadow-sm border border-slate-200">
+                                    <TrendingUp className="h-6 w-6 text-slate-600" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-lg mb-1">Complete Your Profile</h3>
-                                    <p className="text-sm text-muted-foreground mb-4">
+                                    <h3 className="font-bold text-lg mb-1 text-slate-800">Complete Your Profile</h3>
+                                    <p className="text-sm text-slate-600 mb-4 font-medium">
                                         Add your skills, projects, and experience to get accurate skill gap analysis.
                                     </p>
                                     <button
                                         onClick={() => navigate('/student/profile')}
-                                        className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
+                                        className="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2 rounded-xl text-sm font-black transition-all shadow-md active:scale-95"
                                     >
                                         Complete Profile →
                                     </button>

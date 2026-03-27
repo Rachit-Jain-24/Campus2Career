@@ -5,14 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Ca
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
 import {
-    User, Mail, Phone, Hash, UserCircle, Star, Github, Linkedin, Code2, Link as LinkIcon, Edit3, Trash2, X, GraduationCap, MapPin, Plus, Save, CheckCircle2, Trophy, BookOpen, ExternalLink, FileText, Upload, Scan, Search, AlertCircle, Zap, Sparkles, Flame, Briefcase, Award
+    User, Mail, Phone, Hash, UserCircle, Star, Github, Linkedin, Code2, Link as LinkIcon, Edit3, Trash2, X, GraduationCap, MapPin, Plus, Save, CheckCircle2, Trophy, BookOpen, ExternalLink, Upload, Zap, Sparkles, Flame, Briefcase, Award
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { cn } from "../../lib/utils";
 import { storage } from "../../lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { analyzeProfileWithAI } from "../../lib/gemini";
 import type { ProfileAnalysis } from "../../lib/gemini";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -67,7 +66,7 @@ export default function ProfilePage() {
     const [interests, setInterests] = useState<string[]>(user?.interests || []);
     const [newInterest, setNewInterest] = useState("");
     const [saved, setSaved] = useState(false);
-    const [profileAnalysis, setProfileAnalysis] = useState<ProfileAnalysis | null>(null);
+    const [profileAnalysis] = useState<ProfileAnalysis | null>(null);
 
     // Adding forms
     const [addingProject, setAddingProject] = useState(false);
@@ -113,7 +112,7 @@ export default function ProfilePage() {
     }, [user]);
 
     // Resume States
-    const [resumeRef, setResumeRef] = useState<string | null>(user?.resumeUrl || null);
+    const [, setResumeRef] = useState<string | null>(user?.resumeUrl || null);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -269,7 +268,7 @@ export default function ProfilePage() {
                 {/* Hero Profile Card */}
                 <Card className="overflow-hidden">
                     <div className="h-24 gradient-primary relative">
-                        <div className={`absolute top-2 right-4 text-white text-xs font-bold px-3 py-1 rounded-full ${yearGradient[profile.year] || "bg-white/20"} bg-white/20 border border-white/40`}>
+                        <div className={`absolute top-2 right-4 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${yearGradient[profile.year] || "bg-white/20"} border border-white/20 shadow-sm`}>
                             {profile.year}
                         </div>
                     </div>
@@ -347,26 +346,26 @@ export default function ProfilePage() {
 
                             {/* Quick Stats */}
                             <div className="shrink-0 flex flex-row md:flex-col gap-3">
-                                <div className="rounded-xl bg-secondary p-3 text-center min-w-[80px]">
-                                    <p className="text-xl font-bold text-primary">{profile.cgpa}</p>
-                                    <p className="text-xs text-muted-foreground">CGPA</p>
+                                <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 text-center min-w-[80px] shadow-sm">
+                                    <p className="text-xl font-black text-primary">{profile.cgpa}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">CGPA</p>
                                 </div>
-                                <div className="rounded-xl bg-secondary p-3 text-center min-w-[80px]">
-                                    <p className="text-xl font-bold text-blue-600">{projects.length}</p>
-                                    <p className="text-xs text-muted-foreground">Projects</p>
+                                <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 text-center min-w-[80px] shadow-sm">
+                                    <p className="text-xl font-black text-slate-800">{projects.length}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Projects</p>
                                 </div>
-                                <div className="rounded-xl bg-secondary p-3 text-center min-w-[80px]">
-                                    <p className="text-xl font-bold text-green-600">{certs.length}</p>
-                                    <p className="text-xs text-muted-foreground">Certs</p>
+                                <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 text-center min-w-[80px] shadow-sm">
+                                    <p className="text-xl font-black text-slate-800">{certs.length}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Certs</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Placement Status badge */}
                         <div className="mt-4 flex items-center gap-2">
-                            <Flame className="h-4 w-4 text-orange-500" />
-                            <span className="text-sm font-medium">Status:</span>
-                            <Badge variant="warning">{profile.placementStatus}</Badge>
+                            <Flame className="h-4 w-4 text-primary animate-pulse" />
+                            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Status:</span>
+                            <Badge variant="outline" className="border-primary text-primary bg-primary/5 font-black text-[10px] uppercase tracking-wider">{profile.placementStatus}</Badge>
                         </div>
                     </CardContent>
                 </Card>
@@ -809,7 +808,7 @@ export default function ProfilePage() {
                         )}
 
                         <div className="grid gap-4 md:grid-cols-2">
-                            {projects.map(p => (
+                            {projects.map((p: any) => (
                                 <Card key={p.id} className="card-hover">
                                     <CardContent className="pt-5">
                                         <div className="flex items-start justify-between gap-3">
@@ -829,7 +828,7 @@ export default function ProfilePage() {
                                                 )}
                                             </div>
                                             <button onClick={() => {
-                                                const updated = projects.filter(x => x.id !== p.id);
+                                                const updated = projects.filter((x: any) => x.id !== p.id);
                                                 setProjects(updated);
                                                 handleSave({ projects: updated });
                                             }}
@@ -896,7 +895,7 @@ export default function ProfilePage() {
                         )}
 
                         <div className="space-y-3">
-                            {certs.map(c => (
+                            {certs.map((c: any) => (
                                 <Card key={c.id} className="card-hover">
                                     <CardContent className="pt-4 pb-4">
                                         <div className="flex items-center gap-4">
@@ -914,7 +913,7 @@ export default function ProfilePage() {
                                                 )}
                                             </div>
                                             <button onClick={() => {
-                                                const updated = certs.filter(x => x.id !== c.id);
+                                                const updated = certs.filter((x: any) => x.id !== c.id);
                                                 setCerts(updated);
                                                 handleSave({ certifications: updated });
                                             }}
@@ -988,7 +987,7 @@ export default function ProfilePage() {
                         )}
 
                         <div className="space-y-3">
-                            {internships.map(i => (
+                            {internships.map((i: any) => (
                                 <Card key={i.id} className="card-hover">
                                     <CardContent className="pt-4 pb-4">
                                         <div className="flex items-start gap-4">
@@ -1001,7 +1000,7 @@ export default function ProfilePage() {
                                                 <p className="mt-1 text-sm">{i.description}</p>
                                             </div>
                                             <button onClick={() => {
-                                                const updated = internships.filter(x => x.id !== i.id);
+                                                const updated = internships.filter((x: any) => x.id !== i.id);
                                                 setInternships(updated);
                                                 handleSave({ internships: updated });
                                             }}
@@ -1069,7 +1068,7 @@ export default function ProfilePage() {
                         )}
 
                         <div className="grid gap-4 md:grid-cols-2">
-                            {achievements.map(a => (
+                            {achievements.map((a: any) => (
                                 <Card key={a.id} className="card-hover">
                                     <CardContent className="pt-4 pb-4">
                                         <div className="flex items-start gap-3">
@@ -1084,7 +1083,7 @@ export default function ProfilePage() {
                                                 <p className="text-sm text-muted-foreground mt-1">{a.description}</p>
                                             </div>
                                             <button onClick={() => {
-                                                const updated = achievements.filter(x => x.id !== a.id);
+                                                const updated = achievements.filter((x: any) => x.id !== a.id);
                                                 setAchievements(updated);
                                                 handleSave({ achievements: updated });
                                             }}

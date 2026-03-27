@@ -32,6 +32,7 @@ export interface StudentUser extends BaseAuthUser {
     onboardingStep: number;
     careerDiscoveryCompleted?: boolean;
     profileCompleted?: boolean;
+    assessmentCompleted?: boolean;
 
     // Profile specific fields
     careerDiscoveryData?: any;
@@ -39,6 +40,7 @@ export interface StudentUser extends BaseAuthUser {
     careerTrackEmoji?: string;
     assessmentResults?: any;
     leetcode?: string;
+    trackedLeetcodeProblems?: string[];
     interests?: string[];
     goals?: string[];
     phone?: string;

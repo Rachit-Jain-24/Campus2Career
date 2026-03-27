@@ -22,6 +22,7 @@ interface AuthContextType {
     logout: () => Promise<void>;
     refreshUser: () => Promise<void>;
     updateUser: (newUser: AppUser) => Promise<void>;
+    mockLogin: (role: string, name: string, email: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,14 +38,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Centralized Profile Resolution Strategy
     const lookupUserProfileByEmail = async (email: string): Promise<AppUser | null> => {
         try {
-            const usersRef = collection(db, 'users');
-            const q = query(usersRef, where('email', '==', email));
-            const querySnapshot = await getDocs(q);
+            // Check 'students' collection first
+            let usersRef = collection(db, 'students');
+            let q = query(usersRef, where('email', '==', email));
+            let querySnapshot = await getDocs(q);
 
             if (!querySnapshot.empty) {
-                // Return the first match (email should be unique in our system)
                 return querySnapshot.docs[0].data() as AppUser;
             }
+
+            // Fallback to 'admins' collection (for admins)
+            usersRef = collection(db, 'admins');
+            q = query(usersRef, where('email', '==', email));
+            querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                return querySnapshot.docs[0].data() as AppUser;
+            }
+
             return null;
         } catch (error) {
             console.error("Error looking up user profile:", error);
@@ -95,8 +106,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const login = async (sapId: string, password: string) => {
         setIsLoading(true);
         try {
-            // Step 1: Look up student email by SAP ID
-            const userDoc = await getDoc(doc(db, 'users', sapId));
+            // Step 1: Look up student email by SAP ID in 'students' collection
+            const userDoc = await getDoc(doc(db, 'students', sapId));
             if (!userDoc.exists()) {
                 throw new Error('No account found for this SAP ID. Please register first.');
             }
@@ -148,31 +159,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    // Student Signup Flow
     const signup = async (data: any) => {
         setIsLoading(true);
         try {
+            // 1. Create Auth Account
             const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-
-            const newUser: StudentUser = {
+            
+            // 2. Prepare Default Student Data Structure
+            const defaultUser: StudentUser = {
                 uid: userCredential.user.uid,
-                role: 'student',
                 sapId: data.sapId,
-                name: data.name,
-                rollNo: data.rollNo,
+                name: data.fullName,
                 email: data.email,
-                branch: data.branch,
-                currentYear: Number(data.currentYear),
+                phone: data.phone,
+                role: 'student', // Default role
+                branch: data.program,
+                rollNo: '',
+                currentYear: 1,
                 onboardingStep: 0,
-                careerDiscoveryCompleted: false,
-                profileCompleted: false,
+                program: data.program,
+                cgpa: '',
+                // Onboarding flags:
+                careerDiscoveryCompleted: false, // Must complete career test
+                profileCompleted: false,        // Must complete profile setup
+                assessmentCompleted: false,     // Must complete initial assessment
+                
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
             };
 
-            await setDoc(doc(db, 'users', data.sapId), newUser);
-
-            // Require manual login for students post-signup
-            await signOut(auth);
-            localStorage.removeItem('c2c_user');
-            setUser(null);
+            // 3. Save into newly created 'students' collection
+            await setDoc(doc(db, 'students', data.sapId), defaultUser);
+            
+            setUser(defaultUser);
+            localStorage.setItem('c2c_user', JSON.stringify(defaultUser));
         } catch (error: any) {
             if (error.code === 'auth/email-already-in-use') {
                 throw new Error('An account with this email already exists. Please sign in instead.');
@@ -211,27 +232,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const updateUser = async (newUser: AppUser) => {
         try {
-            // Determine document ID. Students use sapId, Admins use uid.
-            // (Assuming existing structure where student docId === sapId)
-            const docId = newUser.role === 'student' 
-                ? (newUser as StudentUser).sapId || newUser.uid 
-                : newUser.uid;
-
-            if (!docId) {
-                console.error('UpdateUser Error: No valid document ID found (missing sapId and uid)', newUser);
-                throw new Error('Authentication Error: Could not identify user record to update.');
-            }
-
-            // Sync to Firestore
-            await setDoc(doc(db, 'users', docId), newUser, { merge: true });
-            
             // Sync to local state
             setUser(newUser);
             localStorage.setItem('c2c_user', JSON.stringify(newUser));
-        } catch (error) {
+
+            // Determine correct collection
+            const collectionName = isAdminUser(newUser) ? 'admins' : 'students';
+            const docId = isAdminUser(newUser) ? newUser.email : (newUser as StudentUser).sapId;
+
+            // Sync with Firestore
+            await setDoc(doc(db, collectionName, docId), {
+                ...newUser,
+                updatedAt: Date.now()
+            }, { merge: true });
+
+        } catch (error: any) {
             console.error('Failed to update user in database:', error);
             throw error;
         }
+    };
+
+    // ── Mock Login (DEV ONLY) ─────────────────────────────────
+    const mockLogin = (role: string, name: string, email: string) => {
+        if (import.meta.env.PROD) {
+            console.warn('mockLogin is disabled in production.');
+            return;
+        }
+        const mockUser: AppUser = {
+            uid: `mock_${role}_${Date.now()}`,
+            email,
+            name,
+            role: role as any,
+            createdAt: new Date().toISOString(),
+        };
+        setUser(mockUser);
+        localStorage.setItem('c2c_user', JSON.stringify(mockUser));
     };
 
     const handleAuthError = (error: any, fallbackMessage: string) => {
@@ -255,7 +290,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return (
         <AuthContext.Provider value={{
             user, isLoading, isAuthenticated, isAdmin,
-            login, adminLogin, signup, logout, refreshUser, updateUser
+            login, adminLogin, signup, logout, refreshUser, updateUser, mockLogin
         }}>
             {children}
         </AuthContext.Provider>

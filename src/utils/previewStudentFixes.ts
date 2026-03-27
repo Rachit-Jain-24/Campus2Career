@@ -30,7 +30,7 @@ export async function previewStudentFixes() {
     
     try {
         // Fetch all current entries
-        const usersRef = collection(db, 'users');
+        const usersRef = collection(db, 'students');
         const querySnapshot = await getDocs(usersRef);
         
         console.log(`📊 Current Database Status:`);

@@ -1,3 +1,4 @@
+// contextmanager
 // Feature: ai-career-advisor-chatbot
 import type { ConversationTurn, ExtractedEntities, ContextSnapshot, PersistedSession } from './types';
 

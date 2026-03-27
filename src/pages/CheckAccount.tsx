@@ -15,34 +15,41 @@ export default function CheckAccount() {
         setResult(null);
 
         try {
-            const usersRef = collection(db, 'users');
-            
-            // Search by email or SAP ID
-            let q;
-            if (email) {
-                q = query(usersRef, where('email', '==', email));
-            } else if (sapId) {
-                q = query(usersRef, where('sapId', '==', sapId));
-            } else {
-                setResult({ error: 'Please enter email or SAP ID' });
-                setIsChecking(false);
-                return;
+            // Search students collection first, then admins
+            let found = false;
+
+            for (const collectionName of ['students', 'admins']) {
+                const ref = collection(db, collectionName);
+                let q;
+                if (email) {
+                    q = query(ref, where('email', '==', email));
+                } else if (sapId) {
+                    q = query(ref, where('sapId', '==', sapId));
+                } else {
+                    setResult({ error: 'Please enter email or SAP ID' });
+                    setIsChecking(false);
+                    return;
+                }
+
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    const userData = querySnapshot.docs[0].data();
+                    setResult({
+                        found: true,
+                        data: userData,
+                        docId: querySnapshot.docs[0].id,
+                        collection: collectionName
+                    });
+                    found = true;
+                    break;
+                }
             }
 
-            const querySnapshot = await getDocs(q);
-            
-            if (querySnapshot.empty) {
-                setResult({ 
-                    found: false, 
+            if (!found) {
+                setResult({
+                    found: false,
                     message: 'Account not found in Firestore',
                     searchedFor: email || sapId
-                });
-            } else {
-                const userData = querySnapshot.docs[0].data();
-                setResult({ 
-                    found: true, 
-                    data: userData,
-                    docId: querySnapshot.docs[0].id
                 });
             }
         } catch (error: any) {

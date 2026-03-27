@@ -1,182 +1,274 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-    UserCheck, FileText, CalendarCheck, Award, GraduationCap,
-    ArrowRight, Clock, Loader2, Inbox, Star, BookOpen
+    Users, BookOpen, Award, AlertTriangle, BarChart3, Code2,
+    ArrowRight, Loader2, Inbox, RefreshCw, GraduationCap, FileText,
+    Settings, Calendar
 } from 'lucide-react';
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+    ResponsiveContainer, Cell
+} from 'recharts';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '../../../lib/firebase';
 import { WelcomeCard } from '../../../components/admin/dashboard/WelcomeCard';
-import { useDashboardData } from '../../../hooks/admin/useDashboardData';
+
+const parseCgpa = (v: string | number | undefined): number => {
+    if (!v) return 0;
+    const n = typeof v === 'number' ? v : parseFloat(v as string);
+    return isNaN(n) ? 0 : n;
+};
+
+const DEPT_COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
+const TT = { contentStyle: { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8 } };
+
+interface StudentRaw {
+    id: string; name?: string; sapId?: string; branch?: string;
+    currentYear?: number; cgpa?: string | number; resumeUrl?: string;
+    techSkills?: string[]; skills?: string[]; projects?: unknown[];
+    internships?: unknown[]; placementStatus?: string;
+}
+interface InterviewRaw {
+    id: string; companyName?: string; roundType?: string;
+    scheduledDate?: string | { seconds: number }; status?: string;
+}
+
+const KpiCard: React.FC<{ title: string; value: string | number; subtitle: string; icon: React.ElementType; colorClass: string; loading: boolean }> = ({ title, value, subtitle, icon: Icon, colorClass, loading }) => (
+    <div className="group relative rounded-2xl border border-slate-100 bg-white p-5 shadow-sm hover:shadow-xl transition-all">
+        <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-black uppercase text-slate-400 tracking-wide">{title}</span>
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${colorClass}`}><Icon className="w-5 h-5" /></div>
+        </div>
+        {loading ? <div className="h-8 w-20 bg-secondary animate-pulse rounded" /> : <p className="text-3xl font-black text-slate-800">{value}</p>}
+        <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+    </div>
+);
+
+const SectionHeader: React.FC<{ icon: React.ElementType; title: string; linkTo?: string; linkLabel?: string }> = ({ icon: Icon, title, linkTo, linkLabel }) => (
+    <div className="flex items-center justify-between mb-5">
+        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2"><Icon className="w-5 h-5 text-primary" />{title}</h3>
+        {linkTo && <NavLink to={linkTo} className="text-sm text-primary hover:text-primary/80 flex items-center gap-1">{linkLabel || 'View all'} <ArrowRight className="w-4 h-4" /></NavLink>}
+    </div>
+);
 
 export const FacultyDashboard: React.FC = () => {
-    const { students, interviews, isLoading } = useDashboardData();
+    const [students, setStudents] = useState<StudentRaw[]>([]);
+    const [interviews, setInterviews] = useState<InterviewRaw[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
-    // KPIs from real data
-    const totalStudents = students.length;
-    const upcomingInterviewCount = interviews.filter((i: any) => {
-        const d = i.scheduledDate instanceof Date ? i.scheduledDate : new Date(i.scheduledDate);
-        return d >= new Date() && i.status !== 'completed';
-    }).length;
+    const fetchData = async () => {
+        setIsLoading(true);
+        const results = await Promise.allSettled([
+            getDocs(query(collection(db, 'students'), orderBy('name'))),
+            getDocs(collection(db, 'interviews')),
+        ]);
+        if (results[0].status === 'fulfilled') setStudents(results[0].value.docs.map(d => ({ id: d.id, ...d.data() } as StudentRaw)));
+        if (results[1].status === 'fulfilled') setInterviews(results[1].value.docs.map(d => ({ id: d.id, ...d.data() } as InterviewRaw)));
+        setLastRefreshed(new Date());
+        setIsLoading(false);
+    };
 
-    const FACULTY_KPIS = [
-        { title: 'Students', value: isLoading ? '...' : totalStudents.toLocaleString(), icon: GraduationCap, subtitle: 'In the system', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-        { title: 'Resumes Uploaded', value: isLoading ? '...' : students.filter((s: any) => s.resumeUrl || s.hasResume).length.toLocaleString(), icon: FileText, subtitle: 'With resume on file', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-        { title: 'Upcoming Interviews', value: isLoading ? '...' : upcomingInterviewCount.toLocaleString(), icon: CalendarCheck, subtitle: 'Scheduled across drives', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-        { title: 'Total Interviews', value: isLoading ? '...' : interviews.length.toLocaleString(), icon: Award, subtitle: 'All interview records', color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
-    ];
+    useEffect(() => { fetchData(); }, []);
 
-    const FACULTY_ACTIONS = [
-        { label: 'View Students', icon: FileText, path: '/admin/students', color: 'text-emerald-400 bg-emerald-500/10' },
-        { label: 'Interviews', icon: CalendarCheck, path: '/admin/interviews', color: 'text-blue-400 bg-blue-500/10' },
-        { label: 'Student Profiles', icon: BookOpen, path: '/admin/students', color: 'text-purple-400 bg-purple-500/10' },
-        { label: 'Reports', icon: Award, path: '/admin/reports', color: 'text-amber-400 bg-amber-500/10' },
-    ];
+    const kpis = useMemo(() => {
+        const total = students.length;
+        const withResume = students.filter(s => !!s.resumeUrl).length;
+        const cgpas = students.map(s => parseCgpa(s.cgpa)).filter(v => v > 0);
+        const avgCgpa = cgpas.length ? (cgpas.reduce((a, b) => a + b, 0) / cgpas.length) : 0;
+        const noInternships = students.filter(s => !s.internships || (s.internships as unknown[]).length === 0).length;
+        return { total, withResume, avgCgpa, noInternships };
+    }, [students]);
+
+    const yearData = useMemo(() => {
+        const map: Record<string, number> = {};
+        students.forEach(s => { const yr = `Year ${s.currentYear || '?'}`; map[yr] = (map[yr] || 0) + 1; });
+        return Object.entries(map).map(([year, count]) => ({ year, count })).sort((a, b) => a.year.localeCompare(b.year));
+    }, [students]);
+
+    const topSkills = useMemo(() => {
+        const map: Record<string, number> = {};
+        students.forEach(s => {
+            const skills = s.techSkills || s.skills || [];
+            skills.forEach((sk: string) => { map[sk] = (map[sk] || 0) + 1; });
+        });
+        return Object.entries(map).sort(([, a], [, b]) => b - a).slice(0, 8).map(([skill, count]) => ({ skill, count }));
+    }, [students]);
+
+    const needsAttention = useMemo(() =>
+        students.filter(s =>
+            parseCgpa(s.cgpa) < 7 ||
+            !s.projects || (s.projects as unknown[]).length === 0 ||
+            ((!s.techSkills || s.techSkills.length === 0) && (!s.skills || s.skills.length === 0))
+        ).slice(0, 10),
+        [students]
+    );
+
+    const upcomingInterviews = useMemo(() => {
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        return interviews.filter(iv => {
+            if (!iv.scheduledDate) return false;
+            const d = typeof iv.scheduledDate === 'object' && 'seconds' in iv.scheduledDate
+                ? new Date((iv.scheduledDate as { seconds: number }).seconds * 1000)
+                : new Date(iv.scheduledDate as string);
+            return !isNaN(d.getTime()) && d >= today;
+        }).slice(0, 6);
+    }, [interviews]);
+
+    const readiness = useMemo(() => {
+        const complete = students.filter(s =>
+            !!s.resumeUrl &&
+            ((s.techSkills?.length || 0) + (s.skills?.length || 0)) > 0 &&
+            (s.projects as unknown[] || []).length > 0
+        ).length;
+        return [
+            { label: 'Profile Complete', value: complete, color: '#10b981' },
+            { label: 'Incomplete', value: students.length - complete, color: '#ef4444' },
+        ];
+    }, [students]);
+
+    const formatDate = (d: string | { seconds: number } | undefined) => {
+        if (!d) return 'TBD';
+        const dt = typeof d === 'object' && 'seconds' in d ? new Date(d.seconds * 1000) : new Date(d as string);
+        return isNaN(dt.getTime()) ? 'TBD' : dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    };
 
     return (
-        <div className="space-y-6 sm:space-y-8 animate-fade-in-up pb-8">
-            <WelcomeCard />
+        <div className="space-y-6 pb-10 animate-fade-in-up">
+            <div className="flex items-start justify-between gap-4">
+                <div className="flex-1"><WelcomeCard /></div>
+                <button onClick={fetchData} disabled={isLoading}
+                    className="mt-1 flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground border border-border rounded-xl hover:bg-secondary transition-all disabled:opacity-50">
+                    <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    <span className="hidden sm:inline">Refresh</span>
+                </button>
+            </div>
 
-            {/* Quick Actions */}
             <div>
-                <h3 className="text-lg font-semibold mb-4 text-foreground">Mentorship Actions</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                    {FACULTY_ACTIONS.map((action, idx) => (
-                        <NavLink
-                            key={idx}
-                            to={action.path}
-                            className="flex flex-col items-center justify-center p-4 sm:p-5 card-nmims hover:bg-secondary/50 hover:border-primary/30 transition-all duration-300 group shadow-sm hover:shadow-md text-center"
-                        >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ${action.color}`}>
-                                <action.icon className="w-5 h-5" />
-                            </div>
-                            <span className="text-xs sm:text-sm font-medium text-foreground group-hover:text-primary transition-colors">{action.label}</span>
+                <h3 className="text-base font-semibold mb-3 text-foreground">Quick Actions</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {[
+                        { label: 'Students', icon: GraduationCap, path: '/faculty/students', color: 'text-blue-700 bg-blue-100' },
+                        { label: 'Batch Analytics', icon: BarChart3, path: '/faculty/batch-analytics', color: 'text-violet-700 bg-violet-100' },
+                        { label: 'Reports', icon: FileText, path: '/faculty/reports', color: 'text-emerald-700 bg-emerald-100' },
+                        { label: 'Settings', icon: Settings, path: '/faculty/settings', color: 'text-amber-700 bg-amber-100' },
+                    ].map((a, i) => (
+                        <NavLink key={i} to={a.path} className="flex flex-col items-center justify-center p-4 card-nmims hover:bg-secondary/50 hover:border-primary/30 transition-all group text-center">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform ${a.color}`}><a.icon className="w-5 h-5" /></div>
+                            <span className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">{a.label}</span>
                         </NavLink>
                     ))}
                 </div>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {FACULTY_KPIS.map((kpi, idx) => (
-                    <div key={idx} className={`card-nmims p-5 border ${kpi.color.split(' ').slice(1).join(' ')}`}>
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm text-muted-foreground font-medium">{kpi.title}</span>
-                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${kpi.color}`}>
-                                <kpi.icon className="w-5 h-5" />
-                            </div>
-                        </div>
-                        <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{kpi.subtitle}</p>
-                    </div>
-                ))}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <KpiCard title="Total Students" value={kpis.total} subtitle="Registered" icon={Users} colorClass="text-violet-700 bg-violet-100 border-violet-200" loading={isLoading} />
+                <KpiCard title="Resume Uploaded" value={kpis.withResume} subtitle="Have resume on file" icon={BookOpen} colorClass="text-blue-700 bg-blue-100 border-blue-200" loading={isLoading} />
+                <KpiCard title="Avg CGPA" value={isLoading ? '...' : kpis.avgCgpa.toFixed(2)} subtitle="Across all students" icon={Award} colorClass="text-emerald-700 bg-emerald-100 border-emerald-200" loading={isLoading} />
+                <KpiCard title="Need Mentoring" value={kpis.noInternships} subtitle="No internships yet" icon={AlertTriangle} colorClass="text-amber-700 bg-amber-100 border-amber-200" loading={isLoading} />
             </div>
 
-            {/* Student Overview + Upcoming Interviews */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="card-nmims p-6">
+                    <SectionHeader icon={Users} title="Year-wise Student Count" />
+                    {isLoading ? <div className="h-52 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                        : yearData.length === 0 ? <div className="h-52 flex flex-col items-center justify-center text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No data</p></div>
+                        : <ResponsiveContainer width="100%" height={220}>
+                            <BarChart data={yearData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                                <XAxis dataKey="year" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} />
+                                <YAxis tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} />
+                                <Tooltip {...TT} />
+                                <Bar dataKey="count" name="Students" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>}
+                </div>
+                <div className="card-nmims p-6">
+                    <SectionHeader icon={Code2} title="Top Skills in Batch" />
+                    {isLoading ? <div className="h-52 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                        : topSkills.length === 0 ? <div className="h-52 flex flex-col items-center justify-center text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No skill data</p></div>
+                        : <ResponsiveContainer width="100%" height={220}>
+                            <BarChart data={topSkills} layout="vertical" margin={{ top: 5, right: 10, left: 40, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                                <XAxis type="number" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} />
+                                <YAxis dataKey="skill" type="category" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} width={60} />
+                                <Tooltip {...TT} />
+                                <Bar dataKey="count" name="Students" radius={[0, 4, 4, 0]}>
+                                    {topSkills.map((_, i) => <Cell key={i} fill={DEPT_COLORS[i % DEPT_COLORS.length]} />)}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>}
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Student Overview */}
-                <div className="lg:col-span-2 card-nmims p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                            <UserCheck className="w-5 h-5 text-primary" />
-                            Student Overview
-                        </h3>
-                        <NavLink to="/admin/students" className="text-sm text-primary hover:text-primary/80 flex items-center gap-1">
-                            All Students <ArrowRight className="w-4 h-4" />
-                        </NavLink>
-                    </div>
-                    {isLoading ? (
-                        <div className="flex items-center justify-center py-8">
-                            <Loader2 className="w-6 h-6 text-primary animate-spin" />
-                        </div>
-                    ) : students.length > 0 ? (
-                        <div className="space-y-3">
-                            {students.slice(0, 6).map((student: any, idx: number) => (
-                                <div key={idx} className="flex items-center gap-4 p-3 rounded-xl bg-secondary/30 border border-border/50">
-                                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                                        {(student.name || 'S').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                <div className="card-nmims p-6 lg:col-span-2">
+                    <SectionHeader icon={AlertTriangle} title="Students Needing Attention" linkTo="/faculty/students" />
+                    {isLoading ? <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-10 bg-secondary animate-pulse rounded-lg" />)}</div>
+                        : needsAttention.length === 0 ? <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">All students on track</p></div>
+                        : <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead><tr className="border-b border-border">
+                                    <th className="text-left py-2 text-xs text-muted-foreground font-semibold">Student</th>
+                                    <th className="text-left py-2 text-xs text-muted-foreground font-semibold">Branch</th>
+                                    <th className="text-right py-2 text-xs text-muted-foreground font-semibold">CGPA</th>
+                                    <th className="text-right py-2 text-xs text-muted-foreground font-semibold">Issues</th>
+                                </tr></thead>
+                                <tbody>
+                                    {needsAttention.map((s, i) => {
+                                        const issues = [];
+                                        if (parseCgpa(s.cgpa) < 7) issues.push('Low CGPA');
+                                        if (!s.projects || (s.projects as unknown[]).length === 0) issues.push('No projects');
+                                        if ((!s.techSkills || s.techSkills.length === 0) && (!s.skills || s.skills.length === 0)) issues.push('No skills');
+                                        return (
+                                            <tr key={i} className="border-b border-border/40 hover:bg-secondary/30 transition-colors">
+                                                <td className="py-2.5 font-medium text-foreground">{s.name || 'Unknown'}</td>
+                                                <td className="py-2.5 text-muted-foreground text-xs">{s.branch || '—'}</td>
+                                                <td className="py-2.5 text-right"><span className={`font-semibold ${parseCgpa(s.cgpa) >= 7 ? 'text-emerald-600' : 'text-rose-600'}`}>{parseCgpa(s.cgpa).toFixed(2)}</span></td>
+                                                <td className="py-2.5 text-right"><div className="flex gap-1 justify-end flex-wrap">{issues.map((iss, j) => <span key={j} className="text-xs px-1.5 py-0.5 rounded bg-rose-50 text-rose-600">{iss}</span>)}</div></td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>}
+                </div>
+
+                <div className="card-nmims p-6">
+                    <SectionHeader icon={Calendar} title="Upcoming Interviews" />
+                    {isLoading ? <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-12 bg-secondary animate-pulse rounded-xl" />)}</div>
+                        : upcomingInterviews.length === 0 ? <div className="flex flex-col items-center justify-center py-6 text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No upcoming interviews</p></div>
+                        : <div className="space-y-2">
+                            {upcomingInterviews.map((iv, i) => (
+                                <div key={i} className="p-3 rounded-xl bg-secondary/30 hover:bg-secondary/60 transition-colors">
+                                    <p className="font-medium text-foreground text-sm">{iv.companyName || 'Company'}</p>
+                                    <div className="flex justify-between mt-1">
+                                        <span className="text-xs text-muted-foreground">{iv.roundType || 'Round'}</span>
+                                        <span className="text-xs text-primary font-medium">{formatDate(iv.scheduledDate)}</span>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-foreground">{student.name || 'Student'}</p>
-                                        <p className="text-xs text-muted-foreground">{student.sapId || student.email || ''} • {student.department || student.branch || ''}</p>
-                                    </div>
-                                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${student.placementStatus === 'placed' ? 'text-emerald-400 bg-emerald-500/10' :
-                                            student.placementStatus === 'eligible' ? 'text-blue-400 bg-blue-500/10' :
-                                                'text-amber-400 bg-amber-500/10'
-                                        }`}>
-                                        {student.placementStatus || 'registered'}
-                                    </span>
                                 </div>
                             ))}
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                            <Inbox className="w-8 h-8 mb-2" />
-                            <p className="text-sm">No students registered yet.</p>
-                        </div>
-                    )}
-                </div>
+                        </div>}
 
-                {/* Upcoming Interviews */}
-                <div className="card-nmims p-6">
-                    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-6">
-                        <CalendarCheck className="w-5 h-5 text-primary" />
-                        Upcoming Interviews
-                    </h3>
-                    {isLoading ? (
-                        <div className="flex items-center justify-center py-8">
-                            <Loader2 className="w-6 h-6 text-primary animate-spin" />
-                        </div>
-                    ) : interviews.filter((i: any) => {
-                        const d = i.scheduledDate instanceof Date ? i.scheduledDate : new Date(i.scheduledDate);
-                        return d >= new Date() && i.status !== 'completed';
-                    }).length > 0 ? (
-                        <div className="space-y-3">
-                            {interviews
-                                .filter((i: any) => {
-                                    const d = i.scheduledDate instanceof Date ? i.scheduledDate : new Date(i.scheduledDate);
-                                    return d >= new Date() && i.status !== 'completed';
-                                })
-                                .slice(0, 4)
-                                .map((interview: any, idx: number) => {
-                                    const d = interview.scheduledDate instanceof Date ? interview.scheduledDate : new Date(interview.scheduledDate);
-                                    return (
-                                        <div key={idx} className="p-3 rounded-xl bg-secondary/30 border border-border/50">
-                                            <p className="text-sm font-medium text-foreground">{interview.companyName || 'Interview'}</p>
-                                            <p className="text-xs text-muted-foreground mt-1">{interview.roundType || 'Round'} • {interview.driveTitle || ''}</p>
-                                            <div className="flex items-center gap-2 mt-2">
-                                                <Clock className="w-3 h-3 text-muted-foreground" />
-                                                <span className="text-xs text-muted-foreground">{d.toLocaleDateString()}</span>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                            <Inbox className="w-8 h-8 mb-2" />
-                            <p className="text-sm text-center">No upcoming interviews.</p>
-                        </div>
-                    )}
-                    <NavLink
-                        to="/admin/interviews"
-                        className="mt-4 flex items-center justify-center gap-2 p-2.5 rounded-xl border border-primary/20 text-primary text-sm font-medium hover:bg-primary/5 transition-colors"
-                    >
-                        View All Interviews <ArrowRight className="w-4 h-4" />
-                    </NavLink>
+                    <div className="mt-5 pt-4 border-t border-border">
+                        <p className="text-xs text-muted-foreground font-semibold mb-3">Student Readiness</p>
+                        {readiness.map((r, i) => (
+                            <div key={i} className="mb-3">
+                                <div className="flex justify-between text-xs mb-1">
+                                    <span className="text-muted-foreground">{r.label}</span>
+                                    <span className="font-semibold text-foreground">{isLoading ? '...' : r.value}</span>
+                                </div>
+                                <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full transition-all duration-700"
+                                        style={{ width: students.length > 0 ? `${(r.value / students.length) * 100}%` : '0%', background: r.color }} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
 
-            {/* Certification Recommendations — No Firestore backing */}
-            <div className="card-nmims p-6">
-                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-                    <Star className="w-5 h-5 text-primary" />
-                    Certification Recommendations
-                </h3>
-                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                    <Inbox className="w-8 h-8 mb-2" />
-                    <p className="text-sm text-center">No certification data available yet.</p>
-                    <p className="text-xs mt-1 text-center">Recommendations will appear when certification tracking is configured.</p>
-                </div>
-            </div>
+            <p className="text-xs text-muted-foreground text-center">Last refreshed: {lastRefreshed.toLocaleTimeString()}</p>
         </div>
     );
 };

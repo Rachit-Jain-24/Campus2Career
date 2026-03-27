@@ -66,7 +66,7 @@ export const StudentDataFixTool: React.FC = () => {
                 <button
                     onClick={handleUpdate20Students}
                     disabled={isUpdating || isRunning}
-                    className="flex items-center gap-2 px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-2 px-6 py-3 bg-purple-500 hover:bg-purple-600 text-foreground rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     {isUpdating ? (
                         <>
@@ -84,7 +84,7 @@ export const StudentDataFixTool: React.FC = () => {
                 <button
                     onClick={handleFix}
                     disabled={isRunning || isUpdating}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-foreground rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     {isRunning ? (
                         <>

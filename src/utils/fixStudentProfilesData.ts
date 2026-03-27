@@ -93,7 +93,7 @@ export async function fixStudentProfilesData() {
     console.log('\n🔧 Starting to fix student profile data...\n');
     
     try {
-        const usersRef = collection(db, 'users');
+        const usersRef = collection(db, 'students');
         const querySnapshot = await getDocs(usersRef);
         
         let updated = 0;

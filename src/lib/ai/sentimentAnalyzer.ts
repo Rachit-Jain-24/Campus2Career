@@ -1,3 +1,4 @@
+// sentimentanalyzer
 import type { SentimentResult } from './types';
 
 export const STRESS_TERMS: Array<{ term: string; weight: number }> = [

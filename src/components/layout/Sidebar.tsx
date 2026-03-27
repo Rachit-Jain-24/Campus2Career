@@ -22,10 +22,8 @@ import {
     UserCheck,
     Download,
     ChevronRight,
-    Compass,
     StickyNote,
     LayoutGrid,
-    Briefcase,
     Sparkles,
 } from "lucide-react";
 
@@ -33,6 +31,8 @@ export type UserRole = "student" | "admin" | "dean" | "director" | "program_chai
 
 interface SidebarProps {
     role: UserRole;
+    isOpen: boolean;
+    setIsOpen: (open: boolean) => void;
 }
 
 const studentNavItems = [
@@ -97,7 +97,7 @@ function getNavItems(role: UserRole) {
     return adminNavItems;
 }
 
-export function Sidebar({ role }: SidebarProps) {
+export function Sidebar({ role, isOpen, setIsOpen }: SidebarProps) {
     const location = useLocation();
     const pathname = location.pathname;
     const navItems = getNavItems(role);
@@ -134,10 +134,24 @@ export function Sidebar({ role }: SidebarProps) {
     };
 
     return (
-        <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r bg-card shadow-sm">
-            <div className="flex h-full flex-col">
-                {/* Logo */}
-                <div className="flex h-16 items-center border-b px-5 gap-3">
+        <>
+            {/* Mobile Overlay */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity duration-300"
+                    onClick={() => setIsOpen(false)}
+                />
+            )}
+
+            <aside
+                className={cn(
+                    "fixed left-0 top-0 z-50 h-screen w-64 border-r bg-card shadow-sm transition-transform duration-300 lg:translate-x-0",
+                    isOpen ? "translate-x-0" : "-translate-x-full"
+                )}
+            >
+                <div className="flex h-full flex-col">
+                    {/* Logo */}
+                    <div className="flex h-16 items-center border-b px-5 gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary shadow-sm">
                         <GraduationCap className="h-5 w-5 text-white" />
                     </div>
@@ -186,7 +200,8 @@ export function Sidebar({ role }: SidebarProps) {
                         {roleLabel[role]} Portal
                     </div>
                 </div>
-            </div>
-        </aside>
+                </div>
+            </aside>
+        </>
     );
 }

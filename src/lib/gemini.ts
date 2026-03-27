@@ -159,7 +159,7 @@ export async function analyzeProfileWithAI(user: any): Promise<ProfileAnalysis> 
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
         const prompt = `
             Analyze the following student profile for placement readiness at top-tier companies.
             PROFILE:
@@ -291,7 +291,7 @@ export async function generateInterviewQuestions(
     if (!API_KEY) return genericFallbacks[mode] || genericFallbacks.technical;
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const resumeSection = resumeDescription?.trim()
             ? `RESUME (read every word — questions MUST reference specific items from this):
@@ -347,7 +347,7 @@ export async function generateFollowUpQuestion(
 ): Promise<string | null> {
     if (!API_KEY || !answer?.trim() || answer.trim().length < 20) return null;
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
         const prompt = `You are interviewing a candidate for ${targetRole}.
 
 Original question: "${originalQuestion}"
@@ -421,7 +421,7 @@ export async function evaluateInterviewAnswer(
     if (!API_KEY || !transcript?.trim() || transcript.trim().length < 10) return fallback;
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
         const prompt = `You are a senior interviewer evaluating a candidate's answer. Be honest and specific — not encouraging for the sake of it.
 
 INTERVIEW MODE: ${mode === 'hr' ? 'HR/Behavioral' : mode === 'project' ? 'Project Deep-Dive' : 'Technical'}
@@ -574,7 +574,7 @@ iconKey must be one of: Code2, LayoutGrid, Briefcase, Target, Compass, Graduatio
 priority must be one of: critical, high, medium`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
         const timeoutPromise = new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('TIMEOUT')), 30000)
@@ -598,4 +598,302 @@ priority must be one of: critical, high, medium`;
         console.error('generateSyllabusRoadmap: Gemini call failed', error);
         return fallback();
     }
+}
+
+// ── Interview Engine Extensions ──────────────────────────────────────────────
+import type { QuestionMetadata, QuestionEvaluation, InterviewMode, Difficulty, STARAnalysis } from '../types/interview';
+import { RUBRICS } from './interviewEngine';
+
+export async function generateInterviewQuestionsStructured(params: {
+  mode: InterviewMode;
+  difficulty: Difficulty;
+  targetRole: string;
+  targetCompany: string;
+  resumeText: string;
+  count: number;
+}): Promise<QuestionMetadata[]> {
+  const { mode, difficulty, targetRole, targetCompany, resumeText, count } = params;
+  const rubric = RUBRICS[mode];
+  const modeLabel = { dsa: 'DSA/Coding', system_design: 'System Design', behavioral: 'Behavioral', project: 'Project Deep-Dive', hr: 'HR' }[mode];
+  const answerMethod = mode === 'dsa' ? 'voice_and_code' : mode === 'system_design' ? 'text' : 'voice';
+
+  const fallbackQuestions: QuestionMetadata[] = Array.from({ length: count }, (_, i) => ({
+    id: `${mode}-${i}`,
+    text: getFallbackQuestion(mode, difficulty, i),
+    mode, difficulty,
+    topicTags: [mode],
+    companyTags: targetCompany ? [targetCompany] : [],
+    expectedDurationSec: mode === 'dsa' ? 1200 : mode === 'system_design' ? 1500 : 180,
+    rubric,
+    followUpSeeds: [],
+    answerMethod: answerMethod as any,
+  }));
+
+  if (!API_KEY) return fallbackQuestions;
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const resumeSection = resumeText?.trim()
+      ? `RESUME:\n"""\n${resumeText.slice(0, 3000)}\n"""`
+      : 'No resume provided.';
+
+    const prompt = `You are a ${difficulty}-level interviewer at ${targetCompany || 'a top tech company'} conducting a ${modeLabel} interview for a ${targetRole} role.
+
+${resumeSection}
+
+Generate exactly ${count} interview question(s) for a ${difficulty} ${modeLabel} interview.
+
+Rules:
+- Questions must match ${difficulty} difficulty precisely
+- ${resumeText?.trim() ? 'Reference specific projects/technologies from the resume where relevant' : 'Use industry-standard questions for this role'}
+- For DSA: include the actual problem statement with constraints and examples
+- For System Design: specify scale requirements (e.g., "design for 10M users")
+- For Behavioral: use STAR-eliciting phrasing ("Tell me about a time when...")
+- Questions must be progressively harder if count > 1
+
+Return ONLY valid JSON array:
+[{
+  "id": "unique-id",
+  "text": "full question text",
+  "topicTags": ["tag1", "tag2"],
+  "companyTags": ["${targetCompany || 'General'}"],
+  "expectedDurationSec": 180,
+  "followUpSeeds": ["follow-up seed 1", "follow-up seed 2"]
+}]`;
+
+    const result = await model.generateContent(prompt);
+    const text = (await result.response).text().replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(text);
+    if (!Array.isArray(parsed)) throw new Error('Not array');
+
+    return parsed.map((q: any, i: number) => ({
+      id: q.id || `${mode}-${Date.now()}-${i}`,
+      text: q.text,
+      mode, difficulty,
+      topicTags: q.topicTags || [mode],
+      companyTags: q.companyTags || [],
+      expectedDurationSec: q.expectedDurationSec || 180,
+      rubric,
+      followUpSeeds: q.followUpSeeds || [],
+      answerMethod: answerMethod as any,
+    }));
+  } catch (err) {
+    console.error('generateInterviewQuestionsStructured failed:', err);
+    return fallbackQuestions;
+  }
+}
+
+function getFallbackQuestion(mode: InterviewMode, difficulty: Difficulty, index: number): string {
+  const banks: Record<InterviewMode, string[]> = {
+    dsa: [
+      'Given an array of integers, find two numbers that sum to a target value. Return their indices. Optimize for O(n) time.',
+      'Design an LRU Cache with O(1) get and put operations. Implement using a doubly linked list and hash map.',
+      'Given a binary tree, find the maximum path sum. The path may start and end at any node.',
+    ],
+    system_design: [
+      'Design a URL shortener like bit.ly. Handle 100M URLs, 10B redirects/day. Focus on scalability and low latency.',
+      'Design Twitter\'s news feed. 300M users, 500M tweets/day. Discuss fan-out strategies and caching.',
+      'Design a distributed rate limiter for an API gateway handling 1M requests/second.',
+    ],
+    behavioral: [
+      'Tell me about a time you had to deliver a project under a very tight deadline. What trade-offs did you make?',
+      'Describe a situation where you disagreed with your tech lead\'s architectural decision. How did you handle it?',
+      'Tell me about the most technically complex problem you\'ve solved. Walk me through your approach.',
+    ],
+    project: [
+      'Walk me through the architecture of your most complex project. Why did you choose that tech stack?',
+      'What was the hardest technical challenge in your main project? How did you debug and resolve it?',
+      'If you had to scale your project to 10x the current load, what would you change first?',
+    ],
+    hr: [
+      'Why are you interested in this role, and how does it align with your 3-year career goal?',
+      'What\'s your biggest technical weakness, and what are you actively doing to improve it?',
+      'Describe your ideal engineering team culture. What makes you thrive?',
+    ],
+  };
+  const list = banks[mode];
+  return list[index % list.length];
+}
+
+export async function evaluateAnswerWithRubric(params: {
+  question: QuestionMetadata;
+  answer: string;
+  codeSubmission?: string;
+  codeOutput?: string;
+  mode: InterviewMode;
+  difficulty: Difficulty;
+  resumeContext?: string;
+}): Promise<QuestionEvaluation> {
+  const { question, answer, codeSubmission, codeOutput, mode, difficulty, resumeContext } = params;
+
+  const wordCount = answer?.trim().split(/\s+/).filter(Boolean).length || 0;
+  const hasCode = !!codeSubmission?.trim();
+  const isEmpty = wordCount === 0 && !hasCode;
+  const isTooShort = wordCount < 10 && !hasCode;
+
+  // Honest fallback — empty = 0, too short = 1-2, no API key = honest low score
+  const emptyFallback: QuestionEvaluation = {
+    questionId: question.id,
+    answer,
+    answerMethod: question.answerMethod,
+    codeSubmission,
+    durationSec: 0,
+    rubricScores: question.rubric.map(r => ({ criterion: r.criterion, score: isEmpty ? 0 : 1, rationale: isEmpty ? 'No answer provided.' : 'Answer too brief to evaluate meaningfully.', quote: undefined })),
+    overallScore: isEmpty ? 0 : 1,
+    technicalDepthScore: 0,
+    strengths: isEmpty ? ['Attempted to start the interview.'] : ['Provided a very brief response.'],
+    improvements: [
+      'Provide a complete, structured answer.',
+      'Explain your reasoning step by step.',
+      'Include concrete examples from your experience.',
+    ],
+    modelAnswer: 'A strong answer would directly address the question with technical depth, concrete examples, and clear reasoning.',
+    hireSignal: 'strong_no',
+  };
+
+  if (!API_KEY) return emptyFallback;
+  if (isEmpty || isTooShort) return emptyFallback;
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const rubricText = question.rubric.map(r => `- ${r.criterion} (${Math.round(r.weight * 100)}%): ${r.description}`).join('\n');
+
+    const prompt = `You are a strict senior ${difficulty} engineer conducting a real interview. Your job is to evaluate this answer HONESTLY — not to encourage the candidate.
+
+QUESTION: ${question.text}
+
+RUBRIC (score each criterion 0–10):
+${rubricText}
+
+CANDIDATE ANSWER (${wordCount} words):
+"${answer.slice(0, 2000)}"
+${codeSubmission ? `\nCANDIDATE CODE:\n${codeSubmission}\n\nCODE OUTPUT:\n${codeOutput || 'Not executed'}` : ''}
+${resumeContext ? `\nRESUME CONTEXT: ${resumeContext.slice(0, 400)}` : ''}
+
+STRICT SCORING RULES:
+- A one-liner or name mention = 1–2 out of 10. Do NOT give 5 for minimal effort.
+- Mentioning a project name without explaining it = 2–3 out of 10.
+- A partial answer missing key concepts = 3–5 out of 10.
+- A complete answer with examples but missing depth = 6–7 out of 10.
+- A thorough answer with trade-offs and examples = 8–9 out of 10.
+- An exceptional answer covering edge cases and alternatives = 10 out of 10.
+- If the answer is off-topic or irrelevant = 0–1 out of 10.
+- NEVER give 5 as a default. Score based on actual content quality.
+
+Return ONLY valid JSON (no markdown, no preamble):
+{
+  "rubricScores": [
+    { "criterion": "exact criterion name", "score": 0-10, "rationale": "1 specific sentence referencing what they said", "quote": "exact quote from answer or null" }
+  ],
+  "overallScore": 0-10,
+  "technicalDepthScore": 0-10,
+  "strengths": ["specific strength referencing actual content — not generic praise"],
+  "improvements": ["specific actionable improvement — what exactly was missing"],
+  "modelAnswer": "What a strong ${difficulty} answer looks like — 100-150 words, concrete and specific",
+  "followUpQuestion": "One follow-up question probing the weakest part of their answer, or null if score >= 8",
+  "hireSignal": "strong_yes|yes|lean_yes|no|strong_no"
+}`;
+
+    const result = await model.generateContent(prompt);
+    const text = (await result.response).text().replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(text);
+
+    // Sanity check: if Gemini returns 5 for a one-liner, override it
+    let overallScore = parsed.overallScore ?? 3;
+    if (wordCount < 20 && overallScore > 3) overallScore = Math.min(overallScore, 3);
+    if (wordCount < 5 && overallScore > 1) overallScore = 1;
+
+    return {
+      questionId: question.id,
+      answer,
+      answerMethod: question.answerMethod,
+      codeSubmission,
+      durationSec: 0,
+      rubricScores: parsed.rubricScores || emptyFallback.rubricScores,
+      overallScore,
+      technicalDepthScore: parsed.technicalDepthScore ?? Math.min(overallScore, 5),
+      strengths: parsed.strengths || emptyFallback.strengths,
+      improvements: parsed.improvements || emptyFallback.improvements,
+      modelAnswer: parsed.modelAnswer || emptyFallback.modelAnswer,
+      followUpQuestion: parsed.followUpQuestion || undefined,
+      hireSignal: parsed.hireSignal || 'no',
+    };
+  } catch (err) {
+    console.error('evaluateAnswerWithRubric failed:', err);
+    return emptyFallback;
+  }
+}
+
+export async function analyzeSTAR(answer: string): Promise<STARAnalysis> {
+  const fallback: STARAnalysis = {
+    situation: { present: false, quality: 0, extract: '' },
+    task: { present: false, quality: 0, extract: '' },
+    action: { present: false, quality: 0, extract: '' },
+    result: { present: false, quality: 0, extract: '' },
+    overallSTARScore: 0,
+    missing: ['situation', 'task', 'action', 'result'],
+  };
+
+  if (!API_KEY || !answer?.trim()) return fallback;
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const prompt = `Analyze this behavioral interview answer for STAR structure.
+
+ANSWER: "${answer.slice(0, 1500)}"
+
+Return ONLY valid JSON:
+{
+  "situation": { "present": true/false, "quality": 0-10, "extract": "relevant quote or empty string" },
+  "task": { "present": true/false, "quality": 0-10, "extract": "relevant quote or empty string" },
+  "action": { "present": true/false, "quality": 0-10, "extract": "relevant quote or empty string" },
+  "result": { "present": true/false, "quality": 0-10, "extract": "relevant quote or empty string" },
+  "overallSTARScore": 0-10,
+  "missing": ["list of missing components"]
+}`;
+
+    const result = await model.generateContent(prompt);
+    const text = (await result.response).text().replace(/```json|```/g, '').trim();
+    return JSON.parse(text);
+  } catch {
+    return fallback;
+  }
+}
+
+export async function generateAIInterviewerMessage(context: {
+  phase: string;
+  mode: InterviewMode;
+  questionText?: string;
+  answerSummary?: string;
+  targetRole: string;
+}): Promise<string> {
+  const { phase, mode, questionText, answerSummary, targetRole } = context;
+
+  const hardcoded: Record<string, string> = {
+    briefing: `Welcome! I'm Aria. Let's begin your ${mode.replace('_', ' ')} round for the ${targetRole} role. Take your time reading each question carefully.`,
+    thinking: "Take your time. Think through your approach before you start.",
+    follow_up: "Interesting — I'd like to dig a bit deeper on that.",
+    between_questions: "Got it. Let's move to the next question.",
+    round_complete: "That wraps up this round. You did well — let's review your performance.",
+  };
+
+  if (!API_KEY) return hardcoded[phase] || "Let's continue.";
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const prompt = `You are Aria, a senior engineer conducting a ${mode.replace('_', ' ')} interview for a ${targetRole} role.
+Current phase: ${phase}
+${questionText ? `Question just asked: "${questionText.slice(0, 200)}"` : ''}
+${answerSummary ? `Candidate just answered about: "${answerSummary.slice(0, 200)}"` : ''}
+
+Write ONE short, natural interviewer line (max 20 words) appropriate for this phase.
+Sound human, professional, and encouraging but not sycophantic.
+Return ONLY the line, no quotes, no explanation.`;
+
+    const result = await model.generateContent(prompt);
+    const text = (await result.response).text().trim();
+    return text.length > 5 ? text : hardcoded[phase] || "Let's continue.";
+  } catch {
+    return hardcoded[phase] || "Let's continue.";
+  }
 }

@@ -34,44 +34,44 @@ export const AcademicSection: React.FC<AcademicSectionProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400">Available Batches</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Available Batches</label>
                     <input
                         type="text"
                         value={data.availableBatches.join(', ')}
                         onChange={(e) => handleListChange('availableBatches', e.target.value)}
-                        className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+                        className="w-full px-3 py-2.5 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-indigo-500"
                     />
                     <p className="text-[11px] text-slate-600">Comma-separated list of batch labels</p>
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400">Available Academic Years</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Available Academic Years</label>
                     <input
                         type="text"
                         value={data.availableYears.join(', ')}
                         onChange={(e) => handleListChange('availableYears', e.target.value)}
-                        className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+                        className="w-full px-3 py-2.5 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-indigo-500"
                     />
                     <p className="text-[11px] text-slate-600">Comma-separated list of academic years</p>
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400">Semester Labels</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Semester Labels</label>
                     <input
                         type="text"
                         value={data.semesterLabels.join(', ')}
                         onChange={(e) => handleListChange('semesterLabels', e.target.value)}
-                        className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+                        className="w-full px-3 py-2.5 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-indigo-500"
                     />
                     <p className="text-[11px] text-slate-600">Comma-separated semester/term labels</p>
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400">Default Progression Year</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Default Progression Year</label>
                     <select
                         value={data.defaultProgressionYear}
                         onChange={(e) => onUpdate('defaultProgressionYear', e.target.value)}
-                        className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+                        className="w-full px-3 py-2.5 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-indigo-500"
                     >
                         {data.availableBatches.map(b => (
                             <option key={b} value={b}>{b}</option>

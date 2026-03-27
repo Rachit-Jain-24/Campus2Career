@@ -1,24 +1,29 @@
-// ─────────────────────────────────────────────────────────────
-// Role-Based Route Mapping
-// Maps each admin role to their dedicated dashboard route
-// ─────────────────────────────────────────────────────────────
-
 import type { AdminRole } from '../../types/auth';
 
 const ROLE_ROUTE_MAP: Record<AdminRole, string> = {
-    dean: '/admin/dean',
-    director: '/admin/director',
-    program_chair: '/admin/program-chair',
-    faculty: '/admin/faculty',
-    placement_officer: '/admin/placement-officer',
-    system_admin: '/admin/system-admin',
+    system_admin: '/admin/dashboard',
+    dean: '/dean/dashboard',
+    director: '/director/dashboard',
+    program_chair: '/program-chair/dashboard',
+    faculty: '/faculty/dashboard',
+    placement_officer: '/placement/dashboard',
 };
 
-/**
- * Returns the default admin dashboard route for a given role.
- * Falls back to /admin/dashboard if role is not mapped.
- */
+const ROLE_LOGIN_MAP: Record<AdminRole, string> = {
+    system_admin: '/login/admin',
+    dean: '/login/dean',
+    director: '/login/director',
+    program_chair: '/login/program-chair',
+    faculty: '/login/faculty',
+    placement_officer: '/login/placement-officer',
+};
+
 export const getDefaultAdminRoute = (role?: string): string => {
-    if (!role) return '/admin/dashboard';
-    return ROLE_ROUTE_MAP[role as AdminRole] || '/admin/dashboard';
+    if (!role) return '/login/admin';
+    return ROLE_ROUTE_MAP[role as AdminRole] || '/login/admin';
+};
+
+export const getRoleLoginRoute = (role?: string): string => {
+    if (!role) return '/login/admin';
+    return ROLE_LOGIN_MAP[role as AdminRole] || '/login/admin';
 };

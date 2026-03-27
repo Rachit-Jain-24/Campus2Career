@@ -81,7 +81,7 @@ function generateProjects(student: BatchStudentData): any[] {
 async function cleanDuplicates() {
     console.log('\n🧹 STEP 1: Cleaning duplicate entries...\n');
     
-    const usersRef = collection(db, 'users');
+    const usersRef = collection(db, 'students');
     const querySnapshot = await getDocs(usersRef);
     
     console.log(`📊 Total entries found: ${querySnapshot.size}`);

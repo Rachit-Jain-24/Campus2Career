@@ -106,8 +106,8 @@ const SECTIONS: Section[] = [
         title: 'Personality Assessment',
         subtitle: 'Understand your working style and how you interact with the world.',
         icon: BrainCircuit,
-        color: 'text-violet-700',
-        bgColor: 'bg-violet-100',
+        color: 'text-slate-700',
+        bgColor: 'bg-slate-100',
         questions: [
             {
                 id: 'p_1', type: 'single',
@@ -166,8 +166,8 @@ const SECTIONS: Section[] = [
         title: 'Behavioral Strengths',
         subtitle: 'Identify your behavioral patterns for placement and growth.',
         icon: Heart,
-        color: 'text-rose-600',
-        bgColor: 'bg-rose-100',
+        color: 'text-primary',
+        bgColor: 'bg-primary/10',
         questions: [
             {
                 id: 'b_1', type: 'single',
@@ -232,10 +232,10 @@ function computeResult(answers: Record<string, any>) {
     const hasDesign = careerAns.some(([, v]) => v === 'design' || v === 'designer');
     const hasWeb = careerAns.some(([, v]) => v === 'webdev');
 
-    if (hasAI) return { title: 'AI/ML Engineer', emoji: '🤖', color: 'bg-violet-600', desc: 'You show a strong inclination towards Artificial Intelligence. Focus on Python, ML frameworks, and mathematics.' };
-    if (hasData) return { title: 'Data Scientist', emoji: '📊', color: 'bg-blue-600', desc: 'You are drawn to patterns and insights. Build skills in SQL, Python, Excel, and Statistics.' };
-    if (hasDesign) return { title: 'Product / UX Designer', emoji: '🎨', color: 'bg-pink-600', desc: 'Your creative instincts shine. Learn Figma, UI principles, and user research methods.' };
-    if (hasWeb) return { title: 'Full-Stack Developer', emoji: '💻', color: 'bg-emerald-600', desc: 'You enjoy building products. Master React, Node.js, and databases to become a full-stack developer.' };
+    if (hasAI) return { title: 'AI/ML Engineer', emoji: '🤖', color: 'bg-primary', desc: 'You show a strong inclination towards Artificial Intelligence. Focus on Python, ML frameworks, and mathematics.' };
+    if (hasData) return { title: 'Data Scientist', emoji: '📊', color: 'bg-primary', desc: 'You are drawn to patterns and insights. Build skills in SQL, Python, Excel, and Statistics.' };
+    if (hasDesign) return { title: 'Product / UX Designer', emoji: '🎨', color: 'bg-primary', desc: 'Your creative instincts shine. Learn Figma, UI principles, and user research methods.' };
+    if (hasWeb) return { title: 'Full-Stack Developer', emoji: '💻', color: 'bg-primary', desc: 'You enjoy building products. Master React, Node.js, and databases to become a full-stack developer.' };
     return { title: 'Generalist Tech', emoji: '🚀', color: 'bg-primary', desc: 'You have broad interests. Explore multiple domains in Year 1 before specializing.' };
 }
 
@@ -367,7 +367,7 @@ export default function AssessmentPage() {
     // ── Completion Screen ──────────────────────────────────────────────────────
     if (isComplete) {
         return (
-            <div className="min-h-screen bg-secondary flex flex-col items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent">
+            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent">
                 <div className="max-w-2xl w-full space-y-6">
                     {/* Confetti-like header */}
                     <div className="text-center space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -380,7 +380,7 @@ export default function AssessmentPage() {
 
                     {/* Career Track Result - PREMIUM CARD */}
                     <div className="relative group animate-in fade-in slide-in-from-bottom-6 duration-700">
-                        <div className="absolute -inset-1 bg-gradient-to-r from-primary to-violet-600 rounded-[2.5rem] blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+                        <div className="absolute -inset-1 bg-primary/20 rounded-[2.5rem] blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
                         <div className="relative bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-2xl">
                             <div className={`${result.color} p-8 text-white relative overflow-hidden`}>
                                 <div className="absolute -right-10 -top-10 h-40 w-40 bg-white/10 rounded-full blur-3xl" />
@@ -446,7 +446,7 @@ export default function AssessmentPage() {
                             disabled={saving}
                             className="w-full py-5 bg-slate-900 text-white font-black rounded-[2rem] text-lg flex items-center justify-center gap-3 shadow-2xl shadow-slate-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all group overflow-hidden relative"
                         >
-                            <div className="absolute inset-0 bg-gradient-to-r from-primary to-violet-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <div className="absolute inset-0 bg-primary opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             {saving ? (
                                 <span className="relative z-10 flex items-center gap-3">
                                     <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

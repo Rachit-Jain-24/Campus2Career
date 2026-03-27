@@ -20,14 +20,14 @@ interface ToggleRowProps {
 }
 
 const ToggleRow: React.FC<ToggleRowProps> = ({ label, description, value, onChange }) => (
-    <div className="flex items-center justify-between p-4 bg-slate-950/50 border border-slate-800 rounded-lg">
+    <div className="flex items-center justify-between p-4 bg-background/50 border border-border rounded-lg">
         <div>
-            <div className="text-sm font-medium text-white">{label}</div>
-            <div className="text-xs text-slate-500 mt-0.5">{description}</div>
+            <div className="text-sm font-medium text-foreground">{label}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">{description}</div>
         </div>
         <button
             onClick={() => onChange(!value)}
-            className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${value ? 'bg-emerald-600' : 'bg-slate-700'}`}
+            className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${value ? 'bg-emerald-600' : 'bg-secondary'}`}
         >
             <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${value ? 'translate-x-6' : ''}`} />
         </button>
@@ -49,7 +49,7 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
         >
             {/* Channel Toggles */}
             <div className="space-y-3">
-                <h4 className="text-sm font-bold text-slate-300">Channels</h4>
+                <h4 className="text-sm font-bold text-foreground">Channels</h4>
                 <ToggleRow
                     label="Email Notifications"
                     description="Send email alerts for drive registrations, interview schedules, and offer updates"
@@ -65,37 +65,37 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
             </div>
 
             {/* Reminder Defaults */}
-            <div className="space-y-4 pt-4 border-t border-slate-800/50">
-                <h4 className="text-sm font-bold text-slate-300">Reminder Defaults</h4>
+            <div className="space-y-4 pt-4 border-t border-border/50">
+                <h4 className="text-sm font-bold text-foreground">Reminder Defaults</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-slate-400">Drive Reminder (days before)</label>
+                        <label className="text-xs font-semibold text-muted-foreground">Drive Reminder (days before)</label>
                         <input
                             type="number"
                             min={1}
                             max={14}
                             value={data.driveReminderDaysBefore}
                             onChange={(e) => onUpdate('driveReminderDaysBefore', parseInt(e.target.value) || 1)}
-                            className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+                            className="w-full px-3 py-2.5 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-indigo-500"
                         />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-slate-400">Interview Reminder (hours before)</label>
+                        <label className="text-xs font-semibold text-muted-foreground">Interview Reminder (hours before)</label>
                         <input
                             type="number"
                             min={1}
                             max={72}
                             value={data.interviewReminderHoursBefore}
                             onChange={(e) => onUpdate('interviewReminderHoursBefore', parseInt(e.target.value) || 1)}
-                            className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+                            className="w-full px-3 py-2.5 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-indigo-500"
                         />
                     </div>
                 </div>
             </div>
 
             {/* Admin Alerts */}
-            <div className="space-y-3 pt-4 border-t border-slate-800/50">
-                <h4 className="text-sm font-bold text-slate-300">Admin Alert Preferences</h4>
+            <div className="space-y-3 pt-4 border-t border-border/50">
+                <h4 className="text-sm font-bold text-foreground">Admin Alert Preferences</h4>
                 <ToggleRow
                     label="New Drive Created"
                     description="Alert all admins when a new drive is published"

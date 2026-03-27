@@ -1,4 +1,5 @@
 // Feature: ai-career-advisor-chatbot
+// chatwidget
 import { useState } from 'react';
 import { Bot } from 'lucide-react';
 import type { StudentUser } from '@/types/auth';

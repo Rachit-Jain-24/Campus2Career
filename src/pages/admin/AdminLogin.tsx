@@ -51,7 +51,7 @@ export const AdminLogin: React.FC = () => {
 
                     <div className="mb-8 text-center">
                         <div className="w-16 h-16 bg-gradient-nmims rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg rotate-3">
-                            <GraduationCap className="h-8 w-8 text-white -rotate-3" />
+                            <GraduationCap className="h-8 w-8 text-foreground -rotate-3" />
                         </div>
                         <h1 className="text-3xl font-bold tracking-tight mb-2">Admin Portal</h1>
                         <p className="text-muted-foreground text-sm">Secure access for Placement Operations</p>

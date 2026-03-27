@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     Code2, Compass, Target, CheckCircle2, Zap,
     Briefcase, GraduationCap, LayoutGrid, BookOpen, Sparkles, Server,
-    Upload, RefreshCw, Info, FileText, X, ChevronRight, Clock,
-    TrendingUp, Award, Layers, ArrowRight, Circle
+    Upload, RefreshCw, Info, FileText, X, Clock,
+    TrendingUp, Award, Layers
 } from 'lucide-react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { useAuth } from '../../contexts/AuthContext';
@@ -199,8 +199,8 @@ export default function RoadmapPage() {
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                     <div className="p-5 border-b border-slate-100 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-xl bg-violet-100 flex items-center justify-center">
-                                <FileText className="h-4 w-4 text-violet-600" />
+                            <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                                <FileText className="h-4 w-4 text-primary" />
                             </div>
                             <div>
                                 <p className="text-sm font-black text-slate-800">Upload Semester Syllabus</p>
@@ -221,7 +221,7 @@ export default function RoadmapPage() {
                             {[1,2,3,4,5,6,7,8].map(s => (
                                 <button key={s} onClick={() => setSemester(s)}
                                     className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${semester === s
-                                        ? 'bg-violet-600 text-white shadow-md'
+                                        ? 'bg-primary text-white shadow-md'
                                         : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
                                     Sem {s}
                                 </button>
@@ -248,11 +248,11 @@ export default function RoadmapPage() {
                             onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
                             onDragLeave={() => setIsDragging(false)}
                             onClick={() => fileInputRef.current?.click()}
-                            className={`border-2 border-dashed rounded-2xl p-6 flex items-center gap-4 cursor-pointer transition-all ${isDragging ? 'border-violet-400 bg-violet-50' : 'border-slate-200 hover:border-violet-300 hover:bg-slate-50'}`}>
+                            className={`border-2 border-dashed rounded-2xl p-6 flex items-center gap-4 cursor-pointer transition-all ${isDragging ? 'border-primary/40 bg-primary/5' : 'border-slate-200 hover:border-primary/30 hover:bg-slate-50'}`}>
                             <input ref={fileInputRef} type="file" accept="application/pdf" className="hidden"
                                 onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }} />
-                            <div className="h-10 w-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
-                                <Upload className="h-5 w-5 text-violet-600" />
+                            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                <Upload className="h-5 w-5 text-primary" />
                             </div>
                             <div>
                                 <p className="text-sm font-bold text-slate-700">Drop your syllabus PDF here</p>
@@ -266,7 +266,7 @@ export default function RoadmapPage() {
                                     <span>Saving to cloud…</span><span>{uploadProgress}%</span>
                                 </div>
                                 <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                    <div className="h-full bg-violet-500 transition-all" style={{ width: `${uploadProgress}%` }} />
+                                    <div className="h-full bg-primary transition-all" style={{ width: `${uploadProgress}%` }} />
                                 </div>
                             </div>
                         )}
@@ -288,8 +288,8 @@ export default function RoadmapPage() {
                 {isGenerating && (
                     <div className="bg-white rounded-2xl p-12 flex flex-col items-center text-center border border-slate-100 shadow-sm">
                         <div className="relative mb-5">
-                            <div className="h-14 w-14 border-4 border-violet-100 border-t-violet-500 rounded-full animate-spin" />
-                            <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-violet-500 animate-pulse" />
+                            <div className="h-14 w-14 border-4 border-slate-100 border-t-primary rounded-full animate-spin" />
+                            <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-primary animate-pulse" />
                         </div>
                         <h3 className="text-lg font-black text-slate-800 mb-1">Gemini AI is analyzing your syllabus…</h3>
                         <p className="text-sm text-slate-400">Mapping your subjects to industry skills for {targetRole}</p>
@@ -332,7 +332,7 @@ export default function RoadmapPage() {
                                     <div className="flex items-center gap-3 mb-6">
                                         <h2 className="text-xl font-black text-slate-800">Your Action Plan</h2>
                                         {isAiGenerated && (
-                                            <span className="text-[10px] font-black uppercase tracking-widest bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">
+                                            <span className="text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                                                 Syllabus-Based
                                             </span>
                                         )}
@@ -459,7 +459,7 @@ export default function RoadmapPage() {
                                         <div className="space-y-2">
                                             {roadmap.projectsToBuild.map((p, idx) => (
                                                 <div key={idx} className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl hover:bg-white hover:shadow-sm transition-all">
-                                                    <div className="h-5 w-5 rounded-full bg-indigo-500 text-white text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</div>
+                                                    <div className="h-5 w-5 rounded-full bg-primary text-white text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</div>
                                                     <p className="text-xs font-bold text-slate-700">{p}</p>
                                                 </div>
                                             ))}
@@ -474,7 +474,7 @@ export default function RoadmapPage() {
                             <div className="space-y-4">
                                 <div className="flex items-center gap-3">
                                     <h2 className="text-xl font-black text-slate-800">Syllabus Analysis</h2>
-                                    <span className="text-[10px] font-black uppercase tracking-widest bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">
+                                    <span className="text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                                         Gemini AI
                                     </span>
                                 </div>

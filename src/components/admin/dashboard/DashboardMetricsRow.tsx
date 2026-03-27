@@ -9,6 +9,15 @@ interface DashboardMetricsRowProps {
     isLoading?: boolean;
 }
 
+const accentColors = [
+    { icon: 'bg-blue-100 text-blue-700', border: 'border-blue-100 hover:border-blue-200' },
+    { icon: 'bg-emerald-100 text-emerald-700', border: 'border-emerald-100 hover:border-emerald-200' },
+    { icon: 'bg-violet-100 text-violet-700', border: 'border-violet-100 hover:border-violet-200' },
+    { icon: 'bg-amber-100 text-amber-700', border: 'border-amber-100 hover:border-amber-200' },
+    { icon: 'bg-rose-100 text-rose-700', border: 'border-rose-100 hover:border-rose-200' },
+    { icon: 'bg-cyan-100 text-cyan-700', border: 'border-cyan-100 hover:border-cyan-200' },
+];
+
 export const DashboardMetricsRow: React.FC<DashboardMetricsRowProps> = ({ stats, isLoading }) => {
     const { user } = useAuth();
 
@@ -58,30 +67,31 @@ export const DashboardMetricsRow: React.FC<DashboardMetricsRowProps> = ({ stats,
     if (allowedMetrics.length === 0) return null;
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-8">
-            {allowedMetrics.map((metric, idx) => (
-                <div
-                    key={idx}
-                    className="card-nmims p-5 sm:p-6 animate-fade-in-up flex flex-col justify-between hover:border-primary/20 transition-colors group"
-                    style={{ animationDelay: `${0.1 + (idx * 0.05)}s` }}
-                >
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1">
-                            <p className="text-sm font-medium text-muted-foreground mb-1">{metric.title}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mb-8">
+            {allowedMetrics.map((metric, idx) => {
+                const colors = accentColors[idx % accentColors.length];
+                return (
+                    <div
+                        key={idx}
+                        className={`group relative rounded-2xl border bg-white p-5 flex items-start justify-between shadow-sm hover:shadow-xl transition-all animate-fade-in-up ${colors.border}`}
+                        style={{ animationDelay: `${0.1 + (idx * 0.05)}s` }}
+                    >
+                        <div className="relative z-10">
+                            <p className="text-xs font-black uppercase text-muted-foreground tracking-wide">{metric.title}</p>
                             {isLoading ? (
-                                <div className="flex items-center gap-2 h-9">
+                                <div className="flex items-center gap-2 h-10 mt-1">
                                     <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
                                 </div>
                             ) : (
-                                <h3 className="text-2xl sm:text-3xl font-bold text-foreground">{metric.value}</h3>
+                                <p className="text-3xl font-black text-slate-800 mt-1">{metric.value}</p>
                             )}
                         </div>
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0 group-hover:scale-110 transition-transform">
+                        <div className={`p-3 rounded-2xl ${colors.icon} shadow-inner flex-shrink-0 group-hover:scale-110 transition-transform`}>
                             <metric.icon className="w-5 h-5" />
                         </div>
                     </div>
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 };

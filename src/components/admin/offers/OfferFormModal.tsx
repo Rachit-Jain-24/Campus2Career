@@ -119,35 +119,35 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose} />
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
 
-            <div className="relative w-full max-w-3xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-in">
+            <div className="relative w-full max-w-3xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-in">
 
-                <div className="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
-                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-card/50">
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                         <IndianRupee className="w-5 h-5 text-emerald-500" />
                         {isEditMode ? 'Edit Offer Record' : 'Record New Offer'}
                     </h2>
-                    <button onClick={onClose} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+                    <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-slate-900/80">
+                <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-card/80">
                     <form id="offer-form" onSubmit={handleSubmit} className="space-y-8">
 
                         <div className="space-y-4">
-                            <h3 className="text-sm border-b border-slate-800 pb-2 font-bold text-white flex items-center gap-2">
+                            <h3 className="text-sm border-b border-border pb-2 font-bold text-foreground flex items-center gap-2">
                                 <User className="w-4 h-4 text-brand-500" /> Student & Company Mapping
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1 md:col-span-2">
-                                    <label className="text-xs font-semibold text-slate-300">Select Student</label>
+                                    <label className="text-xs font-semibold text-foreground">Select Student</label>
                                     <select
                                         required
                                         value={formData.studentId}
                                         onChange={handleStudentChange}
-                                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:border-brand-500"
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary"
                                     >
                                         <option value="" disabled>-- Select a Student --</option>
                                         {students.map(s => (
@@ -156,12 +156,12 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
                                     </select>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-300">Target Company</label>
+                                    <label className="text-xs font-semibold text-foreground">Target Company</label>
                                     <select
                                         required
                                         value={formData.companyId}
                                         onChange={handleCompanyChange}
-                                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:border-brand-500"
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary"
                                     >
                                         <option value="" disabled>-- Select Company --</option>
                                         {companies.map(c => (
@@ -170,12 +170,12 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
                                     </select>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-300">Source Drive</label>
+                                    <label className="text-xs font-semibold text-foreground">Source Drive</label>
                                     <select
                                         required
                                         value={formData.driveId}
                                         onChange={handleDriveChange}
-                                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:border-brand-500"
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary"
                                     >
                                         <option value="" disabled>-- Select Drive --</option>
                                         {formData.companyId ? drives.filter(d => d.companyId === formData.companyId).map(d => (
@@ -189,46 +189,46 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
                         </div>
 
                         <div className="space-y-4">
-                            <h3 className="text-sm border-b border-slate-800 pb-2 font-bold text-white flex items-center gap-2">
+                            <h3 className="text-sm border-b border-border pb-2 font-bold text-foreground flex items-center gap-2">
                                 <Building2 className="w-4 h-4 text-brand-500" /> Offer Details
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-300">Job Role</label>
+                                    <label className="text-xs font-semibold text-foreground">Job Role</label>
                                     <input
                                         type="text" name="role" required
                                         value={formData.role} onChange={handleChange}
-                                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:border-brand-500"
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary"
                                         placeholder="E.g., Software Development Engineer"
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-300">Package (CTC in LPA)</label>
+                                    <label className="text-xs font-semibold text-foreground">Package (CTC in LPA)</label>
                                     <div className="relative">
-                                        <IndianRupee className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                                        <IndianRupee className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                                         <input
                                             type="number" name="ctc" required step="0.1" min="0"
                                             value={formData.ctc || ''} onChange={handleChange}
-                                            className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:border-brand-500"
+                                            className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary"
                                             placeholder="12.5"
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-300">Joining Location</label>
+                                    <label className="text-xs font-semibold text-foreground">Joining Location</label>
                                     <input
                                         type="text" name="location" required
                                         value={formData.location} onChange={handleChange}
-                                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:border-brand-500"
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary"
                                         placeholder="E.g., Bangalore, Remote"
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-300">Bond Duration</label>
+                                    <label className="text-xs font-semibold text-foreground">Bond Duration</label>
                                     <input
                                         type="text" name="bondDuration"
                                         value={formData.bondDuration || ''} onChange={handleChange}
-                                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:border-brand-500"
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary"
                                         placeholder="E.g., None, 1 Year, 2 Years"
                                     />
                                 </div>
@@ -236,24 +236,24 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
                         </div>
 
                         <div className="space-y-4">
-                            <h3 className="text-sm border-b border-slate-800 pb-2 font-bold text-white flex items-center gap-2">
+                            <h3 className="text-sm border-b border-border pb-2 font-bold text-foreground flex items-center gap-2">
                                 <CalendarIcon className="w-4 h-4 text-brand-500" /> Timeline & Context
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-300">Tentative Joining Date</label>
+                                    <label className="text-xs font-semibold text-foreground">Tentative Joining Date</label>
                                     <input
                                         type="date"
                                         value={formData.joiningDate ? new Date(formData.joiningDate.getTime() - (formData.joiningDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0] : ''}
                                         onChange={handleDateChange}
-                                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:border-brand-500 appearance-none col-span-1"
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary appearance-none col-span-1"
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-300">Offer Status</label>
+                                    <label className="text-xs font-semibold text-foreground">Offer Status</label>
                                     <select
                                         name="status" value={formData.status} onChange={handleChange}
-                                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:border-brand-500"
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary"
                                     >
                                         <option value="issued">Issued / Extended</option>
                                         <option value="accepted">Accepted</option>
@@ -263,23 +263,23 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
                                     </select>
                                 </div>
                                 <div className="space-y-1 md:col-span-2">
-                                    <label className="text-xs font-semibold text-slate-300">Offer Letter Reference URL</label>
+                                    <label className="text-xs font-semibold text-foreground">Offer Letter Reference URL</label>
                                     <div className="relative">
-                                        <LinkIcon className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                                        <LinkIcon className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                                         <input
                                             type="url" name="offerLetterUrl"
                                             value={formData.offerLetterUrl || ''} onChange={handleChange}
-                                            className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:border-brand-500"
+                                            className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary"
                                             placeholder="https://drive.google.com/... or cloud storage link"
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-1 md:col-span-2">
-                                    <label className="text-xs font-semibold text-slate-300">Administrative Notes</label>
+                                    <label className="text-xs font-semibold text-foreground">Administrative Notes</label>
                                     <textarea
                                         name="notes" rows={2}
                                         value={formData.notes || ''} onChange={handleChange}
-                                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:border-brand-500 resize-none"
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary resize-none"
                                         placeholder="Conditions, PPO details, or reasons for rejection..."
                                     />
                                 </div>
@@ -289,12 +289,12 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
                     </form>
                 </div>
 
-                <div className="px-6 py-4 bg-slate-900 border-t border-slate-800 flex justify-end gap-3 rounded-b-2xl">
+                <div className="px-6 py-4 bg-card border-t border-border flex justify-end gap-3 rounded-b-2xl">
                     <button
                         type="button"
                         onClick={onClose}
                         disabled={isSaving}
-                        className="px-5 py-2.5 text-sm font-medium text-slate-300 hover:text-white bg-slate-800 border border-slate-700 hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                        className="px-5 py-2.5 text-sm font-medium text-foreground hover:text-foreground bg-secondary border border-border hover:bg-secondary rounded-lg transition-colors disabled:opacity-50"
                     >
                         Cancel
                     </button>
@@ -302,7 +302,7 @@ export const OfferFormModal: React.FC<OfferFormModalProps> = ({
                         type="submit"
                         form="offer-form"
                         disabled={isSaving}
-                        className="px-5 py-2.5 text-sm font-medium text-white bg-brand-600 hover:bg-brand-500 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
+                        className="px-5 py-2.5 text-sm font-medium text-foreground bg-primary hover:bg-brand-500 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
                     >
                         {isSaving ? (
                             <Loader2 className="w-5 h-5 animate-spin" />

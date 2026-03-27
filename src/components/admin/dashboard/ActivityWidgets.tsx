@@ -46,7 +46,7 @@ const ActivityListItem: React.FC<{ item: ActivityItem }> = ({ item }) => {
             case 'offer': return <Award className="w-4 h-4 text-emerald-500" />;
             case 'drive': return <Briefcase className="w-4 h-4 text-purple-500" />;
             case 'student': return <UserCircle className="w-4 h-4 text-amber-500" />;
-            case 'system': return <Server className="w-4 h-4 text-slate-500" />;
+            case 'system': return <Server className="w-4 h-4 text-muted-foreground" />;
             default: return <Clock className="w-4 h-4 text-primary" />;
         }
     };
@@ -57,7 +57,7 @@ const ActivityListItem: React.FC<{ item: ActivityItem }> = ({ item }) => {
             <div className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center flex-shrink-0 mt-1">
                 {getIcon()}
             </div>
-            <div className="pb-6">
+            <div className="pb-5">
                 <div className="flex items-center gap-2 mb-1">
                     <p className="text-sm font-semibold text-foreground">{item.title}</p>
                     <span className="text-xs text-muted-foreground">• {formatRelativeTime(item.timestamp)}</span>
@@ -70,9 +70,9 @@ const ActivityListItem: React.FC<{ item: ActivityItem }> = ({ item }) => {
 
 export const RecentActivity: React.FC<{ activities: ActivityItem[] }> = ({ activities }) => {
     return (
-        <div className="card-nmims h-full flex flex-col p-0">
+        <div className="rounded-2xl border border-slate-100 bg-white shadow-sm h-full flex flex-col p-0">
             <div className="p-5 sm:p-6 border-b border-border/50 flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-foreground">Recent Activity</h3>
+                <h3 className="text-base font-bold text-slate-800">Recent Activity</h3>
                 <NavLink to="/admin/audit-logs" className="text-xs font-medium text-primary hover:underline flex items-center gap-1">
                     View All <ChevronRight className="w-3 h-3" />
                 </NavLink>
@@ -101,14 +101,14 @@ const InterviewListItem: React.FC<{ item: InterviewItem }> = ({ item }) => {
     return (
         <div className="p-4 rounded-xl border border-border/50 bg-secondary/20 hover:bg-secondary/50 transition-colors flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="flex items-start gap-3">
-                <div className={`w - 10 h - 10 rounded - lg flex items - center justify - center flex - shrink - 0 ${isOngoing ? 'bg-emerald-500/10 text-emerald-500 animate-pulse' : 'bg-primary/10 text-primary'} `}>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isOngoing ? 'bg-emerald-100 text-emerald-700 animate-pulse' : 'bg-primary/10 text-primary'}`}>
                     <CalendarDays className="w-5 h-5" />
                 </div>
                 <div>
                     <h4 className="text-sm font-bold text-foreground">{item.companyName}</h4>
                     <p className="text-xs text-muted-foreground mb-1">{item.role} • {item.type.replace('_', ' ').toUpperCase()}</p>
                     <div className="flex items-center gap-3 text-xs font-medium">
-                        <span className={`px - 2 py - 0.5 rounded - full ${isOngoing ? 'bg-emerald-500/10 text-emerald-500' : 'bg-primary/10 text-primary'} `}>
+                        <span className={`px-2 py-0.5 rounded-full ${isOngoing ? 'bg-emerald-100 text-emerald-700' : 'bg-primary/10 text-primary'}`}>
                             {isOngoing ? 'Ongoing Now' : formatAbsoluteDate(item.date)}
                         </span>
                     </div>
@@ -124,9 +124,9 @@ const InterviewListItem: React.FC<{ item: InterviewItem }> = ({ item }) => {
 
 export const UpcomingInterviewsWidget: React.FC<{ interviews: InterviewItem[] }> = ({ interviews }) => {
     return (
-        <div className="card-nmims h-full flex flex-col p-0">
+        <div className="rounded-2xl border border-slate-100 bg-white shadow-sm h-full flex flex-col p-0">
             <div className="p-5 sm:p-6 border-b border-border/50 flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-foreground">Upcoming Interviews</h3>
+                <h3 className="text-base font-bold text-slate-800">Upcoming Interviews</h3>
                 <NavLink to="/admin/interviews" className="text-xs font-medium text-primary hover:underline flex items-center gap-1">
                     Manage Schedule <ChevronRight className="w-3 h-3" />
                 </NavLink>

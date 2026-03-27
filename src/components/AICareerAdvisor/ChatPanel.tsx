@@ -1,4 +1,5 @@
-// Feature: ai-career-advisor-chatbot
+// Feature: ai-career-advisor-chatbot 
+// chatpanel
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Send, Maximize2, Minimize2, Trash2 } from 'lucide-react';
 import * as chatbotService from '@/lib/ai/chatbotService';

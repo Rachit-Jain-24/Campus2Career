@@ -63,13 +63,13 @@ export const EligibilityRulesPage: React.FC = () => {
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
-                        <div className="p-2 bg-brand-500/20 rounded-lg border border-brand-500/30">
-                            <FileSignature className="w-6 h-6 text-brand-400" />
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
+                            <FileSignature className="w-6 h-6 text-primary" />
                         </div>
                         Eligibility Configurations
                     </h1>
-                    <p className="text-slate-400 mt-2">
+                    <p className="text-muted-foreground mt-2">
                         Manage global student exclusion/inclusion templates. Preview logic instantly against current database entries.
                     </p>
                 </div>
@@ -103,16 +103,16 @@ export const EligibilityRulesPage: React.FC = () => {
 
             {/* Pagination Controls */}
             {!isLoading && totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl">
-                    <div className="text-sm text-slate-400 font-medium">
-                        Showing page <span className="text-white">{page}</span> of <span className="text-white">{totalPages}</span>
+                <div className="flex items-center justify-between px-4 py-3 bg-secondary/50 border border-border/50 rounded-xl">
+                    <div className="text-sm text-muted-foreground font-medium">
+                        Showing page <span className="text-foreground">{page}</span> of <span className="text-foreground">{totalPages}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setPage(page - 1)}
                             disabled={page === 1}
-                            className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="p-2 rounded-lg bg-secondary border border-border text-foreground hover:text-foreground hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             <ChevronLeft className="w-4 h-4" />
                         </button>
@@ -123,8 +123,8 @@ export const EligibilityRulesPage: React.FC = () => {
                                     key={i}
                                     onClick={() => setPage(i + 1)}
                                     className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${page === i + 1
-                                        ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/20'
-                                        : 'text-slate-400 hover:text-white hover:bg-slate-700 bg-slate-800/50 border border-slate-700/50'
+                                        ? 'bg-primary text-white shadow-lg'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary bg-secondary/50 border border-border/50'
                                         }`}
                                 >
                                     {i + 1}
@@ -135,7 +135,7 @@ export const EligibilityRulesPage: React.FC = () => {
                         <button
                             onClick={() => setPage(page + 1)}
                             disabled={page === totalPages}
-                            className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="p-2 rounded-lg bg-secondary border border-border text-foreground hover:text-foreground hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             <ChevronRight className="w-4 h-4" />
                         </button>
@@ -163,26 +163,26 @@ export const EligibilityRulesPage: React.FC = () => {
             {/* Simple Attach to Drive placeholder modal */}
             {attachModalState.isOpen && attachModalState.ruleToAttach && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={closeAttachModal} />
-                    <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6">
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={closeAttachModal} />
+                    <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl p-6">
                         <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                <Link2 className="w-5 h-5 text-brand-500" />
+                            <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                                <Link2 className="w-5 h-5 text-primary" />
                                 Attach to Drive
                             </h3>
-                            <button onClick={closeAttachModal} className="text-slate-400 hover:text-white">
+                            <button onClick={closeAttachModal} className="text-muted-foreground hover:text-foreground">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <p className="text-slate-300 mb-6 text-sm">
-                            Select an upcoming placement drive to directly apply the <span className="font-bold text-white">{attachModalState.ruleToAttach.ruleName}</span> criteria.
+                        <p className="text-foreground mb-6 text-sm">
+                            Select an upcoming placement drive to directly apply the <span className="font-bold text-foreground">{attachModalState.ruleToAttach.ruleName}</span> criteria.
                         </p>
-                        <div className="text-center p-4 border border-slate-700 border-dashed rounded-lg bg-slate-800/50 mb-6">
-                            <p className="text-slate-400 text-sm italic">Drive selector integration placeholder...</p>
+                        <div className="text-center p-4 border border-border border-dashed rounded-lg bg-secondary/50 mb-6">
+                            <p className="text-muted-foreground text-sm italic">Drive selector integration placeholder...</p>
                         </div>
                         <div className="flex justify-end gap-3">
-                            <button onClick={closeAttachModal} className="px-4 py-2 text-sm text-slate-300 hover:text-white">Cancel</button>
-                            <button onClick={closeAttachModal} className="px-4 py-2 text-sm bg-brand-600 hover:bg-brand-500 text-white font-medium rounded-lg shadow-md transition-colors">
+                            <button onClick={closeAttachModal} className="px-4 py-2 text-sm text-foreground hover:text-foreground">Cancel</button>
+                            <button onClick={closeAttachModal} className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 text-white font-medium rounded-lg shadow-md transition-colors">
                                 Confirm Link
                             </button>
                         </div>

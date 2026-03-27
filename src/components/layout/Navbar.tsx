@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, GraduationCap, LogOut, ChevronDown } from "lucide-react";
+import { Bell, Search, GraduationCap, LogOut, ChevronDown, Menu } from "lucide-react";
 import type { UserRole } from "./Sidebar";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
@@ -10,6 +10,7 @@ interface NavbarProps {
     role?: UserRole;
     userYear?: string;
     userProgram?: string;
+    onMenuClick?: () => void;
 }
 
 const roleLabel: Record<UserRole, string> = {
@@ -24,7 +25,7 @@ const roleLabel: Record<UserRole, string> = {
     alumni: "Alumni",
 };
 
-export function Navbar({ userName: propUserName, role: propRole, userYear: propYear, userProgram: propProgram }: NavbarProps) {
+export function Navbar({ userName: propUserName, role: propRole, userYear: propYear, userProgram: propProgram, onMenuClick }: NavbarProps) {
     const { user, logout } = useAuth();
     const [notifOpen, setNotifOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -61,7 +62,21 @@ export function Navbar({ userName: propUserName, role: propRole, userYear: propY
     ];
 
     return (
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/90 backdrop-blur-md px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/90 backdrop-blur-md px-4 md:px-6">
+            {/* Mobile Menu Toggle */}
+            <button
+                onClick={onMenuClick}
+                className="rounded-lg p-2 hover:bg-secondary lg:hidden"
+            >
+                <Menu className="h-5 w-5" />
+            </button>
+
+            {/* Logo placeholder for mobile */}
+            <div className="flex items-center gap-2 lg:hidden">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary text-white">
+                    <GraduationCap className="h-4 w-4" />
+                </div>
+            </div>
             {/* Search */}
             <div className="flex-1">
                 <div className="relative max-w-sm">

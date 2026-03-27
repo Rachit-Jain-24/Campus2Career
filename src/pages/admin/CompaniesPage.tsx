@@ -58,13 +58,13 @@ export const CompaniesPage: React.FC = () => {
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
-                        <div className="p-2 bg-brand-500/20 rounded-lg border border-brand-500/30">
-                            <Building2 className="w-6 h-6 text-brand-400" />
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
+                            <Building2 className="w-6 h-6 text-primary" />
                         </div>
                         Company Management
                     </h1>
-                    <p className="text-slate-400 mt-2">
+                    <p className="text-muted-foreground mt-2">
                         Manage placement partners, onboarding status, and drive eligibility criteria.
                     </p>
                 </div>
@@ -97,16 +97,16 @@ export const CompaniesPage: React.FC = () => {
 
             {/* Pagination Controls */}
             {!isLoading && totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl">
-                    <div className="text-sm text-slate-400 font-medium">
-                        Showing page <span className="text-white">{page}</span> of <span className="text-white">{totalPages}</span>
+                <div className="flex items-center justify-between px-4 py-3 bg-secondary/50 border border-border/50 rounded-xl">
+                    <div className="text-sm text-muted-foreground font-medium">
+                        Showing page <span className="text-foreground">{page}</span> of <span className="text-foreground">{totalPages}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setPage(page - 1)}
                             disabled={page === 1}
-                            className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="p-2 rounded-lg bg-secondary border border-border text-foreground hover:text-foreground hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             <ChevronLeft className="w-4 h-4" />
                         </button>
@@ -117,8 +117,8 @@ export const CompaniesPage: React.FC = () => {
                                     key={i}
                                     onClick={() => setPage(i + 1)}
                                     className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${page === i + 1
-                                        ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/20'
-                                        : 'text-slate-400 hover:text-white hover:bg-slate-700 bg-slate-800/50 border border-slate-700/50'
+                                        ? 'bg-primary text-foreground shadow-lg shadow-brand-500/20'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary bg-secondary/50 border border-border/50'
                                         }`}
                                 >
                                     {i + 1}
@@ -129,7 +129,7 @@ export const CompaniesPage: React.FC = () => {
                         <button
                             onClick={() => setPage(page + 1)}
                             disabled={page === totalPages}
-                            className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="p-2 rounded-lg bg-secondary border border-border text-foreground hover:text-foreground hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             <ChevronRight className="w-4 h-4" />
                         </button>

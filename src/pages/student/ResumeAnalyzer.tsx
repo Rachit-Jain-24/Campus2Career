@@ -178,10 +178,10 @@ export default function ResumeAnalyzer() {
                                 <div className="space-y-6">
                                     {/* Score Section */}
                                     <div className="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                                        <div className={`h-24 w-24 rounded-full flex items-center justify-center shadow-lg border-4 ${result.score > 75 ? 'border-green-500 text-green-600 bg-green-50' : result.score > 50 ? 'border-orange-500 text-orange-600 bg-orange-50' : 'border-red-500 text-red-600 bg-red-50'} text-3xl font-black mb-3`}>
+                                        <div className={`h-24 w-24 rounded-full flex items-center justify-center shadow-lg border-4 ${result.score > 75 ? 'border-green-500 text-green-600 bg-green-50' : result.score > 50 ? 'border-primary text-primary bg-primary/5' : 'border-red-500 text-red-600 bg-red-50'} text-3xl font-black mb-3`}>
                                             {result.score}%
                                         </div>
-                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Match Probability</p>
+                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest text-center">ATS Match Probability</p>
                                         <p className="text-sm font-medium text-slate-700 mt-2 italic text-center">"{result.summary}"</p>
                                     </div>
 

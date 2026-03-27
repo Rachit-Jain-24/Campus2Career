@@ -1,4 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
+
+
 
 /* ── CSS Custom Properties (Design Tokens from Next.js project) ── */
 @theme {
@@ -337,7 +340,7 @@
 }
 
 .year-badge-3 {
-  background: linear-gradient(90deg, hsl(38, 92%, 50%), hsl(38, 92%, 60%));
+  background: linear-gradient(90deg, hsl(348, 83%, 67%), hsl(348, 83%, 57%));
   color: white;
 }
 

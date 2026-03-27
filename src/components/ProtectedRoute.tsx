@@ -106,8 +106,8 @@ export const GuestRoute: React.FC<{ children: React.ReactNode }> = ({ children }
     }
 
     if (user) {
-        // Redirect to switch account page instead of auto-redirecting
-        return <Navigate to="/switch-account" replace />;
+        // Redirect to main path selection logic in App.tsx
+        return <Navigate to="/" replace />;
     }
 
     return <>{children}</>;

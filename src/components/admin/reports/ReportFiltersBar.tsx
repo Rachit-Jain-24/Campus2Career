@@ -23,18 +23,18 @@ export const ReportFiltersBar: React.FC<ReportFiltersBarProps> = ({
     const canExport = hasRole(user, ['system_admin', 'placement_officer', 'dean', 'director']);
 
     return (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 space-y-4 print:hidden">
+        <div className="bg-card border border-border rounded-xl p-4 sm:p-5 space-y-4 print:hidden">
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center pb-4 border-b border-slate-800/50">
-                <div className="flex items-center gap-2 text-slate-300">
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center pb-4 border-b border-border/50">
+                <div className="flex items-center gap-2 text-foreground">
                     <Filter className="w-5 h-5 text-indigo-500" />
-                    <h3 className="font-bold text-white text-base">Analytical Filters</h3>
+                    <h3 className="font-bold text-foreground text-base">Analytical Filters</h3>
                 </div>
 
                 <div className="flex items-center gap-3">
                     <button
                         onClick={resetFilters}
-                        className="flex items-center gap-1.5 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg text-sm font-medium transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg text-sm font-medium transition-colors"
                     >
                         <RotateCcw className="w-4 h-4" />
                         Reset All
@@ -44,14 +44,14 @@ export const ReportFiltersBar: React.FC<ReportFiltersBarProps> = ({
                         <>
                             <button
                                 onClick={onPrint}
-                                className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-sm font-medium transition-colors"
+                                className="flex items-center gap-2 px-3 py-2 bg-secondary hover:bg-secondary text-foreground hover:text-foreground rounded-lg text-sm font-medium transition-colors"
                             >
                                 <Printer className="w-4 h-4" />
                                 <span className="hidden sm:inline">Print</span>
                             </button>
                             <button
                                 onClick={onExportCSV}
-                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-500/20"
+                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-foreground rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-500/20"
                             >
                                 <Download className="w-4 h-4" />
                                 <span className="hidden sm:inline">Export CSV</span>
@@ -65,13 +65,13 @@ export const ReportFiltersBar: React.FC<ReportFiltersBarProps> = ({
 
                 {/* Department Filter */}
                 <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                         <Briefcase className="w-3.5 h-3.5" /> Department
                     </label>
                     <select
                         value={filters.department}
                         onChange={(e) => updateFilter('department', e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-indigo-500"
                     >
                         <option value="all">All Departments</option>
                         <option value="B.Tech - Computer Engineering">B.Tech - Computer Eng</option>
@@ -83,13 +83,13 @@ export const ReportFiltersBar: React.FC<ReportFiltersBarProps> = ({
 
                 {/* Batch Filter */}
                 <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                         <GraduationCap className="w-3.5 h-3.5" /> Batch
                     </label>
                     <select
                         value={filters.batchYear}
                         onChange={(e) => updateFilter('batchYear', e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-indigo-500"
                     >
                         <option value="all">All Batches</option>
                         <option value="Final Year">Final Year</option>
@@ -100,13 +100,13 @@ export const ReportFiltersBar: React.FC<ReportFiltersBarProps> = ({
 
                 {/* Academic Year */}
                 <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5" /> Academic Year
                     </label>
                     <select
                         value={filters.academicYear}
                         onChange={(e) => updateFilter('academicYear', e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-indigo-500"
                     >
                         <option value="all">All Years</option>
                         <option value="2023-24">2023-2024</option>
@@ -117,7 +117,7 @@ export const ReportFiltersBar: React.FC<ReportFiltersBarProps> = ({
 
                 {/* Date From */}
                 <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5" /> Date From
                     </label>
                     <input
@@ -125,13 +125,13 @@ export const ReportFiltersBar: React.FC<ReportFiltersBarProps> = ({
                         title="Start Date"
                         value={filters.dateRange.start ? new Date(filters.dateRange.start).toISOString().split('T')[0] : ''}
                         onChange={(e) => updateFilter('dateRange', { ...filters.dateRange, start: e.target.value ? new Date(e.target.value) : null })}
-                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none"
+                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-indigo-500 appearance-none"
                     />
                 </div>
 
                 {/* Date To */}
                 <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5" /> Date To
                     </label>
                     <input
@@ -139,7 +139,7 @@ export const ReportFiltersBar: React.FC<ReportFiltersBarProps> = ({
                         title="End Date"
                         value={filters.dateRange.end ? new Date(filters.dateRange.end).toISOString().split('T')[0] : ''}
                         onChange={(e) => updateFilter('dateRange', { ...filters.dateRange, end: e.target.value ? new Date(e.target.value) : null })}
-                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500 appearance-none"
+                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-indigo-500 appearance-none"
                     />
                 </div>
 

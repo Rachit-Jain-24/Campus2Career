@@ -2,14 +2,15 @@ import { useState } from 'react';
 import nmimsLogo from '../../assets/logo.png';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { User, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, CheckCircle, Shield } from 'lucide-react';
+import { getDefaultAdminRoute } from '../../config/admin/roleRoutes';
 
 export default function LoginPage() {
     const [sapId, setSapId] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
-    const { login, isLoading } = useAuth();
+    const { login, user, isLoading } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const justRegistered = location.state?.registered === true;
@@ -19,7 +20,29 @@ export default function LoginPage() {
         setError('');
         try {
             await login(sapId, password);
-            navigate('/');
+            // After login, read the updated user from context to navigate correctly.
+            // We use a short timeout so onAuthStateChanged can hydrate the user first.
+            setTimeout(() => {
+                // Re-read user from localStorage since state may not have updated yet
+                const stored = localStorage.getItem('c2c_user');
+                if (stored) {
+                    const u = JSON.parse(stored);
+                    if (u.role && u.role !== 'student') {
+                        // Admin — go to their role-specific dashboard
+                        navigate(getDefaultAdminRoute(u.role));
+                    } else if (!u.careerDiscoveryCompleted) {
+                        navigate('/career-discovery');
+                    } else if (!u.profileCompleted) {
+                        navigate('/student/profile-setup');
+                    } else if (!u.assessmentCompleted) {
+                        navigate('/student/assessment');
+                    } else {
+                        navigate('/student/dashboard');
+                    }
+                } else {
+                    navigate('/');
+                }
+            }, 500);
         } catch (err: any) {
             setError(err.message || 'Login failed. Please check your credentials.');
         }
@@ -95,23 +118,23 @@ export default function LoginPage() {
                     {/* Heading */}
                     <div className="mb-8">
                         <h2 className="text-3xl font-black text-slate-900 tracking-tight">Welcome back</h2>
-                        <p className="text-slate-500 mt-1.5 text-sm">Sign in with your SAP ID to access the portal</p>
+                        <p className="text-slate-500 mt-1.5 text-sm">Sign in with your email or SAP ID to access the portal</p>
                     </div>
 
                     {/* Success Banner */}
                     {justRegistered && (
                         <div className="mb-6 flex items-start gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium">
                             <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
-                            <span>Account created successfully! Please sign in with your SAP ID and password.</span>
+                            <span>Account created successfully! Please sign in with your email and password.</span>
                         </div>
                     )}
 
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-5">
 
-                        {/* SAP ID */}
+                        {/* Email or SAP ID */}
                         <div className="space-y-1.5">
-                            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">SAP ID</label>
+                            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">Email or SAP ID</label>
                             <div className="relative">
                                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
                                     <User className="h-4.5 w-4.5 h-[18px] w-[18px]" />
@@ -119,7 +142,7 @@ export default function LoginPage() {
                                 <input
                                     id="sapId"
                                     type="text"
-                                    placeholder="e.g. 70572200036"
+                                    placeholder="e.g. yourname@email.com or 70572200036"
                                     value={sapId}
                                     onChange={e => setSapId(e.target.value)}
                                     required
@@ -193,8 +216,27 @@ export default function LoginPage() {
                         Create an Account
                     </Link>
 
+                    {/* Admin Portal Access */}
+                    <div className="mt-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="flex-1 h-px bg-slate-100" />
+                            <span className="text-[11px] text-slate-300 font-semibold uppercase tracking-widest">Staff &amp; Admin</span>
+                            <div className="flex-1 h-px bg-slate-100" />
+                        </div>
+
+                        <button
+                            id="adminPortalBtn"
+                            type="button"
+                            onClick={() => navigate('/portal')}
+                            className="w-full flex items-center justify-center gap-2.5 py-3 border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 text-slate-500 hover:text-slate-700 font-semibold rounded-xl text-sm tracking-wide transition-all group"
+                        >
+                            <Shield className="h-4 w-4 text-slate-400 group-hover:text-[#8B1A1A] transition-colors" />
+                            <span>Admin / Staff Login</span>
+                        </button>
+                    </div>
+
                     {/* Footer */}
-                    <p className="mt-10 text-center text-[11px] text-slate-400 font-medium">
+                    <p className="mt-8 text-center text-[11px] text-slate-400 font-medium">
                         NMIMS Hyderabad • Campus2Career • 2026
                     </p>
                 </div>

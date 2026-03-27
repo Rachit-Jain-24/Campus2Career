@@ -20,7 +20,7 @@ export async function cleanDuplicateBatchAnalytics() {
     
     try {
         // Fetch all student records
-        const usersRef = collection(db, 'users');
+        const usersRef = collection(db, 'students');
         const querySnapshot = await getDocs(usersRef);
         
         console.log(`📊 Total entries found: ${querySnapshot.size}`);
@@ -117,7 +117,7 @@ export async function previewDuplicates() {
     console.log('\n🔍 Previewing duplicate entries...\n');
     
     try {
-        const usersRef = collection(db, 'users');
+        const usersRef = collection(db, 'students');
         const querySnapshot = await getDocs(usersRef);
         
         console.log(`📊 Total entries: ${querySnapshot.size}\n`);

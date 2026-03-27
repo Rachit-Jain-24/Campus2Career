@@ -1,153 +1,282 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-    Landmark, BarChart3, FileCheck, IndianRupee, Building2, TrendingUp,
-    GraduationCap, Handshake, ArrowRight, Users, BookOpen, Loader2, Inbox
+    Users, TrendingUp, Building2, Award, BarChart3, Briefcase,
+    ArrowRight, Loader2, Inbox, RefreshCw, GraduationCap,
+    FileText, ClipboardList, ShieldCheck, IndianRupee
 } from 'lucide-react';
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+    ResponsiveContainer, PieChart, Pie, Cell, Legend
+} from 'recharts';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '../../../lib/firebase';
 import { WelcomeCard } from '../../../components/admin/dashboard/WelcomeCard';
-import { useDashboardData } from '../../../hooks/admin/useDashboardData';
+
+const parseCgpa = (v: string | number | undefined): number => {
+    if (!v) return 0;
+    const n = typeof v === 'number' ? v : parseFloat(v as string);
+    return isNaN(n) ? 0 : n;
+};
+
+const CHART_COLORS = ['#dc2626', '#2563eb', '#16a34a', '#d97706', '#7c3aed', '#0891b2'];
+const TT_STYLE = { contentStyle: { background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '0.75rem', color: 'var(--color-foreground)' }, labelStyle: { color: 'var(--color-foreground)' } };
+
+interface StudentRaw { id: string; name: string; branch: string; currentYear: number; cgpa: string | number; placementStatus?: string; }
+interface OfferRaw { id: string; studentName: string; companyName: string; ctc?: number; packageLPA?: number; status?: string; role?: string; }
+interface CompanyRaw { id: string; name: string; industry?: string; status?: string; }
+interface AdminUserRaw { id: string; name: string; role: string; status?: string; }
+
+const KpiCard: React.FC<{ title: string; value: string | number; subtitle: string; icon: React.ElementType; accent: string; loading: boolean }> = ({ title, value, subtitle, icon: Icon, accent, loading }) => (
+    <div className="card-nmims p-5">
+        <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-black uppercase text-slate-400 tracking-wide">{title}</span>
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${accent}`}>
+                <Icon className="w-4 h-4" />
+            </div>
+        </div>
+        {loading ? <div className="h-8 w-24 bg-secondary animate-pulse rounded-lg" /> : <p className="text-3xl font-black text-slate-800">{value}</p>}
+        <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+    </div>
+);
+
+const SectionTitle: React.FC<{ icon: React.ElementType; title: string; to?: string; toLabel?: string }> = ({ icon: Icon, title, to, toLabel }) => (
+    <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-foreground flex items-center gap-2 text-base">
+            <Icon className="w-4 h-4 text-primary" />{title}
+        </h3>
+        {to && <NavLink to={to} className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 font-medium">{toLabel || 'View all'}<ArrowRight className="w-3 h-3" /></NavLink>}
+    </div>
+);
 
 export const DeanDashboard: React.FC = () => {
-    const { stats, departmentStats, roleCounts, offers, isLoading } = useDashboardData();
+    const [students, setStudents] = useState<StudentRaw[]>([]);
+    const [offers, setOffers] = useState<OfferRaw[]>([]);
+    const [companies, setCompanies] = useState<CompanyRaw[]>([]);
+    const [adminUsers, setAdminUsers] = useState<AdminUserRaw[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [lastRefreshed, setLastRefreshed] = useState(new Date());
 
-    // Live KPIs
-    const avgPackage = offers.length > 0
-        ? (offers.reduce((sum: number, o: any) => sum + (o.ctc || o.packageLPA || 0), 0) / offers.length).toFixed(1)
-        : '0';
+    const fetchData = async () => {
+        setIsLoading(true);
+        const [s, o, c, a] = await Promise.allSettled([
+            getDocs(query(collection(db, 'students'), orderBy('name'))),
+            getDocs(collection(db, 'offers')),
+            getDocs(collection(db, 'companies')),
+            getDocs(collection(db, 'adminUsers')),
+        ]);
+        if (s.status === 'fulfilled') setStudents(s.value.docs.map(d => ({ id: d.id, ...d.data() } as StudentRaw)));
+        if (o.status === 'fulfilled') setOffers(o.value.docs.map(d => ({ id: d.id, ...d.data() } as OfferRaw)));
+        if (c.status === 'fulfilled') setCompanies(c.value.docs.map(d => ({ id: d.id, ...d.data() } as CompanyRaw)));
+        if (a.status === 'fulfilled') setAdminUsers(a.value.docs.map(d => ({ id: d.id, ...d.data() } as AdminUserRaw)));
+        setLastRefreshed(new Date());
+        setIsLoading(false);
+    };
 
-    const DEAN_KPIS = [
-        { title: 'Overall Placement', value: isLoading ? '...' : `${stats.placementRate}%`, icon: TrendingUp, subtitle: 'Across all departments', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-        { title: 'Total Students', value: isLoading ? '...' : stats.totalStudents.toLocaleString(), icon: GraduationCap, subtitle: 'Registered in system', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-        { title: 'Average Package', value: isLoading ? '...' : `${avgPackage} LPA`, icon: IndianRupee, subtitle: 'Across all offers', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-        { title: 'Industry Partners', value: isLoading ? '...' : stats.companiesOnboarded.toLocaleString(), icon: Handshake, subtitle: 'Companies onboarded', color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
-    ];
+    useEffect(() => { fetchData(); }, []);
 
-    const DEAN_ACTIONS = [
-        { label: 'Annual Reports', icon: BarChart3, path: '/admin/reports', color: 'text-blue-400 bg-blue-500/10' },
-        { label: 'Review Policy', icon: FileCheck, path: '/admin/reports', color: 'text-emerald-400 bg-emerald-500/10' },
-        { label: 'Budget Insights', icon: IndianRupee, path: '/admin/reports', color: 'text-amber-400 bg-amber-500/10' },
-        { label: 'Department Performance', icon: Building2, path: '/admin/reports', color: 'text-purple-400 bg-purple-500/10' },
-    ];
+    const kpis = useMemo(() => {
+        const total = students.length;
+        const placed = students.filter(s => s.placementStatus === 'placed').length;
+        const rate = total > 0 ? ((placed / total) * 100).toFixed(1) : '0';
+        const ctcs = offers.map(o => o.ctc || o.packageLPA || 0).filter(v => v > 0);
+        const avgPkg = ctcs.length ? (ctcs.reduce((a, b) => a + b, 0) / ctcs.length).toFixed(1) : '0';
+        const highPkg = ctcs.length ? Math.max(...ctcs).toFixed(1) : '0';
+        return { total, placed, rate, avgPkg, highPkg, companies: companies.length, offers: offers.length };
+    }, [students, offers, companies]);
+
+    const deptData = useMemo(() => {
+        const map: Record<string, { total: number; placed: number; cgpaSum: number }> = {};
+        students.forEach(s => {
+            const d = s.branch || 'Unknown';
+            if (!map[d]) map[d] = { total: 0, placed: 0, cgpaSum: 0 };
+            map[d].total++;
+            if (s.placementStatus === 'placed') map[d].placed++;
+            map[d].cgpaSum += parseCgpa(s.cgpa);
+        });
+        return Object.entries(map).map(([dept, d]) => ({
+            dept: dept.length > 12 ? dept.slice(0, 12) + '…' : dept,
+            fullDept: dept,
+            total: d.total, placed: d.placed, unplaced: d.total - d.placed,
+            avgCgpa: d.total > 0 ? parseFloat((d.cgpaSum / d.total).toFixed(2)) : 0,
+            rate: d.total > 0 ? parseFloat(((d.placed / d.total) * 100).toFixed(1)) : 0,
+        })).sort((a, b) => b.total - a.total);
+    }, [students]);
+
+    const yearCgpa = useMemo(() => {
+        const map: Record<string, { sum: number; count: number }> = {};
+        students.forEach(s => {
+            const yr = `Yr ${s.currentYear || '?'}`;
+            if (!map[yr]) map[yr] = { sum: 0, count: 0 };
+            const c = parseCgpa(s.cgpa);
+            if (c > 0) { map[yr].sum += c; map[yr].count++; }
+        });
+        return Object.entries(map).map(([year, d]) => ({
+            year, avgCgpa: d.count > 0 ? parseFloat((d.sum / d.count).toFixed(2)) : 0,
+        })).sort((a, b) => a.year.localeCompare(b.year));
+    }, [students]);
+
+    const adminRoles = useMemo(() => {
+        const map: Record<string, number> = {};
+        adminUsers.forEach(u => { map[u.role] = (map[u.role] || 0) + 1; });
+        return Object.entries(map).map(([name, value]) => ({ name: name.replace('_', ' '), value }));
+    }, [adminUsers]);
+
+    const offerColor = (s?: string) => {
+        const st = (s || '').toLowerCase();
+        if (st === 'accepted') return 'text-emerald-600 bg-emerald-50 border-emerald-200';
+        if (st === 'pending' || st === 'issued') return 'text-amber-600 bg-amber-50 border-amber-200';
+        if (st === 'rejected') return 'text-red-600 bg-red-50 border-red-200';
+        return 'text-muted-foreground bg-secondary border-border';
+    };
 
     return (
-        <div className="space-y-6 sm:space-y-8 animate-fade-in-up pb-8">
-            <WelcomeCard />
-
-            {/* Quick Actions */}
-            <div>
-                <h3 className="text-lg font-semibold mb-4 text-foreground">Strategic Actions</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                    {DEAN_ACTIONS.map((action, idx) => (
-                        <NavLink
-                            key={idx}
-                            to={action.path}
-                            className="flex flex-col items-center justify-center p-4 sm:p-5 card-nmims hover:bg-secondary/50 hover:border-primary/30 transition-all duration-300 group shadow-sm hover:shadow-md text-center"
-                        >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ${action.color}`}>
-                                <action.icon className="w-5 h-5" />
-                            </div>
-                            <span className="text-xs sm:text-sm font-medium text-foreground group-hover:text-primary transition-colors">{action.label}</span>
-                        </NavLink>
-                    ))}
-                </div>
+        <div className="space-y-6 pb-10 animate-fade-in-up">
+            <div className="flex items-start gap-4">
+                <div className="flex-1"><WelcomeCard /></div>
+                <button onClick={fetchData} disabled={isLoading}
+                    className="mt-1 flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground border border-border rounded-xl hover:bg-secondary transition-all disabled:opacity-50 flex-shrink-0">
+                    <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    <span className="hidden sm:inline">Refresh</span>
+                </button>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {DEAN_KPIS.map((kpi, idx) => (
-                    <div key={idx} className={`card-nmims p-5 border ${kpi.color.split(' ').slice(1).join(' ')}`}>
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm text-muted-foreground font-medium">{kpi.title}</span>
-                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${kpi.color}`}>
-                                <kpi.icon className="w-5 h-5" />
-                            </div>
-                        </div>
-                        <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{kpi.subtitle}</p>
-                    </div>
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                    { label: 'Students', icon: GraduationCap, path: '/dean/students', accent: 'bg-blue-100 text-blue-700' },
+                    { label: 'Batch Analytics', icon: BarChart3, path: '/dean/batch-analytics', accent: 'bg-purple-100 text-purple-700' },
+                    { label: 'Reports', icon: FileText, path: '/dean/reports', accent: 'bg-emerald-100 text-emerald-700' },
+                    { label: 'Audit Logs', icon: ClipboardList, path: '/dean/audit-logs', accent: 'bg-amber-100 text-amber-700' },
+                ].map((a, i) => (
+                    <NavLink key={i} to={a.path} className="card-nmims flex flex-col items-center justify-center p-4 hover:border-primary/30 transition-all group text-center">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform ${a.accent}`}><a.icon className="w-5 h-5" /></div>
+                        <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">{a.label}</span>
+                    </NavLink>
                 ))}
             </div>
 
-            {/* Department Overview + Policy Queue */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Department Performance */}
-                <div className="lg:col-span-2 card-nmims p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                            <Landmark className="w-5 h-5 text-primary" />
-                            Department Placement Overview
-                        </h3>
-                        <NavLink to="/admin/reports" className="text-sm text-primary hover:text-primary/80 flex items-center gap-1">
-                            Full Report <ArrowRight className="w-4 h-4" />
-                        </NavLink>
-                    </div>
-                    {isLoading ? (
-                        <div className="flex items-center justify-center py-8">
-                            <Loader2 className="w-6 h-6 text-primary animate-spin" />
-                        </div>
-                    ) : departmentStats.length > 0 ? (
-                        <div className="space-y-4">
-                            {departmentStats.map((dept, idx) => (
-                                <div key={idx} className="flex items-center gap-4">
-                                    <span className="text-sm font-medium text-foreground w-40 truncate">{dept.name}</span>
-                                    <div className="flex-1 bg-secondary rounded-full h-3 overflow-hidden">
-                                        <div
-                                            className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full transition-all duration-500"
-                                            style={{ width: `${dept.rate}%` }}
-                                        />
-                                    </div>
-                                    <span className="text-sm font-bold text-foreground w-16 text-right">{dept.rate}%</span>
-                                    <span className="text-xs text-muted-foreground w-20 text-right">{dept.placed}/{dept.total}</span>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                            <Inbox className="w-8 h-8 mb-2" />
-                            <p className="text-sm">No department data available yet.</p>
-                        </div>
-                    )}
-                </div>
+            {/* KPI Row 1 */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <KpiCard title="Total Students" value={kpis.total} subtitle="Registered in system" icon={Users} accent="bg-blue-100 text-blue-700" loading={isLoading} />
+                <KpiCard title="Placement Rate" value={`${kpis.rate}%`} subtitle="Students placed" icon={TrendingUp} accent="bg-emerald-100 text-emerald-700" loading={isLoading} />
+                <KpiCard title="Avg Package" value={`₹${kpis.avgPkg} LPA`} subtitle="From confirmed offers" icon={IndianRupee} accent="bg-amber-100 text-amber-700" loading={isLoading} />
+                <KpiCard title="Highest Package" value={`₹${kpis.highPkg} LPA`} subtitle="Best offer this season" icon={Award} accent="bg-purple-100 text-purple-700" loading={isLoading} />
+            </div>
 
-                {/* Policy Review Queue — No Firestore backing */}
+            {/* KPI Row 2 */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <KpiCard title="Companies" value={kpis.companies} subtitle="Onboarded partners" icon={Building2} accent="bg-cyan-100 text-cyan-700" loading={isLoading} />
+                <KpiCard title="Total Offers" value={kpis.offers} subtitle="Offers issued" icon={Briefcase} accent="bg-rose-100 text-rose-700" loading={isLoading} />
+                <KpiCard title="Students Placed" value={kpis.placed} subtitle="Confirmed placements" icon={GraduationCap} accent="bg-green-100 text-green-700" loading={isLoading} />
+                <KpiCard title="Admin Staff" value={adminUsers.length} subtitle="Platform administrators" icon={ShieldCheck} accent="bg-indigo-100 text-indigo-700" loading={isLoading} />
+            </div>
+
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="card-nmims p-6">
-                    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-6">
-                        <FileCheck className="w-5 h-5 text-primary" />
-                        Policy Queue
-                    </h3>
-                    <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                        <Inbox className="w-8 h-8 mb-2" />
-                        <p className="text-sm text-center">No policy items pending review.</p>
-                        <p className="text-xs mt-1 text-center">Policy queue will appear here when configured.</p>
-                    </div>
+                    <SectionTitle icon={BarChart3} title="Department-wise Placement" to="/dean/batch-analytics" />
+                    {isLoading ? <div className="h-56 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                        : deptData.length === 0 ? <div className="h-56 flex flex-col items-center justify-center text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No data yet</p></div>
+                        : <ResponsiveContainer width="100%" height={220}>
+                            <BarChart data={deptData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                                <XAxis dataKey="dept" tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }} />
+                                <YAxis tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }} />
+                                <Tooltip {...TT_STYLE} />
+                                <Legend />
+                                <Bar dataKey="placed" name="Placed" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="unplaced" name="Unplaced" fill="#dc2626" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>}
+                </div>
+
+                <div className="card-nmims p-6">
+                    <SectionTitle icon={TrendingUp} title="Year-wise Avg CGPA" />
+                    {isLoading ? <div className="h-56 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                        : yearCgpa.length === 0 ? <div className="h-56 flex flex-col items-center justify-center text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No data yet</p></div>
+                        : <ResponsiveContainer width="100%" height={220}>
+                            <BarChart data={yearCgpa} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                                <XAxis dataKey="year" tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }} />
+                                <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }} />
+                                <Tooltip {...TT_STYLE} />
+                                <Bar dataKey="avgCgpa" name="Avg CGPA" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>}
                 </div>
             </div>
 
-            {/* Hierarchy Oversight */}
-            <div className="card-nmims p-6">
-                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-                    <Users className="w-5 h-5 text-primary" />
-                    Hierarchical Oversight
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">As Dean, you oversee all administrative roles across the placement ecosystem.</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                    {[
-                        { role: 'Director', icon: Building2, count: roleCounts.director, color: 'text-blue-400 bg-blue-500/10' },
-                        { role: 'Program Chair', icon: BookOpen, count: roleCounts.program_chair, color: 'text-purple-400 bg-purple-500/10' },
-                        { role: 'Faculty', icon: GraduationCap, count: roleCounts.faculty, color: 'text-emerald-400 bg-emerald-500/10' },
-                        { role: 'Placement Officer', icon: Handshake, count: roleCounts.placement_officer, color: 'text-amber-400 bg-amber-500/10' },
-                        { role: 'System Admin', icon: Landmark, count: roleCounts.system_admin, color: 'text-rose-400 bg-rose-500/10' },
-                    ].map((item, idx) => (
-                        <div key={idx} className="flex flex-col items-center p-4 rounded-xl bg-secondary/30 border border-border/50">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${item.color}`}>
-                                <item.icon className="w-5 h-5" />
-                            </div>
-                            <span className="text-xs font-medium text-muted-foreground">{item.role}</span>
-                            <span className="text-lg font-bold text-foreground">{isLoading ? '...' : item.count}</span>
-                        </div>
-                    ))}
+            {/* Dept Table + Admin Roles */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="card-nmims p-6 lg:col-span-2">
+                    <SectionTitle icon={BarChart3} title="Department Performance" to="/dean/batch-analytics" toLabel="Full analytics" />
+                    {isLoading ? <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-secondary animate-pulse rounded-lg" />)}</div>
+                        : deptData.length === 0 ? <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No department data</p></div>
+                        : <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead><tr className="border-b border-border">
+                                    {['Department', 'Total', 'Placed', 'Rate', 'Avg CGPA'].map(h => (
+                                        <th key={h} className={`py-2.5 text-xs font-semibold text-muted-foreground ${h === 'Department' ? 'text-left' : 'text-right'}`}>{h}</th>
+                                    ))}
+                                </tr></thead>
+                                <tbody>
+                                    {deptData.map((d, i) => (
+                                        <tr key={i} className="border-b border-border/40 hover:bg-secondary/50 transition-colors">
+                                            <td className="py-2.5 font-medium text-foreground">{d.fullDept}</td>
+                                            <td className="py-2.5 text-right text-muted-foreground">{d.total}</td>
+                                            <td className="py-2.5 text-right font-semibold text-emerald-600">{d.placed}</td>
+                                            <td className="py-2.5 text-right">
+                                                <span className={`font-semibold ${d.rate >= 50 ? 'text-emerald-600' : 'text-amber-600'}`}>{d.rate}%</span>
+                                            </td>
+                                            <td className="py-2.5 text-right">
+                                                <span className={`font-semibold ${d.avgCgpa >= 8 ? 'text-emerald-600' : d.avgCgpa >= 7 ? 'text-amber-600' : 'text-red-600'}`}>{d.avgCgpa.toFixed(2)}</span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>}
+                </div>
+
+                <div className="card-nmims p-6">
+                    <SectionTitle icon={ShieldCheck} title="Admin Role Distribution" />
+                    {isLoading ? <div className="h-52 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+                        : adminRoles.length === 0 ? <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No admin data</p></div>
+                        : <ResponsiveContainer width="100%" height={210}>
+                            <PieChart>
+                                <Pie data={adminRoles} cx="50%" cy="50%" outerRadius={72} dataKey="value" nameKey="name" label={({ percent }) => `${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                                    {adminRoles.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                                </Pie>
+                                <Tooltip {...TT_STYLE} />
+                                <Legend iconSize={10} />
+                            </PieChart>
+                        </ResponsiveContainer>}
                 </div>
             </div>
+
+            {/* Recent Offers */}
+            <div className="card-nmims p-6">
+                <SectionTitle icon={Briefcase} title="Recent Offers" to="/dean/reports" toLabel="All reports" />
+                {isLoading ? <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-secondary animate-pulse rounded-xl" />)}</div>
+                    : offers.length === 0 ? <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No offers yet. Seed admin data first.</p></div>
+                    : <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {offers.slice(0, 8).map((o, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors border border-border/50">
+                                <div className="min-w-0">
+                                    <p className="font-semibold text-foreground text-sm truncate">{o.studentName || 'Student'}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{o.companyName} · {o.role || 'Role N/A'}</p>
+                                </div>
+                                <div className="text-right flex-shrink-0 ml-3">
+                                    <p className="text-sm font-bold text-foreground">₹{o.ctc || o.packageLPA || 0} LPA</p>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${offerColor(o.status)}`}>{o.status || 'Pending'}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>}
+            </div>
+
+            <p className="text-xs text-center text-muted-foreground">Last refreshed: {lastRefreshed.toLocaleTimeString()}</p>
         </div>
     );
 };

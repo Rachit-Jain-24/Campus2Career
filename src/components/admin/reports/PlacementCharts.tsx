@@ -18,12 +18,12 @@ export const PlacementCharts: React.FC<PlacementChartsProps> = ({ datasets }) =>
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             return (
-                <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
-                    <p className="font-bold text-white mb-2">{label}</p>
+                <div className="bg-card border border-border p-3 rounded-lg shadow-xl">
+                    <p className="font-bold text-foreground mb-2">{label}</p>
                     {payload.map((entry: any, index: number) => (
                         <div key={index} className="flex items-center gap-2 text-sm">
                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-                            <span className="text-slate-300">{entry.name}:</span>
+                            <span className="text-foreground">{entry.name}:</span>
                             <span className="font-bold" style={{ color: entry.color }}>
                                 {entry.value} {entry.name.includes('Package') || entry.name.includes('avg') || entry.name.includes('highest') ? 'LPA' : ''}
                                 {entry.name.includes('percentage') || entry.name.includes('score') ? '%' : ''}
@@ -43,9 +43,9 @@ export const PlacementCharts: React.FC<PlacementChartsProps> = ({ datasets }) =>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
                 {/* Department Placements (Stacked Bar) */}
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                <div className="bg-card border border-border rounded-xl p-5">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                             <LucidePieChart className="w-5 h-5 text-indigo-500" />
                             Department Outcomes
                         </h3>
@@ -66,9 +66,9 @@ export const PlacementCharts: React.FC<PlacementChartsProps> = ({ datasets }) =>
                 </div>
 
                 {/* Compensation Trajectory (Area Chart) */}
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                <div className="bg-card border border-border rounded-xl p-5">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                             <TrendingUp className="w-5 h-5 text-emerald-500" />
                             Compensation Trajectory (CTC)
                         </h3>
@@ -104,9 +104,9 @@ export const PlacementCharts: React.FC<PlacementChartsProps> = ({ datasets }) =>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* Interview Conversion Funnel (Horizontal Bar) */}
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                <div className="bg-card border border-border rounded-xl p-5">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                             <Filter className="w-5 h-5 text-blue-500" />
                             Conversion Funnel
                         </h3>
@@ -129,9 +129,9 @@ export const PlacementCharts: React.FC<PlacementChartsProps> = ({ datasets }) =>
                 </div>
 
                 {/* Batch Readiness Index (Line Chart) */}
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                <div className="bg-card border border-border rounded-xl p-5">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                             <Activity className="w-5 h-5 text-fuchsia-500" />
                             Batch Readiness
                         </h3>
@@ -150,9 +150,9 @@ export const PlacementCharts: React.FC<PlacementChartsProps> = ({ datasets }) =>
                 </div>
 
                 {/* Monthly Drive Activity (Composed Bar + Line) */}
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                <div className="bg-card border border-border rounded-xl p-5">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                             <CalendarDays className="w-5 h-5 text-amber-500" />
                             Monthly Activity
                         </h3>

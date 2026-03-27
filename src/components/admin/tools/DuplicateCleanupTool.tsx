@@ -61,7 +61,7 @@ export const DuplicateCleanupTool: React.FC = () => {
                 <button
                     onClick={handlePreview}
                     disabled={isPreviewing || isLoading}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-foreground rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     {isPreviewing ? (
                         <>
@@ -79,7 +79,7 @@ export const DuplicateCleanupTool: React.FC = () => {
                 <button
                     onClick={handleCleanup}
                     disabled={isLoading || isPreviewing}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-foreground rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     {isLoading ? (
                         <>

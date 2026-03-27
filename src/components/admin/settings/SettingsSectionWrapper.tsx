@@ -23,16 +23,16 @@ export const SettingsSectionWrapper: React.FC<SettingsSectionWrapperProps> = ({
     children
 }) => {
     return (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-slate-800/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="px-6 py-4 border-b border-border/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
                         <Icon className="w-5 h-5 text-indigo-400" />
                     </div>
                     <div>
-                        <h3 className="font-bold text-white text-base">{title}</h3>
-                        <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+                        <h3 className="font-bold text-foreground text-base">{title}</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
                     </div>
                 </div>
 
@@ -45,7 +45,7 @@ export const SettingsSectionWrapper: React.FC<SettingsSectionWrapperProps> = ({
                     <button
                         onClick={onReset}
                         disabled={!isDirty || isSaving}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                         <RotateCcw className="w-3.5 h-3.5" />
                         Reset
@@ -53,7 +53,7 @@ export const SettingsSectionWrapper: React.FC<SettingsSectionWrapperProps> = ({
                     <button
                         onClick={onSave}
                         disabled={!isDirty || isSaving}
-                        className="flex items-center gap-1.5 px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
+                        className="flex items-center gap-1.5 px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-foreground rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
                     >
                         <Save className="w-3.5 h-3.5" />
                         {isSaving ? 'Saving...' : 'Save Section'}
