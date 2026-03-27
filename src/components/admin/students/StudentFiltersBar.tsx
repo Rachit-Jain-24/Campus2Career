@@ -67,33 +67,33 @@ export const StudentFiltersBar: React.FC<StudentFiltersBarProps> = ({
 
             {/* Bottom Row: Deep Filters */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-2 border-t border-border/50">
-                {/* Department */}
+                {/* Department (Branch) */}
                 <select
                     value={filters.department}
                     onChange={(e) => updateFilter('department', e.target.value)}
-                    className="bg-card/50 border border-border/50 rounded-lg px-3 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors appearance-none"
+                    className="bg-card/50 border border-border/50 rounded-xl px-3 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors appearance-none"
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1.2em' }}
                 >
-                    <option value="all">All Departments</option>
-                    <option value="Computer Eng">Computer Eng</option>
-                    <option value="IT Eng">IT Eng</option>
-                    <option value="Data Science">Data Science</option>
-                    <option value="AI/ML">AI/ML</option>
-                    <option value="EC Eng">Electronics & Comm.</option>
+                    <option value="all">All Branches</option>
+                    <option value="B.Tech CSDS">B.Tech CSDS</option>
+                    <option value="B.Tech AI/ML">B.Tech AI/ML</option>
+                    <option value="B.Tech Cyber Security">Cyber Security</option>
+                    <option value="B.Tech CSBS">B.Tech CSBS</option>
+                    <option value="MBA Tech">MBA Tech</option>
                 </select>
 
                 {/* Year */}
                 <select
                     value={filters.year}
                     onChange={(e) => updateFilter('year', e.target.value)}
-                    className="bg-card/50 border border-border/50 rounded-lg px-3 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors appearance-none"
+                    className="bg-card/50 border border-border/50 rounded-xl px-3 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors appearance-none"
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center', backgroundSize: '1.2em' }}
                 >
                     <option value="all">All Years</option>
-                    <option value="First Year">First Year</option>
-                    <option value="Second Year">Second Year</option>
-                    <option value="Third Year">Third Year</option>
-                    <option value="Final Year">Final Year</option>
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year (Final)</option>
                 </select>
 
                 {/* Career Goal */}

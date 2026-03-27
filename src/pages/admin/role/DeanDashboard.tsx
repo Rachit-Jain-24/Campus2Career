@@ -63,7 +63,7 @@ export const DeanDashboard: React.FC = () => {
             getDocs(query(collection(db, 'students'), orderBy('name'))),
             getDocs(collection(db, 'offers')),
             getDocs(collection(db, 'companies')),
-            getDocs(collection(db, 'adminUsers')),
+            getDocs(collection(db, 'admins')),
         ]);
         if (s.status === 'fulfilled') setStudents(s.value.docs.map(d => ({ id: d.id, ...d.data() } as StudentRaw)));
         if (o.status === 'fulfilled') setOffers(o.value.docs.map(d => ({ id: d.id, ...d.data() } as OfferRaw)));
@@ -245,7 +245,7 @@ export const DeanDashboard: React.FC = () => {
                         : adminRoles.length === 0 ? <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No admin data</p></div>
                         : <ResponsiveContainer width="100%" height={210}>
                             <PieChart>
-                                <Pie data={adminRoles} cx="50%" cy="50%" outerRadius={72} dataKey="value" nameKey="name" label={({ percent }) => `${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                                <Pie data={adminRoles} cx="50%" cy="50%" outerRadius={72} dataKey="value" nameKey="name" label={({ percent }) => `${((percent || 0) * 100).toFixed(0)}%`} labelLine={false}>
                                     {adminRoles.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                                 </Pie>
                                 <Tooltip {...TT_STYLE} />

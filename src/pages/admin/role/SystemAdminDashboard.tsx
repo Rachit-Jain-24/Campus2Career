@@ -72,7 +72,7 @@ export const SystemAdminDashboard: React.FC = () => {
         setIsLoading(true);
         const results = await Promise.allSettled([
             getDocs(query(collection(db, 'students'), orderBy('name'))),
-            getDocs(collection(db, 'adminUsers')),
+            getDocs(collection(db, 'admins')),
             getDocs(query(collection(db, 'auditLogs'), orderBy('timestamp', 'desc'), limit(50))),
         ]);
         if (results[0].status === 'fulfilled') setStudents(results[0].value.docs.map(d => ({ id: d.id, ...d.data() } as StudentRaw)));
@@ -144,7 +144,7 @@ export const SystemAdminDashboard: React.FC = () => {
                         : adminRoleData.length === 0 ? <div className="h-52 flex flex-col items-center justify-center text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No admin data</p></div>
                         : <ResponsiveContainer width="100%" height={220}>
                             <PieChart>
-                                <Pie data={adminRoleData} cx="50%" cy="50%" outerRadius={80} dataKey="value" nameKey="name" label={({ percent }) => `${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                                <Pie data={adminRoleData} cx="50%" cy="50%" outerRadius={80} dataKey="value" nameKey="name" label={({ percent }) => `${((percent || 0) * 100).toFixed(0)}%`} labelLine={false}>
                                     {adminRoleData.map((_, i) => <Cell key={i} fill={DEPT_COLORS[i % DEPT_COLORS.length]} />)}
                                 </Pie>
                                 <Tooltip {...TT} />

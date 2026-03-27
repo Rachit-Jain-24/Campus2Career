@@ -17,7 +17,7 @@ import { db } from '../../lib/firebase';
 import type { AdminUserProfile, UserFormData } from '../../types/userAdmin';
 import { auditService } from './audit.service';
 
-const COLLECTION_NAME = 'adminUsers';
+const COLLECTION_NAME = 'admins';
 
 // ── Service ──────────────────────────────────────────────────
 
@@ -51,7 +51,7 @@ export const usersService = {
 
     async createUser(data: UserFormData, actorEmail?: string): Promise<AdminUserProfile> {
         const usersRef = collection(db, COLLECTION_NAME);
-        const newUserRef = doc(usersRef);
+        const newUserRef = doc(usersRef, data.email);
         const now = new Date();
 
         const documentData = {

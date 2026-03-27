@@ -70,7 +70,7 @@ export const useStudents = () => {
             result = result.filter(s => s.department === filters.department);
         }
         if (filters.year !== 'all') {
-            result = result.filter(s => s.currentYear === filters.year);
+            result = result.filter(s => String(s.currentYear) === filters.year);
         }
         if (filters.careerGoal !== 'all') {
             result = result.filter(s => s.careerGoal === filters.careerGoal);

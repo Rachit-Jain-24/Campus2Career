@@ -12,20 +12,7 @@ import RoadmapPage from './pages/student/RoadmapPage';
 import InterviewSimulator from './pages/student/InterviewSimulator';
 import ResumeAnalyzer from './pages/student/ResumeAnalyzer';
 import SkillGapAnalysisPage from './pages/student/SkillGapAnalysis';
-import SeedDemoData from './pages/admin/SeedDemoData';
-import SeedBatchData from './pages/admin/SeedBatchData';
-import SeedStudents from './pages/SeedStudents';
-import SeedRemaining20 from './pages/SeedRemaining20';
-import UpdateBatchData from './pages/UpdateBatchData';
-import SwitchAccount from './pages/SwitchAccount';
-import CheckAccount from './pages/CheckAccount';
-import CreateAdminAccount from './pages/admin/CreateAdminAccount';
-import FixUserFields from './pages/FixUserFields';
-import FixStudent35 from './pages/admin/FixStudent35';
 import SeedAdminData from './pages/admin/SeedAdminData';
-
-// Legacy admin routes (kept for backward compat)
-import { AdminRoutes } from './routes/AdminRoutes';
 
 // New role-based portal routes
 import { AdminPortalRoutes } from './routes/AdminPortalRoutes';
@@ -101,22 +88,7 @@ function App() {
         <Route path="/faculty/*" element={<ProtectedRoute allowedRole="admin"><FacultyPortalRoutes /></ProtectedRoute>} />
         <Route path="/placement/*" element={<ProtectedRoute allowedRole="admin"><PlacementPortalRoutes /></ProtectedRoute>} />
 
-        {/* ── Legacy admin portal (kept for backward compat) ── */}
-        <Route path="/admin-legacy/*" element={<AdminRoutes />} />
-
-        {/* ── Utility tools — restricted to system_admin only ── */}
-        <Route path="/switch-account" element={<SwitchAccount />} />
-        <Route path="/create-admin" element={<SystemAdminRoute><CreateAdminAccount /></SystemAdminRoute>} />
-        <Route path="/check-account" element={<SystemAdminRoute><CheckAccount /></SystemAdminRoute>} />
-        <Route path="/seed-students" element={<SystemAdminRoute><SeedStudents /></SystemAdminRoute>} />
-        <Route path="/seed-remaining-20" element={<SystemAdminRoute><SeedRemaining20 /></SystemAdminRoute>} />
-        <Route path="/update-batch-data" element={<SystemAdminRoute><UpdateBatchData /></SystemAdminRoute>} />
-        <Route path="/admin-legacy/seed-demo" element={<SystemAdminRoute><SeedDemoData /></SystemAdminRoute>} />
-        <Route path="/admin-legacy/seed-batch" element={<SystemAdminRoute><SeedBatchData /></SystemAdminRoute>} />
-
-        {/* ── vpa-v2 specific fix routes ── */}
-        <Route path="/fix-user-fields" element={<FixUserFields />} />
-        <Route path="/fix-student-35" element={<FixStudent35 />} />
+        {/* ── System tools ── */}
         <Route path="/seed-admin-data" element={<SystemAdminRoute><SeedAdminData /></SystemAdminRoute>} />
 
         {/* ── Student routes ── */}

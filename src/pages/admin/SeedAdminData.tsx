@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Database, CheckCircle2, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { Database, CheckCircle2, AlertCircle, Loader2, RefreshCw, Users } from 'lucide-react';
 import { seedAllAdminCollections, checkAdminCollectionsExist } from '../../utils/seedAdminCollections';
+import { seedMockStudents } from '../../utils/seedMockStudents';
+import { seedBatchAccounts } from '../../utils/seedBatchAccounts';
 
 export default function SeedAdminData() {
     const [isSeeding, setIsSeeding] = useState(false);
@@ -16,7 +18,7 @@ export default function SeedAdminData() {
     };
 
     const handleSeed = async () => {
-        if (!confirm('This will add mock data to companies, drives, interviews, offers, auditLogs, and adminUsers collections. Continue?')) return;
+        if (!confirm('This will add mock data to companies, drives, interviews, offers, auditLogs, and admins collections. Continue?')) return;
         setIsSeeding(true);
         setResult(null);
         const res = await seedAllAdminCollections();
@@ -46,9 +48,11 @@ export default function SeedAdminData() {
                         ['interviews', '20 interviews'],
                         ['offers', '10 offers'],
                         ['auditLogs', '20 audit events'],
-                        ['adminUsers', '5 admin accounts'],
+                        ['admins', '5 admin accounts'],
                         ['eligibility_rules', '3 global rule templates'],
                         ['config', 'Platform platformSettings doc'],
+                        ['students (real)', '32 B.Tech CSDS Year 4'],
+                        ['students (mock)', '60+ students, all branches/years'],
                     ].map(([col, desc]) => (
                         <div key={col} className="flex items-start gap-2 p-2 rounded-lg bg-secondary/50">
                             <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0" />
@@ -69,7 +73,19 @@ export default function SeedAdminData() {
                     <button onClick={handleSeed} disabled={isSeeding}
                         className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-primary text-foreground rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50">
                         {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-                        {isSeeding ? 'Seeding...' : 'Seed All Collections'}
+                        {isSeeding ? 'Seeding...' : 'Seed Admin Data'}
+                    </button>
+                    <button onClick={async () => {
+                        setIsSeeding(true);
+                        await seedBatchAccounts();
+                        await seedMockStudents();
+                        setIsSeeding(false);
+                        handleCheck();
+                        alert('Student data (Real Batch + Varied Mock) seeded!');
+                    }} disabled={isSeeding}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-all disabled:opacity-50">
+                        <Users className="w-4 h-4" />
+                        Seed Full Student Database
                     </button>
                 </div>
             </div>

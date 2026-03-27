@@ -1,287 +1,366 @@
-/**
- * Master Seeding Utility
- * Seeds all organizational and operational Firestore collections with mock data.
- */
-import {
-    collection, getDocs, setDoc, doc, writeBatch, query, limit, deleteDoc
+import { initializeApp, deleteApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { 
+    collection, 
+    doc, 
+    setDoc, 
+    getDocs, 
+    serverTimestamp,
+    writeBatch
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { DEFAULT_SETTINGS } from '../services/admin/settings.service';
 
-// ── Helpers ──────────────────────────────────────────────────
-const id = () => Math.random().toString(36).slice(2, 10);
-const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-const rand = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * MASTER SEEDING UTILITY
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Seeds all organizational and operational Firestore collections with mock data.
+ * Uses recognizable, human-readable IDs (e.g., 'google', 'amazon') where possible.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 const daysAgo = (n: number) => new Date(Date.now() - n * 86400000);
 const daysFromNow = (n: number) => new Date(Date.now() + n * 86400000);
 
-// ── Static reference data ─────────────────────────────────────
-const COMPANIES = [
-    { name: 'Infosys', industry: 'IT Services', website: 'https://infosys.com', ctcRange: [3.5, 6.5] },
-    { name: 'TCS', industry: 'IT Services', website: 'https://tcs.com', ctcRange: [3.5, 7] },
-    { name: 'Wipro', industry: 'IT Services', website: 'https://wipro.com', ctcRange: [3.5, 6] },
-    { name: 'Cognizant', industry: 'IT Services', website: 'https://cognizant.com', ctcRange: [4, 7] },
-    { name: 'Accenture', industry: 'Consulting', website: 'https://accenture.com', ctcRange: [4.5, 8] },
-    { name: 'Google', industry: 'Technology', website: 'https://google.com', ctcRange: [25, 45] },
-    { name: 'Microsoft', industry: 'Technology', website: 'https://microsoft.com', ctcRange: [20, 42] },
-    { name: 'Amazon', industry: 'E-commerce', website: 'https://amazon.com', ctcRange: [18, 35] },
-    { name: 'J.P. Morgan Chase', industry: 'Finance', website: 'https://jpmorgan.com', ctcRange: [12, 18] },
-    { name: 'Goldman Sachs', industry: 'Finance', website: 'https://goldmansachs.com', ctcRange: [15, 22] },
-];
-
-const ROLES = [
-    'Software Engineer', 'Data Analyst', 'ML Engineer', 'Backend Developer',
-    'Full Stack Developer', 'Data Scientist', 'DevOps Engineer', 'Frontend Developer',
-    'Business Analyst', 'Systems Engineer'
-];
-
-const ROUND_TYPES = ['aptitude_test', 'technical_interview', 'hr_interview', 'group_discussion', 'coding_round'];
-const DRIVE_STATUSES = ['registration_open', 'ongoing', 'completed', 'upcoming'];
-const OFFER_STATUSES = ['accepted', 'pending', 'rejected', 'issued'];
-
-// ── Seeders ──────────────────────────────────────────────────
-
-export async function seedCompanies(): Promise<string[]> {
-    const batch = writeBatch(db);
-    const companyIds: string[] = [];
-    for (const c of COMPANIES) {
-        const docId = id();
-        companyIds.push(docId);
-        batch.set(doc(db, 'companies', docId), {
-            id: docId,
-            name: c.name,
-            industry: c.industry,
-            website: c.website,
-            status: 'active',
-            hrContact: {
-                name: `${c.name} HR`,
-                email: `hr@${c.name.toLowerCase().replace(/\s/g, '')}.com`,
-                phone: `+91 ${rand(70000, 99999)}${rand(10000, 99999)}`
-            },
-            eligibilityCriteria: {
-                minCGPA: pick([6.5, 7.0, 7.5, 8.0]),
-                allowedBranches: ['CSE', 'CSDS', 'IT'],
-                skills: ['Python', 'SQL', 'Git']
-            },
-            createdAt: daysAgo(rand(30, 90)),
-            updatedAt: new Date()
-        });
-    }
-    await batch.commit();
-    return companyIds;
-}
-
-export async function seedDrives(companyIds: string[]): Promise<string[]> {
-    const batch = writeBatch(db);
-    const driveIds: string[] = [];
-    const templates = [
-        { title: 'Campus Hiring 2026', role: 'Software Engineer' },
-        { title: 'Data Analytics Program', role: 'Data Analyst' },
-        { title: 'Tech Analyst Hiring', role: 'Business Analyst' },
-        { title: 'Graduate Trainee 2026', role: 'Systems Engineer' },
-        { title: 'Full Stack Excellence', role: 'Full Stack Developer' },
+// ── Clear All Admin Data ──
+export const clearAllAdminData = async () => {
+    const collections = [
+        'companies', 
+        'drives', 
+        'interviews', 
+        'offers', 
+        'auditLogs', 
+        'admins',
+        'eligibility_rules',
+        'config'
     ];
 
-    for (let i = 0; i < templates.length; i++) {
-        const t = templates[i];
-        const companyId = companyIds[i % companyIds.length];
-        const status = pick(DRIVE_STATUSES);
-        const docId = id();
-        driveIds.push(docId);
+    console.log('🧹 Clearing all admin collections...');
+    
+    for (const colName of collections) {
+        const snap = await getDocs(collection(db, colName));
+        const batch = writeBatch(db);
+        snap.docs.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+    }
+    console.log('✅ Admin collections cleared.');
+};
 
-        batch.set(doc(db, 'drives', docId), {
-            id: docId,
-            title: t.title,
-            companyId,
-            companyName: COMPANIES[i % COMPANIES.length].name,
-            jobRole: t.role,
-            status,
-            location: pick(['Hyderabad', 'Remote', 'Mumbai', 'Bangalore']),
-            mode: pick(['on-campus', 'off-campus', 'virtual']),
-            registrationStart: daysAgo(rand(5, 15)),
-            registrationEnd: daysFromNow(rand(5, 15)),
-            ctcOffered: rand(5, 25),
-            applicantCount: rand(50, 200),
-            shortlistedCount: rand(10, 50),
-            stages: [
-                { name: 'Aptitude Test', date: daysAgo(2) },
-                { name: 'Technical Interview', date: daysFromNow(2) }
-            ],
-            createdAt: daysAgo(30),
-            updatedAt: new Date()
+// ── Check Collection Status ──
+export const checkAdminCollectionsExist = async () => {
+    const collections = [
+        'companies', 
+        'drives', 
+        'interviews', 
+        'offers', 
+        'auditLogs', 
+        'admins',
+        'eligibility_rules',
+        'config'
+    ];
+
+    const counts: Record<string, number> = {};
+    
+    for (const colName of collections) {
+        try {
+            const snap = await getDocs(collection(db, colName));
+            counts[colName] = snap.size;
+        } catch (e) {
+            counts[colName] = 0;
+        }
+    }
+    
+    return counts;
+};
+
+// ── Seed Companies ──
+const seedCompanies = async () => {
+    const companies = [
+        { id: 'google', name: 'Google', industry: 'Technology', website: 'google.com', contactEmail: 'university@google.com', status: 'active', tier: 'Tier 1' },
+        { id: 'amazon', name: 'Amazon', industry: 'E-commerce', website: 'amazon.jobs', contactEmail: 'campus@amazon.com', status: 'active', tier: 'Tier 1' },
+        { id: 'microsoft', name: 'Microsoft', industry: 'Software', website: 'microsoft.com', contactEmail: 'hire@microsoft.com', status: 'active', tier: 'Tier 1' },
+        { id: 'tcs', name: 'TCS', industry: 'IT Services', website: 'tcs.com', contactEmail: 'campus@tcs.com', status: 'active', tier: 'Tier 2' },
+        { id: 'accenture', name: 'Accenture', industry: 'Consulting', website: 'accenture.com', contactEmail: 'hr@accenture.com', status: 'active', tier: 'Tier 2' },
+    ];
+
+    for (const c of companies) {
+        await setDoc(doc(db, 'companies', c.id), {
+            ...c,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
         });
     }
-    await batch.commit();
-    return driveIds;
-}
+};
 
-export async function seedInterviews(driveIds: string[]): Promise<void> {
-    const snap = await getDocs(query(collection(db, 'students'), limit(20)));
-    const students = snap.docs.map(d => ({ id: d.id, ...d.data() as any }));
-    if (students.length === 0) return;
+// ── Seed Placement Drives ──
+const seedDrives = async () => {
+    const drives = [
+        { 
+            id: 'drive-google-swe-2025',
+            companyId: 'google', 
+            companyName: 'Google', 
+            title: 'Google STEP/SWE 2025',
+            status: 'registration_open', 
+            type: 'full_time',
+            batch: '2025',
+            eligibleDepartments: ['B.Tech CSE', 'B.Tech IT'],
+            minCGPA: 8.5,
+            ctcOffered: 32.5,
+            applicantCount: 450,
+            shortlistedCount: 85,
+            location: 'Multiple',
+            registrationDeadline: daysFromNow(15)
+        },
+        { 
+            id: 'drive-amazon-sde-2025',
+            companyId: 'amazon', 
+            companyName: 'Amazon', 
+            title: 'Amazon SDE Recruiting 2025',
+            status: 'ongoing', 
+            type: 'full_time',
+            batch: '2025',
+            eligibleDepartments: ['B.Tech'],
+            minCGPA: 7.5,
+            ctcOffered: 28.0,
+            applicantCount: 820,
+            shortlistedCount: 120,
+            location: 'Bangalore/Hyderabad'
+        },
+        { 
+            id: 'drive-tcs-ninja-2025',
+            companyId: 'tcs', 
+            companyName: 'TCS', 
+            title: 'TCS Ninja/Digital Hiring',
+            status: 'completed', 
+            type: 'full_time',
+            batch: '2025',
+            eligibleDepartments: ['B.Tech', 'MCA'],
+            minCGPA: 6.0,
+            ctcOffered: 7.0,
+            applicantCount: 1540,
+            shortlistedCount: 450,
+            location: 'Pan India'
+        }
+    ];
 
-    const batch = writeBatch(db);
-    for (let i = 0; i < 20; i++) {
-        const student = students[i % students.length];
-        const docId = id();
-        batch.set(doc(db, 'interviews', docId), {
-            id: docId,
-            studentId: student.id,
-            studentName: student.name || 'Student',
-            driveId: pick(driveIds),
-            companyName: pick(COMPANIES).name,
-            roundType: pick(ROUND_TYPES),
-            scheduledDate: daysFromNow(rand(1, 10)),
+    for (const d of drives) {
+        await setDoc(doc(db, 'drives', d.id), {
+            ...d,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+    }
+};
+
+// ── Seed Interviews ──
+const seedInterviews = async () => {
+    const interviews = [
+        {
+            id: 'int-google-tech-01',
+            driveId: 'drive-google-swe-2025',
+            companyName: 'Google',
+            roundType: 'technical_interview',
+            scheduledDate: daysFromNow(5),
             status: 'scheduled',
-            venue: 'Virtual - Microsoft Teams',
-            createdAt: new Date()
-        });
-    }
-    await batch.commit();
-}
-
-export async function seedOffers(driveIds: string[]): Promise<void> {
-    const snap = await getDocs(query(collection(db, 'students'), limit(15)));
-    const students = snap.docs.map(d => ({ id: d.id, ...d.data() as any }));
-    if (students.length === 0) return;
-
-    const batch = writeBatch(db);
-    for (let i = 0; i < 10; i++) {
-        const student = students[i % students.length];
-        const docId = id();
-        const ctc = rand(6, 18);
-        batch.set(doc(db, 'offers', docId), {
-            id: docId,
-            studentId: student.id,
-            studentName: student.name || 'Student',
-            companyName: pick(COMPANIES).name,
-            driveId: pick(driveIds),
-            role: pick(ROLES),
-            ctc,
-            status: pick(OFFER_STATUSES),
-            offerDate: daysAgo(rand(1, 10)),
-            createdAt: new Date()
-        });
-    }
-    await batch.commit();
-}
-
-export async function seedAdminUsers(): Promise<void> {
-    const admins = [
-        { name: 'Dr. Rajesh Kumar', email: 'dean@nmims.edu.in', role: 'dean', department: 'Management', status: 'active' },
-        { name: 'Prof. Sunita Sharma', email: 'director@nmims.edu.in', role: 'director', department: 'Administration', status: 'active' },
-        { name: 'Dr. Anil Verma', email: 'program.chair@nmims.edu.in', role: 'program_chair', department: 'CSE', status: 'active' },
-        { name: 'Ms. Priya Nair', email: 'placement@nmims.edu.in', role: 'placement_officer', department: 'Corp Relations', status: 'active' },
-        { name: 'System Admin', email: 'admin@nmims.edu.in', role: 'system_admin', department: 'IT', status: 'active' },
+            candidateCount: 12,
+            location: 'Google Meet',
+            interviewer: 'Sundar P.'
+        },
+        {
+            id: 'int-amazon-hr-01',
+            driveId: 'drive-amazon-sde-2025',
+            companyName: 'Amazon',
+            roundType: 'hr_interview',
+            scheduledDate: daysAgo(2),
+            status: 'completed',
+            candidateCount: 8,
+            location: 'Chime Video'
+        }
     ];
 
-    const batch = writeBatch(db);
-    for (const a of admins) {
-        batch.set(doc(db, 'adminUsers', id()), {
-            ...a,
-            createdAt: daysAgo(180),
-            lastLogin: daysAgo(1)
+    for (const i of interviews) {
+        await setDoc(doc(db, 'interviews', i.id), {
+            ...i,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
         });
     }
-    await batch.commit();
-}
+};
 
-export async function seedEligibilityRules(): Promise<void> {
-    const batch = writeBatch(db);
+// ── Seed Offers ──
+const seedOffers = async () => {
+    const offers = [
+        {
+            id: 'off-google-001',
+            driveId: 'drive-google-swe-2025',
+            studentId: '70572200035',
+            studentName: 'Rachit Jain',
+            studentDepartment: 'B.Tech CSE',
+            studentYear: '4',
+            companyId: 'google',
+            companyName: 'Google',
+            role: 'Software Engineer',
+            ctc: 32.5,
+            status: 'accepted',
+            validityDate: daysFromNow(30)
+        },
+        {
+            id: 'off-amazon-001',
+            driveId: 'drive-amazon-sde-2025',
+            studentId: '70572200001',
+            studentName: 'Aditya Sharma',
+            studentDepartment: 'B.Tech CSE',
+            studentYear: '4',
+            companyId: 'amazon',
+            companyName: 'Amazon',
+            role: 'SDE-1',
+            ctc: 28.0,
+            status: 'issued',
+            validityDate: daysFromNow(15)
+        }
+    ];
+
+    for (const o of offers) {
+        await setDoc(doc(db, 'offers', o.id), {
+            ...o,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+    }
+};
+
+// ── Seed Eligibility Rules ──
+const seedRules = async () => {
     const rules = [
-        { ruleName: 'Premium Tech Criteria', description: 'Rules for Tier-1 companies like Google/MS', minCGPA: 8.5, active: true, allowedDepartments: ['CSE', 'CSDS'], allowedYears: ['4'] },
-        { ruleName: 'General Placement Criteria', description: 'Standard eligibility for mass recruiters', minCGPA: 6.0, active: true, allowedDepartments: ['CSE', 'CSDS', 'IT'], allowedYears: ['3', '4'] },
-        { ruleName: 'Internship Eligibility', description: 'Rules for 3rd year internship drives', minCGPA: 7.0, active: true, allowedDepartments: ['CSE'], allowedYears: ['3'] },
+        { 
+            id: 'rule-premium',
+            ruleName: 'Premium Tech Criteria', 
+            description: 'Rules for Tier-1 companies like Google/MS', 
+            minCGPA: 8.5, 
+            active: true, 
+            allowedDepartments: ['B.Tech CSE', 'B.Tech IT'], 
+            allowedYears: ['4'],
+            maxActiveBacklogs: 0,
+            maxHistoryBacklogs: 0
+        },
+        { 
+            id: 'rule-standard',
+            ruleName: 'Standard Hiring Criteria', 
+            description: 'Rules for general IT roles', 
+            minCGPA: 7.0, 
+            active: true, 
+            allowedDepartments: ['B.Tech', 'MBA'], 
+            allowedYears: ['3', '4'],
+            maxActiveBacklogs: 1,
+            maxHistoryBacklogs: 2
+        }
     ];
 
     for (const r of rules) {
-        const docId = id();
-        batch.set(doc(db, 'eligibility_rules', docId), {
-            id: docId,
+        await setDoc(doc(db, 'eligibility_rules', r.id), {
             ...r,
-            createdAt: daysAgo(60),
-            updatedAt: new Date()
+            linkedDriveIds: [],
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
         });
     }
-    await batch.commit();
-}
+};
 
-export async function seedSettings(): Promise<void> {
-    await setDoc(doc(db, 'config', 'platformSettings'), {
-        ...DEFAULT_SETTINGS,
-        updatedAt: new Date(),
-        updatedBy: 'system_admin'
-    });
-}
+// ── Seed Admin Users ──
+const seedAdmins = async () => {
+    const admins = [
+        { id: 'admin-dean', name: 'Dr. Ramesh Kumar', email: 'dean@nmims.edu', role: 'dean', department: 'Academics', status: 'active' },
+        { id: 'admin-director', name: 'Prof. Sunita Sharma', email: 'director@nmims.edu', role: 'director', department: 'Management', status: 'active' },
+        { id: 'admin-chair', name: 'Prof. S. Gupta', email: 'chair@nmims.edu', role: 'program_chair', department: 'CSE', status: 'active' },
+        { id: 'admin-po', name: 'Sunita Mehra', email: 'po@nmims.edu', role: 'placement_officer', department: 'Placements', status: 'active' },
+        { id: 'admin-sys', name: 'System Admin', email: 'admin@nmims.edu', role: 'system_admin', department: 'IT Operations', status: 'active' },
+    ];
 
-export async function seedAuditLogs(): Promise<void> {
-    const batch = writeBatch(db);
-    for (let i = 0; i < 20; i++) {
-        batch.set(doc(db, 'auditLogs', id()), {
-            actorId: 'admin_1',
-            actorName: 'System Admin',
-            actorRole: 'system_admin',
-            action: pick(['create', 'update', 'status_change', 'login']),
-            module: pick(['drives', 'companies', 'students', 'users', 'settings']),
-            severity: 'low',
-            summary: `Periodic system maintenance log #${i}`,
-            timestamp: daysAgo(rand(0, 7))
+    // Initialize a secondary app for admin creation so it doesn't log out the current user
+    const secondaryApp = initializeApp({
+        apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+        storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+        appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    }, 'SecondaryAuthApp');
+    const secondaryAuth = getAuth(secondaryApp);
+
+    for (const a of admins) {
+        // Create Firestore document in the correct 'admins' collection
+        await setDoc(doc(db, 'admins', a.email), {
+            ...a,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+
+        // Also create Firebase Auth account so we can login
+        try {
+            await createUserWithEmailAndPassword(secondaryAuth, a.email, 'nmims2026');
+            console.log(`✅ Created Auth account for ${a.email}`);
+        } catch (authError: any) {
+            if (authError.code === 'auth/email-already-in-use') {
+                console.log(`ℹ️ Auth account already exists for ${a.email}`);
+            } else {
+                console.warn(`⚠️ Failed to create Auth account for ${a.email}:`, authError.message);
+            }
+        }
+    }
+
+    // Clean up secondary app
+    await deleteApp(secondaryApp);
+};
+
+// ── Seed Audit Logs ──
+const seedAuditLogs = async () => {
+    const logs = [
+        { id: 'log-001', actorEmail: 'admin@nmims.edu', action: 'CREATE_DRIVE', module: 'drives', summary: 'Created Google SWE 2025 drive', severity: 'low', timestamp: daysAgo(1) },
+        { id: 'log-002', actorEmail: 'admin@nmims.edu', action: 'UPDATE_RULE', module: 'eligibility', summary: 'Updated Premium Rule criteria', severity: 'medium', timestamp: daysAgo(0.5) },
+        { id: 'log-003', actorEmail: 'system', action: 'LOGIN_FAILURE', module: 'auth', summary: 'Multiple failed logins detected', severity: 'high', timestamp: daysAgo(0.1) },
+    ];
+
+    for (const l of logs) {
+        await setDoc(doc(db, 'auditLogs', l.id), {
+            ...l,
+            createdAt: serverTimestamp()
         });
     }
-    await batch.commit();
-}
+};
 
-// ── Master Functions ──────────────────────────────────────────
+// ── Seed Platform Config ──
+const seedConfig = async () => {
+    const settings = {
+        currentAcademicYear: '2024-25',
+        activeBatches: ['2025', '2026'],
+        allowLateRegistrations: false,
+        maintenanceMode: false,
+        supportEmail: 'support@nmims.edu',
+        updatedAt: serverTimestamp()
+    };
+    await setDoc(doc(db, 'config', 'platformSettings'), settings);
+};
 
-export async function seedAllAdminCollections(): Promise<{ success: boolean; results: Record<string, string>; error?: string }> {
+// ── Main Orchestrator ──
+export const seedAllAdminCollections = async () => {
+    console.log('🚀 Starting Admin Collection Seeding...');
+    
     const results: Record<string, string> = {};
+    
     try {
-        const companyIds = await seedCompanies();
-        results.companies = `✅ ${companyIds.length} companies`;
-
-        const driveIds = await seedDrives(companyIds);
-        results.drives = `✅ ${driveIds.length} drives`;
-
-        await seedInterviews(driveIds);
-        results.interviews = '✅ Interviews seeded';
-
-        await seedOffers(driveIds);
-        results.offers = '✅ Offers seeded';
-
-        await seedAdminUsers();
-        results.adminUsers = '✅ Admin accounts seeded';
-
-        await seedEligibilityRules();
-        results.eligibility_rules = '✅ Eligibility rules seeded';
-
-        await seedSettings();
-        results.settings = '✅ Platform configurations seeded';
-
-        await seedAuditLogs();
-        results.auditLogs = '✅ Audit history seeded';
-
+        await seedCompanies(); results['companies'] = 'Success';
+        await seedDrives(); results['drives'] = 'Success';
+        await seedInterviews(); results['interviews'] = 'Success';
+        await seedOffers(); results['offers'] = 'Success';
+        await seedRules(); results['rules'] = 'Success';
+        await seedAdmins(); results['admins'] = 'Success';
+        await seedAuditLogs(); results['auditLogs'] = 'Success';
+        await seedConfig(); results['config'] = 'Success';
+        
+        console.log('✅ All Admin collections seeded successfully.');
         return { success: true, results };
-    } catch (err: any) {
-        return { success: false, results, error: err.message };
+    } catch (error: any) {
+        console.error('❌ Seeding failed:', error.message);
+        return { success: false, results, error: error.message };
     }
-}
-
-export async function checkAdminCollectionsExist(): Promise<Record<string, number>> {
-    const collections = ['companies', 'drives', 'interviews', 'offers', 'auditLogs', 'adminUsers', 'eligibility_rules'];
-    const counts: Record<string, number> = {};
-    for (const col of collections) {
-        const snap = await getDocs(query(collection(db, col), limit(1)));
-        counts[col] = snap.size;
-    }
-    return counts;
-}
-
-export async function clearAllAdminData(): Promise<void> {
-    const collections = ['companies', 'drives', 'interviews', 'offers', 'auditLogs', 'adminUsers', 'eligibility_rules'];
-    for (const col of collections) {
-        const snap = await getDocs(collection(db, col));
-        const promises = snap.docs.map(d => deleteDoc(d.ref));
-        await Promise.all(promises);
-    }
-    await deleteDoc(doc(db, 'config', 'platformSettings'));
-}
+};
