@@ -222,7 +222,7 @@ export async function sendMessage(
     transparencyMeta.modelUsed = 'local-fallback';
     const fallbackText = buildFallbackResponse(
       topChunk ?? { title: 'career guidance', content: 'System is experiencing heavy load. Please try again soon.', id: '', source: 'faq', tags: [], tfidfVector: new Map() }
-    ) + `\n\n**[Debug Error]** Failed to connect to Gemini API: ${errorMsg}`;
+    ) + `\n\n**[Status]** System core was unable to connect.`;
     
     contextManager.addTurn({ role: 'assistant', content: fallbackText, timestamp: Date.now() });
     contextManager.persist(student.uid);

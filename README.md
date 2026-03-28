@@ -1,18 +1,138 @@
-# Campus2Career
+# Campus2Career — Virtual Placement Assistant
 
-AI-powered career guidance and placement management platform for NMIMS Hyderabad students.
+![Campus2Career Banner](C:\Users\rachi\.gemini\antigravity\brain\cd8d3206-8351-4f4a-8deb-423e92cfb9e7\campus2career_banner_1774695436607.png)
 
-## Quick Start
+An AI-powered career guidance and placement management platform designed for students transitioning from campus to professional careers.
 
+---
+
+## 🚀 Overview
+
+**Campus2Career** is a dual-portal platform that empowers students with personalized, data-driven career guidance while providing administrators with a robust system to track and manage placements.
+
+- **Student Portal**: Career discovery, skill tracking, LeetCode integration, AI interview simulator, resume analysis, and personalized roadmap generation.
+- **Admin Portal**: Role-based management for Deans, Directors, Program Chairs, Faculty, and Placement Officers with detailed batch analytics, company/drive tracking, and audit logs.
+
+---
+
+## ✨ Key Features
+
+### For Students
+- **AI Career Advisor**: Real-time chat integration with Google Gemini 1.5 Flash for career assessments and guidance.
+- **Skill Gap Analysis**: Compares student profiles against 6 industry-standard benchmarks (Full-Stack, AI/ML, DevOps, etc.).
+- **AI Interview Simulator**: Voice-enabled practice interviews with Gemini-generated technical and behavioral questions.
+- **Resume Analyzer**: ATS-based scoring and optimization suggestions using a Python NLP engine.
+- **Personalized Roadmaps**: 4-year prioritized action plans mapped to academic milestones.
+
+### For Administrators
+- **Role-Based Access Control (RBAC)**: 6 distinct portals with specific permissions and views.
+- **Batch Analytics**: Comprehensive dashboards showing placement readiness, skill distributions, and eligibility metrics.
+- **Placement Management**: End-to-end tracking of companies, placement drives, interviews, and final offers.
+- **Audit Logs & Tools**: Systematic tracking of all administrative actions and powerful data-seeding tools.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technologies |
+|---|---|
+| **Frontend** | React 19, TypeScript, Vite 6, Tailwind CSS 4, Recharts, Lucide React |
+| **Backend** | Node.js, Express 5, SQLite via Prisma ORM 6 |
+| **AI / NLP** | Google Gemini 1.5 Flash, Python Flask, Web Speech API |
+| **Infrastructure** | Firebase Auth, Cloud Firestore, Firebase Storage, Firebase Hosting |
+
+---
+
+## ⚙️ Installation & Setup
+
+### 1. Prerequisites
+- Node.js 18+
+- Python 3.10+ (for AI Engine)
+- Git
+
+### 2. Global Setup (Frontend)
 ```bash
+# Clone the repository
+git clone https://github.com/Rachit-Jain-24/Campus2Career.git
+cd vpa-v2
+
+# Install dependencies
 npm install
-npm run dev
+
+# Setup environment variables
+cp .env.example .env
+# Edit .env with your Firebase and Gemini API keys
 ```
 
-See [PROJECT_INFO.md](./PROJECT_INFO.md) for full documentation — architecture, features, algorithms, demo accounts, and deployment.
+### 3. Backend Setup (Optional but Recommended)
+```bash
+cd server
+npm install
+npx prisma generate
+npx prisma migrate dev
+npm run dev # Starts server on http://localhost:5000
+```
 
-## Portals
+### 4. AI Engine Setup (Optional)
+```bash
+cd ai-engine
+python -m venv venv
+# On Windows
+venv\Scripts\activate
+# On macOS/Linux
+source venv/bin/activate
 
-- Student: `/login`
-- Admin portal selector: `/portal`
-- Direct role logins: `/login/admin`, `/login/dean`, `/login/director`, `/login/program-chair`, `/login/faculty`, `/login/placement-officer`
+pip install -r requirements.txt
+python main.py # Starts AI engine on http://localhost:8000
+```
+
+### 5. Start Development
+```bash
+# From the root directory
+npm run dev # Starts frontend on http://localhost:5173
+```
+
+---
+
+## 🔑 Environment Variables
+
+Create a `.env` file in the root with the following:
+
+```env
+VITE_FIREBASE_API_KEY=your_key
+VITE_FIREBASE_AUTH_DOMAIN=your_domain
+VITE_FIREBASE_PROJECT_ID=your_id
+VITE_FIREBASE_STORAGE_BUCKET=your_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_id
+VITE_FIREBASE_APP_ID=your_app_id
+VITE_GEMINI_API_KEY=your_gemini_key
+```
+
+---
+
+## 🗝️ Portals & Demo Accounts
+
+### Portals
+- **Student**: `/login`
+- **Admin Portal Selector**: `/portal`
+- **Direct Admin Logins**: `/login/admin`, `/login/dean`, `/login/director`, `/login/program-chair`, `/login/faculty`, `/login/placement-officer`
+
+### Demo Access
+Use the **"Preview"** button on any admin login page to bypass Firebase authentication for a live demo.
+
+---
+
+## 🏗️ Project Structure
+
+- `src/`: Core frontend code (pages, components, hooks, services).
+- `server/`: Express backend and Prisma/SQLite database.
+- `ai-engine/`: Python Flask service for NLP and resume analysis.
+- `public/`: Static assets.
+- `lib/`: Core logic engines for AI, roadmaps, and analytics.
+
+---
+
+## 📄 License
+
+Developed for **NMIMS Hyderabad** (B.Tech CSE - Data Science, Semester 8).  
+© 2025–2026 Rachit Jain, Prasad Kannawar, Venkatesh Mahindra.

@@ -101,7 +101,7 @@ export function AIInterviewerAvatar({ state, message, speak = true }: Props) {
       {/* Name */}
       <div className="text-center mt-1">
         <p className="text-sm font-black text-slate-800">Aria</p>
-        <p className="text-[10px] text-slate-400 font-medium">Senior Engineer · Gemini AI</p>
+        <p className="text-[10px] text-slate-400 font-medium">Senior Evaluation Engineer · Virtual Assistant</p>
       </div>
 
       {/* Speech bubble */}

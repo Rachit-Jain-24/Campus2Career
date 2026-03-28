@@ -11,7 +11,7 @@ export function TransparencyPanel({ meta, defaultExpanded = false }: Transparenc
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   const modelLabel =
-    meta.modelUsed === 'local-fallback' ? 'Local Fallback' : 'Gemini 1.5 Flash';
+    meta.modelUsed === 'local-fallback' ? 'Local Fallback' : 'VPA Engine';
 
   return (
     <div className="mt-2">
@@ -21,7 +21,7 @@ export function TransparencyPanel({ meta, defaultExpanded = false }: Transparenc
         aria-expanded={expanded}
       >
         {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-        Show AI Details
+        Show Analysis Details
       </button>
 
       {expanded && (

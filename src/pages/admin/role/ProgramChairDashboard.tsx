@@ -4,7 +4,7 @@ import {
     BookOpen, ShieldCheck, GraduationCap, TrendingUp, BarChart3,
     Users, ArrowRight, CheckCircle2, AlertTriangle, Target, Loader2,
     Inbox, XCircle, Award, Code2, RefreshCw, ChevronDown,
-    ChevronUp, Search, Filter
+    ChevronUp, Search, Filter, Send, Megaphone
 } from 'lucide-react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -13,6 +13,7 @@ import {
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { WelcomeCard } from '../../../components/admin/dashboard/WelcomeCard';
+import { BatchSWOCSection } from '../../../components/admin/dashboard/BatchSWOCSection';
 import { eligibilityService } from '../../../services/admin/eligibility.service';
 import type { AdminEligibilityRule } from '../../../types/eligibilityAdmin';
 
@@ -135,7 +136,7 @@ export const ProgramChairDashboard: React.FC = () => {
 
     // ── Derived KPIs ──────────────────────────────────────────
     const kpis = useMemo(() => {
-        if (!students || !eligibilityRules) return { total: 0, eligible: 0, placed: 0, avgCgpa: 0, profileComplete: 0, activeRules: 0, placementRate: '0' };
+        if (!students || !eligibilityRules) return { total: 0, eligible: 0, placed: 0, avgCgpa: 0, profileComplete: 0, activeRules: 0, placementRate: '0', internshipRate: 0 };
         const total = students.length;
         const eligible = students.filter(s =>
             s.placementStatus === 'eligible' || s.placementStatus === 'placed'
@@ -147,7 +148,11 @@ export const ProgramChairDashboard: React.FC = () => {
         const activeRules = eligibilityRules.filter(r => r.active !== false).length;
         const placementRate = total > 0 ? ((placed / total) * 100).toFixed(1) : '0';
 
-        return { total, eligible, placed, avgCgpa, profileComplete, activeRules, placementRate };
+        // Calculate internship rate
+        const internshipsDone = students.filter(s => (s.internships?.length || 0) > 0).length;
+        const internshipRate = total > 0 ? Math.round((internshipsDone / total) * 100) : 0;
+
+        return { total, eligible, placed, avgCgpa, profileComplete, activeRules, placementRate, internshipRate };
     }, [students, eligibilityRules]);
 
     // ── Year-wise breakdown ───────────────────────────────────
@@ -320,6 +325,62 @@ export const ProgramChairDashboard: React.FC = () => {
                 <KpiCard title="Departments" value={deptStats.length} subtitle="Active departments"
                     icon={BarChart3} colorClass="text-indigo-700 bg-indigo-100 border-indigo-200" loading={isLoading} />
             </div>
+
+            {/* Program Chair Action Hub */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
+                {/* Rule Override Control */}
+                <div className="lg:col-span-1 card-nmims p-6 border-l-4 border-l-rose-500/50">
+                    <SectionHeader icon={ShieldCheck} title="Compliance Guard" />
+                    <div className="space-y-4 mt-4">
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/30">
+                            <span className="text-xs font-bold uppercase text-slate-500 tracking-tight">Active Policy Status</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${kpis.activeRules > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                                {kpis.activeRules > 0 ? 'Enforced' : 'Inactive'}
+                            </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed italic">
+                             Automated eligibility checks are running against the current {kpis.total} students in the cohort.
+                        </p>
+                        <NavLink to="/program-chair/eligibility-rules" className="flex items-center justify-center gap-2 w-full py-3 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg hover:shadow-indigo-500/20">
+                             Modify Policy <ArrowRight className="w-3 h-3" />
+                        </NavLink>
+                    </div>
+                </div>
+
+                {/* Batch Announcement */}
+                <div className="lg:col-span-2 card-nmims p-6 border-l-4 border-l-indigo-500/50 relative overflow-hidden">
+                    <div className="absolute top-[-20px] right-[-20px] opacity-[0.03]">
+                        <BookOpen className="w-32 h-32" />
+                    </div>
+                    <SectionHeader icon={Megaphone} title="Departmental Directive" />
+                    <div className="mt-4 flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                            <textarea 
+                                placeholder="Post an official directive to all students in your program..."
+                                className="w-full h-24 p-4 bg-background border border-border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none font-medium placeholder:text-muted-foreground/50 transition-all"
+                            />
+                        </div>
+                        <div className="flex flex-col gap-2 justify-end items-center sm:items-stretch group">
+                            <button className="nmims-btn-primary p-4 rounded-xl shadow-xl hover:shadow-primary/30 flex items-center justify-center group-hover:bg-primary/90 transition-all">
+                                <Send className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                            </button>
+                            <span className="text-[10px] text-center text-muted-foreground font-black uppercase tracking-tighter whitespcae-nowrap">Broadcast to Batch</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* AI Batch SWOC Section - New Strategic Insight */}
+            <BatchSWOCSection 
+                batchData={{
+                    total: kpis.total,
+                    avgCgpa: kpis.avgCgpa,
+                    topSkills: topSkills.map(s => s.skill),
+                    placementRate: kpis.placementRate,
+                    internshipRate: kpis.internshipRate,
+                    careerTracks: careerTrackData.map(c => c.name)
+                }}
+            />
 
             {/* Year-wise Bar Chart + Career Track Pie */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

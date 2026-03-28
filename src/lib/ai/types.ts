@@ -93,7 +93,7 @@ export interface TransparencyMeta {
   ragChunksRetrieved: number;
   topChunkTitle: string;
   placementReadinessScore: number;
-  modelUsed: 'gemini-1.5-flash' | 'local-fallback';
+  modelUsed: string;
 }
 
 export interface ChatbotResponse {

@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-    Building2, Briefcase, Calendar, Clock, BarChart3, Target,
-    ArrowRight, Loader2, Inbox, RefreshCw, Activity
+    Building2, Briefcase, Clock, ArrowRight, Loader2, RefreshCw,
+    Target, FilePlus, Search, UserCheck, TrendingUp, Layers, Activity,
+    Inbox, BarChart3
 } from 'lucide-react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-    ResponsiveContainer, PieChart, Pie, Cell, Legend
+    ResponsiveContainer, PieChart, Pie, Cell, Legend,
+    AreaChart, Area
 } from 'recharts';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
@@ -135,20 +137,67 @@ export const PlacementOfficerDashboard: React.FC = () => {
                 </button>
             </div>
 
-            <div>
-                <h3 className="text-base font-semibold mb-3 text-foreground">Quick Actions</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {[
-                        { label: 'Companies', icon: Building2, path: '/placement/companies', color: 'text-blue-700 bg-blue-100' },
-                        { label: 'Drives', icon: Activity, path: '/placement/drives', color: 'text-violet-700 bg-violet-100' },
-                        { label: 'Interviews', icon: Calendar, path: '/placement/interviews', color: 'text-emerald-700 bg-emerald-100' },
-                        { label: 'Offers', icon: Briefcase, path: '/placement/offers', color: 'text-amber-700 bg-amber-100' },
-                    ].map((a, i) => (
-                        <NavLink key={i} to={a.path} className="flex flex-col items-center justify-center p-4 card-nmims hover:bg-secondary/50 hover:border-primary/30 transition-all group text-center">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform ${a.color}`}><a.icon className="w-5 h-5" /></div>
-                            <span className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">{a.label}</span>
-                        </NavLink>
-                    ))}
+            {/* Drive Operations Center */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 card-nmims p-6 border-l-4 border-l-blue-500/50">
+                    <SectionHeader icon={Layers} title="Recruitment Pipeline" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                        <div className="h-48">
+                             <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={[
+                                    { stage: 'Applicants', count: drives.reduce((a, b) => a + (b.applicantCount || 0), 0) },
+                                    { stage: 'Shortlisted', count: drives.reduce((a, b) => a + (b.shortlistedCount || 0), 0) },
+                                    { stage: 'Offers', count: offers.length },
+                                ]} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <Tooltip {...TT} />
+                                    <Area type="monotone" dataKey="count" stroke="#3b82f6" fillOpacity={1} fill="url(#colorCount)" />
+                                </AreaChart>
+                             </ResponsiveContainer>
+                        </div>
+                        <div className="flex flex-col justify-center space-y-3">
+                             {[
+                                { label: 'Total Applicants', count: drives.reduce((a, b) => a + (b.applicantCount || 0), 0), icon: Search, color: 'text-blue-600' },
+                                { label: 'Shortlisted', count: drives.reduce((a, b) => a + (b.shortlistedCount || 0), 0), icon: UserCheck, color: 'text-purple-600' },
+                                { label: 'Placed', count: offers.filter(o => o.status?.toLowerCase() === 'accepted').length, icon: TrendingUp, color: 'text-emerald-600' },
+                             ].map((item, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-border/50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-1.5 rounded-lg bg-white shadow-sm">
+                                            <item.icon className={`w-4 h-4 ${item.color}`} />
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">{item.label}</span>
+                                    </div>
+                                    <span className="text-sm font-black text-slate-800">{item.count}</span>
+                                </div>
+                             ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="card-nmims p-6 border-l-4 border-l-primary/50 relative overflow-hidden">
+                    <div className="absolute top-[-10px] right-[-10px] opacity-[0.05]">
+                         <FilePlus className="w-24 h-24" />
+                    </div>
+                    <SectionHeader icon={FilePlus} title="Placement Hub" />
+                    <div className="grid grid-cols-1 gap-2.5 mt-4 relative">
+                        {[
+                            { label: 'Post New Job Drive', icon: FilePlus, path: '/placement/drives/new', color: 'bg-emerald-50 text-emerald-700' },
+                            { label: 'Review Applications', icon: Search, path: '/placement/drives', color: 'bg-blue-50 text-blue-700' },
+                            { label: 'Verify Offer Letters', icon: Briefcase, path: '/placement/offers', color: 'bg-amber-50 text-amber-700' },
+                        ].map((a, i) => (
+                            <NavLink key={i} to={a.path} className="flex items-center gap-3 p-3.5 rounded-xl border border-border/60 hover:border-primary/50 hover:bg-secondary/50 transition-all group bg-white/50 backdrop-blur-sm">
+                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${a.color}`}><a.icon className="w-5 h-5" /></div>
+                                <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{a.label}</span>
+                                <ArrowRight className="w-4 h-4 ml-auto text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                            </NavLink>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -166,7 +215,7 @@ export const PlacementOfficerDashboard: React.FC = () => {
                         : driveStatusData.length === 0 ? <div className="h-52 flex flex-col items-center justify-center text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No drives</p></div>
                         : <ResponsiveContainer width="100%" height={220}>
                             <PieChart>
-                                <Pie data={driveStatusData} cx="50%" cy="50%" outerRadius={80} dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                                <Pie data={driveStatusData} cx="50%" cy="50%" outerRadius={80} dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`} labelLine={false}>
                                     {driveStatusData.map((_, i) => <Cell key={i} fill={DEPT_COLORS[i % DEPT_COLORS.length]} />)}
                                 </Pie>
                                 <Tooltip {...TT} />

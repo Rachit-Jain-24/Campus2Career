@@ -7,8 +7,6 @@ import { FACULTY_NAV } from '../config/roles/roleNavigation';
 import { FacultyDashboard } from '../pages/admin/role/FacultyDashboard';
 import { StudentsPage } from '../pages/admin/StudentsPage';
 import { BatchAnalytics } from '../pages/admin/BatchAnalytics';
-import { ReportsPage } from '../pages/admin/ReportsPage';
-import { SettingsPage } from '../pages/admin/SettingsPage';
 
 const FacultyShell: React.FC = () => (
     <RoleLayout
@@ -26,8 +24,6 @@ export const FacultyPortalRoutes: React.FC = () => (
             <Route path="dashboard" element={<FacultyDashboard />} />
             <Route path="students" element={<StudentsPage />} />
             <Route path="batch-analytics" element={<BatchAnalytics />} />
-            <Route path="reports" element={<ReportsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
         </Route>
     </Routes>
 );

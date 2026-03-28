@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
     Users, BookOpen, Award, AlertTriangle, BarChart3, Code2,
     ArrowRight, Loader2, Inbox, RefreshCw, GraduationCap, FileText,
-    Settings, Calendar
+    Settings, Calendar, Send
 } from 'lucide-react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -12,6 +12,7 @@ import {
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { WelcomeCard } from '../../../components/admin/dashboard/WelcomeCard';
+import { BatchSWOCSection } from '../../../components/admin/dashboard/BatchSWOCSection';
 
 const parseCgpa = (v: string | number | undefined): number => {
     if (!v) return 0;
@@ -77,7 +78,14 @@ export const FacultyDashboard: React.FC = () => {
         const cgpas = students.map(s => parseCgpa(s.cgpa)).filter(v => v > 0);
         const avgCgpa = cgpas.length ? (cgpas.reduce((a, b) => a + b, 0) / cgpas.length) : 0;
         const noInternships = students.filter(s => !s.internships || (s.internships as unknown[]).length === 0).length;
-        return { total, withResume, avgCgpa, noInternships };
+        
+        // Additions for Batch SWOC
+        const placed = students.filter(s => s.placementStatus === 'placed').length;
+        const placementRate = total > 0 ? ((placed / total) * 100).toFixed(1) : '0';
+        const internshipsDone = students.filter(s => (s.internships?.length || 0) > 0).length;
+        const internshipRate = total > 0 ? Math.round((internshipsDone / total) * 100) : 0;
+
+        return { total, withResume, avgCgpa, noInternships, placementRate, internshipRate };
     }, [students]);
 
     const yearData = useMemo(() => {
@@ -167,6 +175,61 @@ export const FacultyDashboard: React.FC = () => {
                 <KpiCard title="Avg CGPA" value={isLoading ? '...' : kpis.avgCgpa.toFixed(2)} subtitle="Across all students" icon={Award} colorClass="text-emerald-700 bg-emerald-100 border-emerald-200" loading={isLoading} />
                 <KpiCard title="Need Mentoring" value={kpis.noInternships} subtitle="No internships yet" icon={AlertTriangle} colorClass="text-amber-700 bg-amber-100 border-amber-200" loading={isLoading} />
             </div>
+
+            {/* Mentorship Action Desk */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
+                {/* Academic Intervention */}
+                <div className="lg:col-span-1 card-nmims p-6 border-l-4 border-l-rose-500/50">
+                    <SectionHeader icon={AlertTriangle} title="Student Flagging" />
+                    <div className="space-y-4 mt-4">
+                        <div className="p-3 rounded-xl bg-rose-50/50 border border-rose-100">
+                             <p className="text-xs font-bold text-rose-700 uppercase tracking-tight mb-1">Attention Required</p>
+                             <p className="text-[10px] text-rose-600 leading-relaxed font-medium">
+                                 {kpis.noInternships} students flagged for missing internships. Immediate intervention recommended.
+                             </p>
+                        </div>
+                        <button className="flex items-center justify-center gap-2 w-full py-3 bg-rose-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg hover:shadow-rose-500/20">
+                             Batch Intervention <ArrowRight className="w-3 h-3" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Session Notes */}
+                <div className="lg:col-span-2 card-nmims p-6 border-l-4 border-l-emerald-500/50 relative overflow-hidden">
+                    <div className="absolute top-[-20px] right-[-20px] opacity-[0.03]">
+                        <Users className="w-32 h-32" />
+                    </div>
+                    <SectionHeader icon={FileText} title="Mentorship Journal" />
+                    <div className="mt-4 flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                            <textarea 
+                                placeholder="Log private notes from your recent student mentoring sessions..."
+                                className="w-full h-24 p-4 bg-background border border-border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none font-medium placeholder:text-muted-foreground/50 transition-all"
+                            />
+                        </div>
+                        <div className="flex flex-col gap-2 justify-end items-center sm:items-stretch">
+                            <button className="flex items-center justify-center p-4 rounded-xl shadow-xl bg-emerald-600 hover:bg-emerald-700 transition-all text-white">
+                                <Send className="w-5 h-5" />
+                            </button>
+                            <span className="text-[10px] text-center text-muted-foreground font-black uppercase tracking-tighter">Save Private Log</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* AI Batch SWOC Section */}
+            {!isLoading && kpis.total > 0 && (
+                <BatchSWOCSection 
+                    batchData={{
+                        total: kpis.total,
+                        avgCgpa: kpis.avgCgpa,
+                        topSkills: topSkills.map(s => s.skill),
+                        placementRate: kpis.placementRate,
+                        internshipRate: kpis.internshipRate,
+                        careerTracks: []
+                    }}
+                />
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="card-nmims p-6">

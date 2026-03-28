@@ -9,9 +9,13 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { 
+    collection, getDocs, query, orderBy, doc, getDoc, 
+    addDoc, serverTimestamp 
+} from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { WelcomeCard } from '../../../components/admin/dashboard/WelcomeCard';
+import { Megaphone, BarChart as BarChartIcon, Send, Goal } from 'lucide-react';
 
 const parseCgpa = (v: string | number | undefined): number => {
     if (!v) return 0;
@@ -28,7 +32,7 @@ interface CompanyRaw { id: string; name: string; industry?: string; status?: str
 interface AdminUserRaw { id: string; name: string; role: string; status?: string; }
 
 const KpiCard: React.FC<{ title: string; value: string | number; subtitle: string; icon: React.ElementType; accent: string; loading: boolean }> = ({ title, value, subtitle, icon: Icon, accent, loading }) => (
-    <div className="card-nmims p-5">
+    <div className="card-nmims p-5 h-full">
         <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-black uppercase text-slate-400 tracking-wide">{title}</span>
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${accent}`}>
@@ -40,7 +44,7 @@ const KpiCard: React.FC<{ title: string; value: string | number; subtitle: strin
     </div>
 );
 
-const SectionTitle: React.FC<{ icon: React.ElementType; title: string; to?: string; toLabel?: string }> = ({ icon: Icon, title, to, toLabel }) => (
+const SectionHeader: React.FC<{ icon: React.ElementType; title: string; to?: string; toLabel?: string }> = ({ icon: Icon, title, to, toLabel }) => (
     <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-foreground flex items-center gap-2 text-base">
             <Icon className="w-4 h-4 text-primary" />{title}
@@ -54,23 +58,50 @@ export const DeanDashboard: React.FC = () => {
     const [offers, setOffers] = useState<OfferRaw[]>([]);
     const [companies, setCompanies] = useState<CompanyRaw[]>([]);
     const [adminUsers, setAdminUsers] = useState<AdminUserRaw[]>([]);
+    const [config, setConfig] = useState<any>(null);
+    const [broadcastMsg, setBroadcastMsg] = useState('');
+    const [isBroadcasting, setIsBroadcasting] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [lastRefreshed, setLastRefreshed] = useState(new Date());
 
     const fetchData = async () => {
         setIsLoading(true);
-        const [s, o, c, a] = await Promise.allSettled([
+        const [s, o, c, a, conf] = await Promise.allSettled([
             getDocs(query(collection(db, 'students'), orderBy('name'))),
             getDocs(collection(db, 'offers')),
             getDocs(collection(db, 'companies')),
             getDocs(collection(db, 'admins')),
+            getDoc(doc(db, 'config', 'platformSettings')),
         ]);
         if (s.status === 'fulfilled') setStudents(s.value.docs.map(d => ({ id: d.id, ...d.data() } as StudentRaw)));
         if (o.status === 'fulfilled') setOffers(o.value.docs.map(d => ({ id: d.id, ...d.data() } as OfferRaw)));
         if (c.status === 'fulfilled') setCompanies(c.value.docs.map(d => ({ id: d.id, ...d.data() } as CompanyRaw)));
         if (a.status === 'fulfilled') setAdminUsers(a.value.docs.map(d => ({ id: d.id, ...d.data() } as AdminUserRaw)));
+        if (conf.status === 'fulfilled' && conf.value.exists()) setConfig(conf.value.data());
+        
         setLastRefreshed(new Date());
         setIsLoading(false);
+    };
+
+    const handleBroadcast = async () => {
+        if (!broadcastMsg.trim()) return;
+        setIsBroadcasting(true);
+        try {
+            await addDoc(collection(db, 'notifications'), {
+                type: 'dean_broadcast',
+                title: 'Dean\'s Strategic Message',
+                message: broadcastMsg,
+                timestamp: serverTimestamp(),
+                sender: 'Dean Ramesh Kumar',
+                priority: 'high'
+            });
+            setBroadcastMsg('');
+            alert('Broadcasting operation successful. All students notified.');
+        } catch (e) {
+            console.error('Broadcast failed:', e);
+            alert('Operation failed. Check permissions.');
+        }
+        setIsBroadcasting(false);
     };
 
     useEffect(() => { fetchData(); }, []);
@@ -156,6 +187,70 @@ export const DeanDashboard: React.FC = () => {
                 ))}
             </div>
 
+            {/* Strategic Control Center */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 pt-2">
+                {/* Global Broadcast Box */}
+                <div className="xl:col-span-2 card-nmims p-6 border-l-4 border-l-primary/50 relative overflow-hidden">
+                    <div className="absolute top-[-20px] right-[-20px] opacity-[0.03]">
+                        <Megaphone className="w-32 h-32" />
+                    </div>
+                    <SectionHeader icon={Megaphone} title="Campus-wide Broadcast" />
+                    <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                        <div className="flex-1 relative">
+                            <textarea
+                                value={broadcastMsg}
+                                onChange={(e) => setBroadcastMsg(e.target.value)}
+                                placeholder="Write a strategic message to all students and staff..."
+                                className="w-full h-24 p-4 bg-background border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                            />
+                        </div>
+                        <div className="flex flex-col gap-2 justify-end">
+                            <button
+                                onClick={handleBroadcast}
+                                disabled={isBroadcasting || !broadcastMsg.trim()}
+                                className="nmims-btn-primary flex items-center justify-center gap-2 px-6 py-3 rounded-xl disabled:opacity-50"
+                            >
+                                {isBroadcasting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                Broadcast
+                            </button>
+                            <p className="text-[10px] text-muted-foreground text-center italic leading-tight">Message will be visible<br/>to all 2000+ students</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Strategic Targets */}
+                <div className="card-nmims p-6 border-l-4 border-l-emerald-500/50">
+                    <SectionHeader icon={Goal} title="Institutional Goals" />
+                    <div className="space-y-4 mt-4">
+                        {[
+                            { label: 'Placement Rate', current: kpis.rate, target: config?.targets?.placementRate || 100, unit: '%' },
+                            { label: 'Avg Package (LPA)', current: kpis.avgPkg, target: config?.targets?.averageCTC || 15, unit: '' },
+                            { label: 'Higher Education Rate', current: 12, target: config?.targets?.nirfHigherStudies || 20, unit: '%' },
+                        ].map((t, idx) => {
+                            const progress = Math.min(100, (parseFloat(t.current as string) / t.target) * 100);
+                            return (
+                                <div key={idx} className="space-y-1.5">
+                                    <div className="flex justify-between items-end">
+                                        <span className="text-xs font-bold text-foreground">{t.label}</span>
+                                        <span className="text-[10px] font-medium text-muted-foreground tracking-tight">Trgt: {t.target}{t.unit}</span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+                                        <div 
+                                            className={`h-full transition-all duration-1000 ${progress >= 90 ? 'bg-emerald-500' : progress >= 70 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                                            style={{ width: `${progress}%` }}
+                                        />
+                                    </div>
+                                    <div className="flex justify-between text-[10px] items-center">
+                                        <span className="text-primary font-bold">Curr: {t.current}{t.unit}</span>
+                                        <span className="text-muted-foreground">{progress.toFixed(0)}% reached</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+
             {/* KPI Row 1 */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <KpiCard title="Total Students" value={kpis.total} subtitle="Registered in system" icon={Users} accent="bg-blue-100 text-blue-700" loading={isLoading} />
@@ -175,7 +270,7 @@ export const DeanDashboard: React.FC = () => {
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="card-nmims p-6">
-                    <SectionTitle icon={BarChart3} title="Department-wise Placement" to="/dean/batch-analytics" />
+                    <SectionHeader icon={BarChart3} title="Department-wise Placement" to="/dean/batch-analytics" />
                     {isLoading ? <div className="h-56 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
                         : deptData.length === 0 ? <div className="h-56 flex flex-col items-center justify-center text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No data yet</p></div>
                         : <ResponsiveContainer width="100%" height={220}>
@@ -192,7 +287,7 @@ export const DeanDashboard: React.FC = () => {
                 </div>
 
                 <div className="card-nmims p-6">
-                    <SectionTitle icon={TrendingUp} title="Year-wise Avg CGPA" />
+                    <SectionHeader icon={TrendingUp} title="Year-wise Avg CGPA" />
                     {isLoading ? <div className="h-56 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
                         : yearCgpa.length === 0 ? <div className="h-56 flex flex-col items-center justify-center text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No data yet</p></div>
                         : <ResponsiveContainer width="100%" height={220}>
@@ -210,7 +305,7 @@ export const DeanDashboard: React.FC = () => {
             {/* Dept Table + Admin Roles */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="card-nmims p-6 lg:col-span-2">
-                    <SectionTitle icon={BarChart3} title="Department Performance" to="/dean/batch-analytics" toLabel="Full analytics" />
+                    <SectionHeader icon={BarChart3} title="Department Performance" to="/dean/batch-analytics" toLabel="Full analytics" />
                     {isLoading ? <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-secondary animate-pulse rounded-lg" />)}</div>
                         : deptData.length === 0 ? <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No department data</p></div>
                         : <div className="overflow-x-auto">
@@ -239,8 +334,9 @@ export const DeanDashboard: React.FC = () => {
                         </div>}
                 </div>
 
+                {/* Branch Performance */}
                 <div className="card-nmims p-6">
-                    <SectionTitle icon={ShieldCheck} title="Admin Role Distribution" />
+                    <SectionHeader icon={BarChartIcon} title="Branch Distribution" />
                     {isLoading ? <div className="h-52 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
                         : adminRoles.length === 0 ? <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No admin data</p></div>
                         : <ResponsiveContainer width="100%" height={210}>
@@ -257,7 +353,7 @@ export const DeanDashboard: React.FC = () => {
 
             {/* Recent Offers */}
             <div className="card-nmims p-6">
-                <SectionTitle icon={Briefcase} title="Recent Offers" to="/dean/reports" toLabel="All reports" />
+                <SectionHeader icon={Briefcase} title="Recent Offers" to="/dean/reports" toLabel="All reports" />
                 {isLoading ? <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-secondary animate-pulse rounded-xl" />)}</div>
                     : offers.length === 0 ? <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No offers yet. Seed admin data first.</p></div>
                     : <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

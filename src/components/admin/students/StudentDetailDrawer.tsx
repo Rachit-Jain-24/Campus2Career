@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { X, Mail, Phone, BookOpen, Briefcase, Award, TrendingUp, Download, Building2 } from 'lucide-react';
+import { SWOCAnalysis } from '../../ui/SWOCAnalysis';
 import type { AdminStudentProfile } from '../../../types/studentAdmin';
 
 interface StudentDetailDrawerProps {
@@ -13,6 +14,19 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
     isOpen,
     onClose
 }) => {
+
+    // Simple mapper to make AdminStudentProfile compatible with SWOCAnalysis
+    const mappedStudentForSWOC = student ? {
+        name: student.fullName,
+        branch: student.department,
+        currentYear: student.currentYear,
+        cgpa: student.cgpa,
+        techSkills: student.skills,
+        projects: student.projectsCount ? new Array(student.projectsCount) : [],
+        internships: student.internshipCompleted ? [1] : [],
+        careerTrack: student.careerGoal,
+        assessmentResults: (student as any).assessmentResults || {}
+    } : null;
 
     // Handle Escape key to close
     useEffect(() => {
@@ -36,13 +50,13 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
             />
 
             {/* Drawer */}
-            <div className="fixed inset-y-0 right-0 w-full md:w-[600px] bg-card border-l border-border/50 shadow-2xl z-50 overflow-y-auto animate-slide-in-right">
+            <div className="fixed inset-y-0 right-0 w-full md:w-[600px] bg-card border-l border-border/50 shadow-2xl z-50 overflow-y-auto animate-slide-in-right text-slate-900 leading-normal">
 
                 {/* Header Section */}
                 <div className="sticky top-0 z-10 bg-card/90 backdrop-blur-md border-b border-border p-6 flex items-start justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500/20 to-purple-500/20 border border-brand-500/20 flex items-center justify-center shadow-inner">
-                            <span className="text-2xl font-bold text-brand-300">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/20 flex items-center justify-center shadow-inner">
+                            <span className="text-2xl font-bold text-primary">
                                 {student.fullName.charAt(0)}{student.fullName.split(' ')[1]?.[0] || ''}
                             </span>
                         </div>
@@ -65,6 +79,7 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
                     {/* Quick Stats Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <div className="bg-secondary/50 border border-border/50 rounded-xl p-4 text-center">
+                            <div className="text-sm text-muted-foreground mb-1">CGPA</div>
                             <div className="text-xl font-bold text-primary">{typeof student.cgpa === 'number' ? student.cgpa.toFixed(2) : (Number(student.cgpa) || 0).toFixed(2)}</div>
                         </div>
                         <div className="bg-secondary/50 border border-border/50 rounded-xl p-4 text-center">
@@ -79,6 +94,14 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
                             <div className="text-sm text-muted-foreground mb-1">Offers</div>
                             <div className="text-xl font-bold text-emerald-400">{student.offersCount || 0}</div>
                         </div>
+                    </div>
+
+                    {/* AI SWOC Analysis for Admins */}
+                    <div className="bg-secondary/10 border border-border/20 rounded-[2.5rem] p-6 shadow-sm">
+                        <SWOCAnalysis 
+                            studentData={mappedStudentForSWOC} 
+                            editable={true} 
+                        />
                     </div>
 
                     {/* Contact Info */}
@@ -144,7 +167,7 @@ export const StudentDetailDrawer: React.FC<StudentDetailDrawerProps> = ({
                     </div>
 
                     {/* Resume & Documents */}
-                    <div className="bg-secondary/30 border border-border/30 rounded-xl p-5 flex items-center justify-between">
+                    <div className="bg-secondary/30 border border-border/30 rounded-xl p-5 flex items-center justify-between text-slate-900">
                         <div>
                             <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
                                 <BookOpen className="w-4 h-4 text-muted-foreground" />

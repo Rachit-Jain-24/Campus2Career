@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { GaugeChart } from '../../components/charts/GaugeChart';
 import { RadarChart } from '../../components/charts/RadarChart';
+import { SWOCAnalysis } from '../../components/ui/SWOCAnalysis';
 import { useAuth } from '../../contexts/AuthContext';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { useNavigate } from 'react-router-dom';
@@ -78,6 +79,21 @@ export default function StudentDashboard() {
         if (user.resumeUrl) ps += 10;
 
         return { readiness: Math.min(crs, 100), placement: Math.min(ps, 100) };
+    };
+
+    const handleSWOCUpdate = async (newSWOC: any) => {
+        if (!user) return;
+        try {
+            await updateUser({
+                ...user,
+                assessmentResults: {
+                    ...(user.assessmentResults || {}),
+                    swoc: newSWOC
+                }
+            });
+        } catch (error) {
+            console.error("Failed to save SWOC update:", error);
+        }
     };
 
     const { readiness: liveReadinessScore, placement: livePlacementScore } = calculateRealTimeScores();
@@ -180,7 +196,7 @@ export default function StudentDashboard() {
             stats.push({ label: "Resume Strength", value: getResumeStrength(), icon: Sparkles, color: "text-purple-600", bg: "bg-purple-50", trend: "ATS Optimized" });
         } else {
             stats.push({ label: "Placement Status", value: user?.placementStatus || "Preparing", icon: Trophy, color: "text-purple-600", bg: "bg-purple-50", trend: "Final Season" });
-            stats.push({ label: "Placement Score", value: `${livePlacementScore}%`, icon: Sparkles, color: "text-green-600", bg: "bg-green-50", trend: "AI Predicted" });
+            stats.push({ label: "Placement Score", value: `${livePlacementScore}%`, icon: Sparkles, color: "text-green-600", bg: "bg-green-50", trend: "Ready" });
             stats.push({ label: "Resume Strength", value: getResumeStrength(), icon: FileText, color: "text-blue-600", bg: "bg-blue-50", trend: "ATS Optimized" });
         }
         return stats;
@@ -362,6 +378,15 @@ export default function StudentDashboard() {
                         <h3 className="font-bold text-slate-800 mb-6">Skills Overview</h3>
                         <RadarChart data={derivedSkills} />
                     </div>
+                </div>
+
+                {/* AI SWOC Analysis Section */}
+                <div className="card-nmims bg-white p-8">
+                    <SWOCAnalysis 
+                        studentData={user} 
+                        onUpdate={handleSWOCUpdate} 
+                        editable={true} 
+                    />
                 </div>
 
                 {/* Main Content Row 2: Roadmap + LeetCode */}

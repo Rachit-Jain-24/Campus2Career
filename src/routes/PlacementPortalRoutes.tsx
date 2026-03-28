@@ -10,8 +10,6 @@ import { DrivesPage } from '../pages/admin/DrivesPage';
 import { InterviewsPage } from '../pages/admin/InterviewsPage';
 import { OffersPage } from '../pages/admin/OffersPage';
 import { ReportsPage } from '../pages/admin/ReportsPage';
-import { SettingsPage } from '../pages/admin/SettingsPage';
-import { AuditLogsPage } from '../pages/admin/AuditLogsPage';
 
 const PlacementShell: React.FC = () => (
     <RoleLayout
@@ -32,8 +30,6 @@ export const PlacementPortalRoutes: React.FC = () => (
             <Route path="interviews" element={<InterviewsPage />} />
             <Route path="offers" element={<OffersPage />} />
             <Route path="reports" element={<ReportsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="audit-logs" element={<AuditLogsPage />} />
         </Route>
     </Routes>
 );

@@ -26,37 +26,26 @@ export const ADMIN_NAV: RoleNavItem[] = [
 // ── Dean ──────────────────────────────────────────────────────
 export const DEAN_NAV: RoleNavItem[] = [
     { path: '/dean/dashboard', label: 'Dean Dashboard', icon: Landmark, section: 'Overview' },
-    { path: '/dean/overview', label: 'Overview Dashboard', icon: LayoutDashboard, section: 'Overview' },
-    { path: '/dean/users', label: 'User Management', icon: Users, section: 'Directory' },
     { path: '/dean/students', label: 'Students Directory', icon: GraduationCap, section: 'Directory' },
     { path: '/dean/batch-analytics', label: 'Batch Analytics', icon: BarChart3, section: 'Directory' },
     { path: '/dean/reports', label: 'Reports & Analytics', icon: BarChart3, section: 'Insights' },
-    { path: '/dean/settings', label: 'Platform Settings', icon: Settings, section: 'System' },
-    { path: '/dean/audit-logs', label: 'Audit Logs', icon: History, section: 'System' },
 ];
 
 // ── Director ──────────────────────────────────────────────────
 export const DIRECTOR_NAV: RoleNavItem[] = [
     { path: '/director/dashboard', label: 'Director Dashboard', icon: Target, section: 'Overview' },
-    { path: '/director/overview', label: 'Overview Dashboard', icon: LayoutDashboard, section: 'Overview' },
-    { path: '/director/users', label: 'User Management', icon: Users, section: 'Directory' },
     { path: '/director/students', label: 'Students Directory', icon: GraduationCap, section: 'Directory' },
     { path: '/director/batch-analytics', label: 'Batch Analytics', icon: BarChart3, section: 'Directory' },
     { path: '/director/reports', label: 'Reports & Analytics', icon: BarChart3, section: 'Insights' },
-    { path: '/director/settings', label: 'Platform Settings', icon: Settings, section: 'System' },
-    { path: '/director/audit-logs', label: 'Audit Logs', icon: History, section: 'System' },
 ];
 
 // ── Program Chair ─────────────────────────────────────────────
 export const PROGRAM_CHAIR_NAV: RoleNavItem[] = [
     { path: '/program-chair/dashboard', label: 'Program Chair Dashboard', icon: BookOpen, section: 'Overview' },
-    { path: '/program-chair/overview', label: 'Overview Dashboard', icon: LayoutDashboard, section: 'Overview' },
-    { path: '/program-chair/users', label: 'User Management', icon: Users, section: 'Directory' },
     { path: '/program-chair/students', label: 'Students Directory', icon: GraduationCap, section: 'Directory' },
     { path: '/program-chair/batch-analytics', label: 'Batch Analytics', icon: BarChart3, section: 'Directory' },
     { path: '/program-chair/reports', label: 'Reports & Analytics', icon: BarChart3, section: 'Insights' },
-    { path: '/program-chair/settings', label: 'Platform Settings', icon: Settings, section: 'System' },
-    { path: '/program-chair/audit-logs', label: 'Audit Logs', icon: History, section: 'System' },
+    { path: '/program-chair/eligibility-rules', label: 'Eligibility Rules', icon: ShieldCheck, section: 'Configuration' },
 ];
 
 // ── Faculty ───────────────────────────────────────────────────
@@ -64,8 +53,6 @@ export const FACULTY_NAV: RoleNavItem[] = [
     { path: '/faculty/dashboard', label: 'Faculty Dashboard', icon: UserCheck, section: 'Overview' },
     { path: '/faculty/students', label: 'Students Directory', icon: GraduationCap, section: 'Directory' },
     { path: '/faculty/batch-analytics', label: 'Batch Analytics', icon: BarChart3, section: 'Directory' },
-    { path: '/faculty/reports', label: 'Reports & Analytics', icon: BarChart3, section: 'Insights' },
-    { path: '/faculty/settings', label: 'Platform Settings', icon: Settings, section: 'System' },
 ];
 
 // ── Placement Officer ─────────────────────────────────────────
@@ -76,6 +63,4 @@ export const PLACEMENT_NAV: RoleNavItem[] = [
     { path: '/placement/interviews', label: 'Interviews', icon: CalendarCheck, section: 'Placement Operations' },
     { path: '/placement/offers', label: 'Offers & Outcomes', icon: Award, section: 'Placement Operations' },
     { path: '/placement/reports', label: 'Reports & Analytics', icon: BarChart3, section: 'Insights' },
-    { path: '/placement/settings', label: 'Platform Settings', icon: Settings, section: 'System' },
-    { path: '/placement/audit-logs', label: 'Audit Logs', icon: History, section: 'System' },
 ];
