@@ -1,13 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged
-} from 'firebase/auth';
-import type { User as FirebaseUser } from 'firebase/auth';
-import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
+import { supabase } from '../lib/supabase';
+import { userDb } from '../services/db/database.service';
 import type { AppUser, StudentUser } from '../types/auth';
 import { isAdminUser } from '../types/auth';
 
@@ -38,25 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Centralized Profile Resolution Strategy
     const lookupUserProfileByEmail = async (email: string): Promise<AppUser | null> => {
         try {
-            // Check 'students' collection first
-            let usersRef = collection(db, 'students');
-            let q = query(usersRef, where('email', '==', email));
-            let querySnapshot = await getDocs(q);
-
-            if (!querySnapshot.empty) {
-                return querySnapshot.docs[0].data() as AppUser;
-            }
-
-            // Fallback to 'admins' collection (for admins)
-            usersRef = collection(db, 'admins');
-            q = query(usersRef, where('email', '==', email));
-            querySnapshot = await getDocs(q);
-
-            if (!querySnapshot.empty) {
-                return querySnapshot.docs[0].data() as AppUser;
-            }
-
-            return null;
+            return await userDb.lookupUserProfileByEmail(email);
         } catch (error) {
             console.error("Error looking up user profile:", error);
             return null;
@@ -64,65 +39,95 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-            if (firebaseUser?.email) {
-                try {
-                    // Fast path: load from localStorage to prevent UI flicker
-                    const storedUser = localStorage.getItem('c2c_user');
-                    if (storedUser) {
-                        const parsed = JSON.parse(storedUser) as AppUser;
-                        // Verify the stored user matches the Firebase session
-                        if (parsed.email === firebaseUser.email) {
-                            setUser(parsed);
-                        }
-                    }
+        let profileUnsubscribe: (() => void) | undefined;
 
-                    // Background validation: always fetch fresh truth from Firestore
-                    const freshProfile = await lookupUserProfileByEmail(firebaseUser.email);
-                    if (freshProfile) {
-                        setUser(freshProfile);
-                        localStorage.setItem('c2c_user', JSON.stringify(freshProfile));
-                    } else {
-                        // Firebase auth exists, but no Firestore profile. Force logout.
-                        console.warn("Firebase Auth valid, but no explicit Firestore profile found.");
-                        await signOut(auth);
-                        setUser(null);
-                        localStorage.removeItem('c2c_user');
-                    }
-                } catch (error) {
-                    console.error('Error hydrating user session:', error);
-                }
+        // 1. Initial Session Check (Supabase)
+        const initAuth = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user?.email) {
+                await handleUserHydration(session.user.email);
             } else {
+                setIsLoading(false);
+            }
+        };
+
+        // 2. Auth State Listener (Supabase)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log(`[Supabase Auth] Event: ${event}`);
+            
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                if (session?.user?.email) {
+                    await handleUserHydration(session.user.email);
+                }
+            } else if (event === 'SIGNED_OUT') {
                 setUser(null);
                 localStorage.removeItem('c2c_user');
+                if (profileUnsubscribe) profileUnsubscribe();
             }
             setIsLoading(false);
         });
 
-        return () => unsubscribe();
+        const handleUserHydration = async (email: string) => {
+            try {
+                const freshProfile = await lookupUserProfileByEmail(email);
+                if (freshProfile) {
+                    setUser(freshProfile);
+                    localStorage.setItem('c2c_user', JSON.stringify(freshProfile));
+
+                    // Setup Real-time Profile Listener (Supabase Realtime)
+                    if (profileUnsubscribe) profileUnsubscribe();
+                    
+                    const isStudent = !isAdminUser(freshProfile);
+                    const docId = isStudent ? (freshProfile as StudentUser).sapId : email;
+                    const collection = isStudent ? 'students' : 'admins';
+
+                    if (docId) {
+                        profileUnsubscribe = userDb.onProfileChange?.(collection, docId, (updatedProfile) => {
+                            console.log('[Supabase Realtime] Profile Updated');
+                            setUser(prev => ({ ...prev, ...updatedProfile }));
+                            localStorage.setItem('c2c_user', JSON.stringify({ ...freshProfile, ...updatedProfile }));
+                        });
+                    }
+                } else {
+                    await supabase.auth.signOut();
+                    setUser(null);
+                    localStorage.removeItem('c2c_user');
+                }
+            } catch (error) {
+                console.error('Error hydrating user session:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        initAuth();
+
+        return () => {
+            subscription.unsubscribe();
+            if (profileUnsubscribe) profileUnsubscribe();
+        };
     }, []);
 
-    // Student Login via SAP ID
+    // Student Login via SAP ID (Supabase Auth)
     const login = async (sapId: string, password: string) => {
         setIsLoading(true);
         try {
-            // Step 1: Look up student email by SAP ID in 'students' collection
-            const userDoc = await getDoc(doc(db, 'students', sapId));
-            if (!userDoc.exists()) {
-                throw new Error('No account found for this SAP ID. Please register first.');
+            // In our system, student email is sapId@nmims.edu.in
+            const email = `${sapId}@nmims.edu.in`;
+            
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (error) throw error;
+            
+            // Re-fetch profile immediately for responsiveness
+            const userData = await userDb.getStudentDoc(sapId);
+            if (userData) {
+                setUser(userData);
+                localStorage.setItem('c2c_user', JSON.stringify(userData));
             }
-            const userData = userDoc.data() as StudentUser;
-
-            if (userData.role !== 'student') {
-                throw new Error('Please use the Admin login portal.');
-            }
-
-            // Step 2: Authenticate with Firebase using the resolved email
-            await signInWithEmailAndPassword(auth, userData.email, password);
-
-            // Note: onAuthStateChanged will handle setting the state, but we can set it immediately for speed
-            setUser(userData);
-            localStorage.setItem('c2c_user', JSON.stringify(userData));
         } catch (error: any) {
             handleAuthError(error, 'Login failed. Please check your credentials.');
         } finally {
@@ -130,23 +135,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    // Admin Login via Email directly
+    // Admin Login via Email (Supabase Auth)
     const adminLogin = async (email: string, password: string) => {
         setIsLoading(true);
         try {
-            // First authenticate with Firebase
-            await signInWithEmailAndPassword(auth, email, password);
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-            // Then resolve the role from Firestore
+            if (error) throw error;
+
             const adminProfile = await lookupUserProfileByEmail(email);
-
-            if (!adminProfile) {
-                await signOut(auth); // Rollback auth
-                throw new Error('auth/no-access-profile');
-            }
-
-            if (!isAdminUser(adminProfile)) {
-                await signOut(auth); // Rollback auth
+            if (!adminProfile || !isAdminUser(adminProfile)) {
+                await supabase.auth.signOut();
                 throw new Error('auth/unauthorized-role');
             }
 
@@ -159,46 +161,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    // Student Signup Flow
+    // Student Signup Flow (Supabase Auth)
     const signup = async (data: any) => {
         setIsLoading(true);
         try {
-            // 1. Create Auth Account
-            const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+            // 1. Create Auth Account in Supabase
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email: data.email,
+                password: data.password,
+                options: {
+                    data: {
+                        name: data.fullName,
+                        role: 'student',
+                        sap_id: data.sapId
+                    }
+                }
+            });
+
+            if (authError) throw authError;
+            if (!authData.user) throw new Error('Signup failed: No user created');
             
-            // 2. Prepare Default Student Data Structure
+            // 2. Create Profile in 'students' table
             const defaultUser: StudentUser = {
-                uid: userCredential.user.uid,
+                uid: authData.user.id,
                 sapId: data.sapId,
                 name: data.fullName,
                 email: data.email,
                 phone: data.phone,
-                role: 'student', // Default role
+                role: 'student',
                 branch: data.program,
                 rollNo: '',
                 currentYear: 1,
                 onboardingStep: 0,
                 program: data.program,
                 cgpa: '',
-                // Onboarding flags:
-                careerDiscoveryCompleted: false, // Must complete career test
-                profileCompleted: false,        // Must complete profile setup
-                assessmentCompleted: false,     // Must complete initial assessment
-                
+                careerDiscoveryCompleted: false,
+                profileCompleted: false,
+                assessmentCompleted: false,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
             };
 
-            // 3. Save into newly created 'students' collection
-            await setDoc(doc(db, 'students', data.sapId), defaultUser);
+            await userDb.updateUser('students', data.sapId, defaultUser);
             
             setUser(defaultUser);
             localStorage.setItem('c2c_user', JSON.stringify(defaultUser));
         } catch (error: any) {
-            if (error.code === 'auth/email-already-in-use') {
-                throw new Error('An account with this email already exists. Please sign in instead.');
-            }
-            throw new Error(error.message || 'Signup failed. Please try again.');
+            handleAuthError(error, 'Signup failed. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -207,7 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const logout = async () => {
         setIsLoading(true);
         try {
-            await signOut(auth);
+            await supabase.auth.signOut();
             setUser(null);
             localStorage.removeItem('c2c_user');
         } catch (error) {
@@ -232,19 +241,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const updateUser = async (newUser: AppUser) => {
         try {
-            // Sync to local state
             setUser(newUser);
             localStorage.setItem('c2c_user', JSON.stringify(newUser));
 
-            // Determine correct collection
-            const collectionName = isAdminUser(newUser) ? 'admins' : 'students';
-            const docId = isAdminUser(newUser) ? newUser.email : (newUser as StudentUser).sapId;
+            const isStudent = !isAdminUser(newUser);
+            const collectionName = isStudent ? 'students' : 'admins';
+            const docId = isStudent ? (newUser as StudentUser).sapId : newUser.email;
 
-            // Sync with Firestore
-            await setDoc(doc(db, collectionName, docId), {
+            await userDb.updateUser(collectionName, docId, {
                 ...newUser,
-                updatedAt: Date.now()
-            }, { merge: true });
+                updatedAt: new Date().toISOString()
+            });
 
         } catch (error: any) {
             console.error('Failed to update user in database:', error);
@@ -252,12 +259,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    // ── Mock Login (DEV ONLY) ─────────────────────────────────
     const mockLogin = (role: string, name: string, email: string) => {
-        if (import.meta.env.PROD) {
-            console.warn('mockLogin is disabled in production.');
-            return;
-        }
+        if (import.meta.env.PROD) return;
         const mockUser: AppUser = {
             uid: `mock_${role}_${Date.now()}`,
             email,
@@ -270,19 +273,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const handleAuthError = (error: any, fallbackMessage: string) => {
-        // Custom explicit errors
-        if (error.message === 'auth/no-access-profile') {
-            throw new Error('No access profile found in the system for this email.');
-        }
         if (error.message === 'auth/unauthorized-role') {
             throw new Error('Access Denied: You do not have an administrative role.');
         }
-        // Firebase native errors
-        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-            throw new Error('Incorrect credentials. Please try again.');
-        }
-        if (error.code === 'auth/user-not-found') {
-            throw new Error('No account found. Please contact system administrators.');
+        if (error.message?.includes('Invalid login credentials') || error.status === 400) {
+            throw new Error('Incorrect credentials. Please check your SAP ID/Email and password.');
         }
         throw new Error(error.message || fallbackMessage);
     };

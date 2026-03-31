@@ -1,6 +1,6 @@
 // personalizationengine
-import { industryBenchmarks } from '@/data/industryBenchmarks';
-import { analyzeSkillGap } from '@/lib/skillGapAnalysis';
+import { industryBenchmarks } from '../../data/industryBenchmarks';
+import { analyzeSkillGap } from '../../lib/skillGapAnalysis';
 import type {
   KnowledgeChunk,
   RAGResult,
@@ -152,7 +152,8 @@ export function rank(
 
   const rankedChunks: RankedChunk[] = [];
 
-  for (const chunk of ragResult.chunks) {
+  const chunks = Array.isArray(ragResult?.chunks) ? ragResult.chunks : [];
+  for (const chunk of chunks) {
     // Filter placed-student chunks
     if (isPlaced && isPlacementDriveOrEligibilityChunk(chunk)) {
       continue;
@@ -191,7 +192,7 @@ export function rank(
   // Compute readiness score via analyzeSkillGap
   // Guard: skills must be string[], cgpa may be stored as string in Firestore
   const safeSkills = (Array.isArray(student.skills) ? student.skills : [])
-    .filter((s): s is string => typeof s === 'string');
+    .filter((s: unknown): s is string => typeof s === 'string');
   const safeCgpa = typeof student.cgpa === 'number'
     ? student.cgpa
     : parseFloat(String(student.cgpa ?? '0')) || 0;

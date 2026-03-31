@@ -1,84 +1,36 @@
-import { collection, getDocs, doc, setDoc, updateDoc, query, orderBy, Timestamp } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { drivesDb } from '../db/database.service';
 import type { AdminDriveProfile, DriveFormData } from '../../types/driveAdmin';
 
-const COLLECTION_NAME = 'drives';
-
+/**
+ * Service to handle fetching and managing recruitment drives.
+ * This automatically uses the active provider (Firestore or Supabase).
+ */
 export const drivesService = {
 
     async fetchAllDrives(): Promise<AdminDriveProfile[]> {
-        const drivesRef = collection(db, COLLECTION_NAME);
-        const q = query(drivesRef, orderBy('createdAt', 'desc'));
-
-        const snapshot = await getDocs(q);
-
-        return snapshot.docs.map(doc => {
-            const data = doc.data();
-
-            return {
-                id: doc.id,
-                ...data,
-                // Convert Firestore Timestamps back to JS Dates
-                registrationStart: data.registrationStart?.toDate() || new Date(),
-                registrationEnd: data.registrationEnd?.toDate() || new Date(),
-                createdAt: data.createdAt?.toDate() || new Date(),
-                updatedAt: data.updatedAt?.toDate() || new Date(),
-                // Convert arrays of stages dates if extending
-                stages: (data.stages || []).map((stage: any) => ({
-                    ...stage,
-                    date: stage.date ? stage.date.toDate() : null
-                }))
-            } as AdminDriveProfile;
-        });
+        try {
+            return await drivesDb.fetchAllDrives();
+        } catch (error) {
+            console.error('Error fetching drives:', error);
+            throw new Error('Failed to fetch drive directory data');
+        }
     },
 
     async createDrive(data: DriveFormData): Promise<string> {
-        const newDriveRef = doc(collection(db, COLLECTION_NAME));
-
-        // Clean up undefined/null values that Firestore rejects
-        const cleanData = JSON.parse(JSON.stringify(data));
-
-        await setDoc(newDriveRef, {
-            ...cleanData,
-
-            // Initial counts
-            applicantCount: 0,
-            shortlistedCount: 0,
-
-            // Convert JS Dates to Firestore Timestamps
-            registrationStart: Timestamp.fromDate(data.registrationStart),
-            registrationEnd: Timestamp.fromDate(data.registrationEnd),
-            stages: data.stages.map((stage: any) => ({
-                ...stage,
-                date: stage.date ? Timestamp.fromDate(stage.date) : null
-            })),
-
-            createdAt: Timestamp.now(),
-            updatedAt: Timestamp.now()
-        });
-
-        return newDriveRef.id;
+        try {
+            return await drivesDb.createDrive(data);
+        } catch (error) {
+            console.error('Error creating drive:', error);
+            throw new Error('Failed to create drive profile');
+        }
     },
 
     async updateDrive(id: string, data: Partial<DriveFormData>): Promise<void> {
-        const driveRef = doc(db, COLLECTION_NAME, id);
-
-        const cleanData = JSON.parse(JSON.stringify(data));
-        const updatePayload: any = {
-            ...cleanData,
-            updatedAt: Timestamp.now()
-        };
-
-        // Handle specific timestamp conversions if present in partial update
-        if (data.registrationStart) updatePayload.registrationStart = Timestamp.fromDate(data.registrationStart);
-        if (data.registrationEnd) updatePayload.registrationEnd = Timestamp.fromDate(data.registrationEnd);
-        if (data.stages) {
-            updatePayload.stages = data.stages.map((stage: any) => ({
-                ...stage,
-                date: stage.date ? Timestamp.fromDate(stage.date) : null
-            }));
+        try {
+            await drivesDb.updateDrive(id, data);
+        } catch (error) {
+            console.error('Error updating drive:', error);
+            throw new Error('Failed to update drive profile');
         }
-
-        await updateDoc(driveRef, updatePayload);
     }
 };

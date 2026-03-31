@@ -9,19 +9,20 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
-import { db } from '../../../lib/firebase';
+import { 
+    studentsDb, adminUsersDb, auditDb 
+} from '../../../services/db/database.service';
 import { WelcomeCard } from '../../../components/admin/dashboard/WelcomeCard';
 
 const DEPT_COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
 const TT = { contentStyle: { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8 } };
 
-interface StudentRaw { id: string; currentYear?: number; }
+interface StudentRaw { id: string; currentYear?: string | number; }
 interface AdminUserRaw { id: string; name?: string; email?: string; role?: string; status?: string; }
 interface AuditLogRaw {
     id: string; action?: string; summary?: string; actorEmail?: string;
     severity?: string; module?: string;
-    timestamp?: { seconds: number } | string;
+    timestamp?: any;
 }
 
 const KpiCard: React.FC<{ title: string; value: string | number; subtitle: string; icon: React.ElementType; colorClass: string; loading: boolean }> = ({ title, value, subtitle, icon: Icon, colorClass, loading }) => (
@@ -52,9 +53,9 @@ const severityColor = (s?: string) => {
 
 const relativeTime = (ts: { seconds: number } | string | undefined): string => {
     if (!ts) return 'Unknown';
-    const d = typeof ts === 'object' && 'seconds' in ts ? new Date(ts.seconds * 1000) : new Date(ts as string);
-    if (isNaN(d.getTime())) return 'Unknown';
-    const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+    const d_val = typeof ts === 'object' && 'seconds' in ts ? new Date(ts.seconds * 1000) : new Date(ts as string);
+    if (isNaN(d_val.getTime())) return 'Unknown';
+    const diff = Math.floor((Date.now() - d_val.getTime()) / 1000);
     if (diff < 60) return `${diff}s ago`;
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
@@ -70,16 +71,23 @@ export const SystemAdminDashboard: React.FC = () => {
 
     const fetchData = async () => {
         setIsLoading(true);
-        const results = await Promise.allSettled([
-            getDocs(query(collection(db, 'students'), orderBy('name'))),
-            getDocs(collection(db, 'admins')),
-            getDocs(query(collection(db, 'auditLogs'), orderBy('timestamp', 'desc'), limit(50))),
-        ]);
-        if (results[0].status === 'fulfilled') setStudents(results[0].value.docs.map(d => ({ id: d.id, ...d.data() } as StudentRaw)));
-        if (results[1].status === 'fulfilled') setAdminUsers(results[1].value.docs.map(d => ({ id: d.id, ...d.data() } as AdminUserRaw)));
-        if (results[2].status === 'fulfilled') setAuditLogs(results[2].value.docs.map(d => ({ id: d.id, ...d.data() } as AuditLogRaw)));
-        setLastRefreshed(new Date());
-        setIsLoading(false);
+        try {
+            const results = await Promise.allSettled([
+                studentsDb.fetchAllStudents(),
+                adminUsersDb.fetchAllAdmins(),
+                auditDb.fetchLogs(50),
+            ]);
+
+            if (results[0].status === 'fulfilled') setStudents(results[0].value.map((d: any) => ({ ...d }) as StudentRaw));
+            if (results[1].status === 'fulfilled') setAdminUsers(results[1].value.map((d: any) => ({ ...d }) as AdminUserRaw));
+            if (results[2].status === 'fulfilled') setAuditLogs(results[2].value.map((d: any) => ({ ...d }) as AuditLogRaw));
+            
+            setLastRefreshed(new Date());
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     useEffect(() => { fetchData(); }, []);

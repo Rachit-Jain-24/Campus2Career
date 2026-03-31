@@ -10,8 +10,7 @@ import {
     Users,
     Activity
 } from 'lucide-react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { studentsDb } from '../../services/db/database.service';
 import type { StudentUser } from '../../types/auth';
 import { useAuth } from '../../contexts/AuthContext';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
@@ -38,12 +37,20 @@ export default function LeetCodeTracker() {
     const fetchLeaderboard = async () => {
         setIsLeaderboardLoading(true);
         try {
-            const snapshot = await getDocs(collection(db, 'students'));
+            const allStudents = await studentsDb.fetchAllStudents();
             const usersList: StudentUser[] = [];
-            snapshot.forEach(doc => {
-                const data = doc.data() as StudentUser;
-                if (data.leetcodeStats && data.role === 'student' && (data.leetcodeStats.totalSolved > 0 || data.leetcode)) {
-                    usersList.push(data);
+            
+            allStudents.forEach((data: any) => {
+                const leetcodeStats = data.leetcodeStats;
+                const role = data.role;
+                const hasLeetCode = data.leetcode || (leetcodeStats && leetcodeStats.totalSolved > 0);
+                
+                if (hasLeetCode && (role === 'student' || !role)) {
+                    usersList.push({
+                        ...data,
+                        name: data.fullName || data.name,
+                        branch: data.department || data.branch
+                    } as StudentUser);
                 }
             });
             usersList.sort((a, b) => (b.leetcodeStats?.totalSolved || 0) - (a.leetcodeStats?.totalSolved || 0));

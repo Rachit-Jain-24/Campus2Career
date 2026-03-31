@@ -10,11 +10,11 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '../../../lib/firebase';
+import { 
+    studentsDb, eligibilityDb 
+} from '../../../services/db/database.service';
 import { WelcomeCard } from '../../../components/admin/dashboard/WelcomeCard';
 import { BatchSWOCSection } from '../../../components/admin/dashboard/BatchSWOCSection';
-import { eligibilityService } from '../../../services/admin/eligibility.service';
 import type { AdminEligibilityRule } from '../../../types/eligibilityAdmin';
 
 // ── Types ─────────────────────────────────────────────────────
@@ -24,7 +24,7 @@ interface StudentRaw {
     sapId: string;
     email: string;
     branch: string;
-    currentYear: number;
+    currentYear: string | number;
     cgpa: string | number;
     batch: string;
     techSkills?: string[];
@@ -112,18 +112,24 @@ export const ProgramChairDashboard: React.FC = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const [studentsSnap, rules] = await Promise.all([
-                getDocs(query(collection(db, 'students'), orderBy('createdAt', 'desc'))),
-                eligibilityService.getAllRules().catch(() => [] as AdminEligibilityRule[]),
+            const [studentsSnap, rules] = await Promise.allSettled([
+                studentsDb.fetchAllStudents(),
+                eligibilityDb.fetchAllRules(),
             ]);
 
-            const raw: StudentRaw[] = studentsSnap.docs.map(d => ({
-                id: d.id,
-                ...(d.data() as Omit<StudentRaw, 'id'>),
-            }));
+            if (studentsSnap.status === 'fulfilled') {
+                setStudents(studentsSnap.value.map((d: any) => ({
+                    ...d,
+                    name: d.fullName || d.name,
+                    branch: d.department || d.branch,
+                    currentYear: d.currentYear
+                }) as StudentRaw));
+            }
+            
+            if (rules.status === 'fulfilled') {
+                setEligibilityRules(rules.value);
+            }
 
-            setStudents(raw);
-            setEligibilityRules(rules);
             setLastRefreshed(new Date());
         } catch (err) {
             console.error('ProgramChairDashboard fetch error:', err);

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Sparkles,
     Target,
@@ -22,11 +22,24 @@ import { useAuth } from '../../contexts/AuthContext';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { useNavigate } from 'react-router-dom';
 import { fetchLeetCodeStats } from '../../lib/leetcode';
+import { drivesDb } from '../../services/db/database.service';
 import type { StudentUser } from '../../types/auth';
+import type { AdminDriveProfile } from '../../types/driveAdmin';
 
 export default function StudentDashboard() {
     const { user, updateUser } = useAuth();
     const navigate = useNavigate();
+    const [activeDrives, setActiveDrives] = useState<AdminDriveProfile[]>([]);
+    const [isDrivesLoading, setIsDrivesLoading] = useState(true);
+
+    // Real-time Drives Subscription
+    useEffect(() => {
+        const unsubscribe = drivesDb.onDrivesChange((drives) => {
+            setActiveDrives(drives.filter(d => d.status === 'upcoming' || d.status === 'ongoing'));
+            setIsDrivesLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
 
     // Real-time Scoring Logic
     const calculateRealTimeScores = () => {
@@ -160,6 +173,17 @@ export default function StudentDashboard() {
 
     const getQuickStats = () => {
         const stats: any[] = [];
+        
+        // Add Live Drives Stat (Always first)
+        stats.push({
+            label: "Active Drives",
+            value: isDrivesLoading ? "..." : activeDrives.length.toString(),
+            icon: Zap,
+            color: "text-amber-600",
+            bg: "bg-amber-50",
+            trend: "Live updates enabled"
+        });
+
         stats.push({
             label: "LeetCode Solved",
             value: user?.leetcodeStats ? `${user.leetcodeStats.totalSolved}` : user?.leetcode ? "Syncing" : "Link",

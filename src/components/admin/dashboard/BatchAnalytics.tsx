@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Users, TrendingUp, Award, Code, BookOpen, Briefcase, Target, Brain, Loader2 } from 'lucide-react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../../lib/firebase';
+import { studentsDb } from '../../../services/db/database.service';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 
 interface BatchStudent {
@@ -44,28 +43,22 @@ export const BatchAnalytics: React.FC<BatchAnalyticsProps> = ({
     const fetchBatchData = async () => {
         try {
             setIsLoading(true);
-            const studentsRef = collection(db, 'students');
-            const q = query(
-                studentsRef,
-                where('batch', '==', batchYear),
-                where('branch', '==', branch)
+            const allStudents = await studentsDb.fetchAllStudents();
+            
+            const filtered = allStudents.filter((s: any) => 
+                (s.batch === batchYear || (s.academicHistory?.batch) === batchYear) && 
+                (s.branch === branch || s.department === branch)
             );
-            
-            const querySnapshot = await getDocs(q);
-            const studentsData: BatchStudent[] = [];
-            
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                studentsData.push({
-                    name: data.name,
-                    cgpa: data.cgpa || '0',
-                    techSkills: data.techSkills || [],
-                    leetcodeStats: data.leetcodeStats,
-                    projects: data.projects || [],
-                    certifications: data.certifications || [],
-                    internships: data.internships || []
-                });
-            });
+
+            const studentsData: BatchStudent[] = filtered.map((data: any) => ({
+                name: data.fullName || data.name,
+                cgpa: data.cgpa || '0',
+                techSkills: data.skills || data.techSkills || [],
+                leetcodeStats: data.leetcodeStats,
+                projects: data.projects || [],
+                certifications: data.certifications || [],
+                internships: data.internships || []
+            }));
 
             setStudents(studentsData);
             calculateStats(studentsData);

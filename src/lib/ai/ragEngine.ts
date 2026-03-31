@@ -1,8 +1,9 @@
-// ragengine
 import type { KnowledgeChunk, RAGResult } from './types';
-import type { StudentUser } from '@/types/auth';
-import { industryBenchmarks } from '@/data/industryBenchmarks';
-import { RECOMMENDED_PROBLEMS } from '@/data/leetcodeProblems';
+import type { StudentUser } from '../../types/auth';
+import { industryBenchmarks } from '../../data/industryBenchmarks';
+import { RECOMMENDED_PROBLEMS } from '../../data/leetcodeProblems';
+import { searchKnowledge } from './knowledgeService';
+import { isSupabaseEnabled } from '../supabase';
 
 // Internal interface for raw (pre-TF-IDF) chunks
 export interface RawChunk {
@@ -557,17 +558,33 @@ export function getKnowledgeBase(): KnowledgeChunk[] {
 
 /**
  * Retrieve the top-K most relevant chunks for a query using cosine similarity.
- *
- * Steps:
- *   1. Tokenize the query
- *   2. Build query vector: IDF-weighted scores (unknown terms get IDF = 1)
- *   3. L2-normalize the query vector
- *   4. Compute dot product (cosine similarity) against all chunk vectors
- *   5. Return top-K chunks sorted by descending score
- *
- * Requirements: 1.3
+ * Logic:
+ * 1. If Supabase is enabled: Use Semantic Search (Gemini Embeddings + pgvector).
+ * 2. If Firestore is enabled: Use local TF-IDF (keyword-based).
  */
-export function retrieve(query: string, topK: number = 5): RAGResult {
+export async function retrieve(query: string, topK: number = 5): Promise<RAGResult> {
+  if (isSupabaseEnabled()) {
+    try {
+      const results = await searchKnowledge(query, topK);
+      if (results.length > 0) {
+        return {
+          chunks: results.map(r => ({
+            id: r.id,
+            title: r.metadata?.title || 'Knowledge Base',
+            content: r.content,
+            source: (r.metadata?.source || 'faq') as any,
+            tags: r.metadata?.tags || [],
+            tfidfVector: new Map() // Not used in native search mode
+          })) as KnowledgeChunk[],
+          queryVector: new Map()
+        };
+      }
+    } catch (err) {
+      console.warn("Native search failed, falling back to local TF-IDF:", err);
+    }
+  }
+
+  // FALLBACK: Local TF-IDF Logic
   const queryTokens = tokenize(query);
 
   // Build raw query vector using stored IDF table; unknown terms get IDF = 1

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, getDocs } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { studentsDb } from '../../services/db/database.service';
 import { 
     Users, GraduationCap, TrendingUp, Award, Loader2, 
     CheckCircle2, ChevronDown, ExternalLink, 
@@ -30,52 +29,59 @@ export const BatchAnalytics = () => {
     const fetchBatchData = async () => {
         setIsLoading(true);
         try {
-            const studentsRef = collection(db, 'students');
-            const q = query(studentsRef);
-            const querySnapshot = await getDocs(q);
+            const allStudentsRaw = await studentsDb.fetchAllStudents();
             
-            const allStudents: any[] = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
+            const allStudents: any[] = allStudentsRaw.map((s: any) => ({
+                ...s,
+                name: s.fullName || s.name,
+                branch: s.department || s.branch,
+                currentYear: typeof s.currentYear === 'string' ? (parseInt(s.currentYear) || s.currentYear) : s.currentYear,
+                batch: s.batch || (s.academicHistory?.batch) || '2022-2026', // Fallback for demo
+                techSkills: s.skills || s.techSkills || []
             }));
 
             setStudents(allStudents);
 
-            const batch2022_26 = allStudents.filter(s => s.batch === '2022-2026').length;
-            const fourthYear = allStudents.filter(s => s.currentYear === 4).length;
-            const csdsStudents = allStudents.filter(s => 
-                s.branch?.includes('CSE') && s.branch?.includes('Data Science')
+            const batch2022_26_val = allStudents.filter(s => s.batch === '2022-2026').length;
+            const fourthYear_val = allStudents.filter(s => 
+                s.currentYear === 4 || 
+                s.currentYear === '4' || 
+                (typeof s.currentYear === 'string' && s.currentYear.includes('4'))
+            ).length;
+            
+            const csdsStudents_val = allStudents.filter(s => 
+                (s.branch || '').includes('CSE') && (s.branch || '').includes('Data Science')
             ).length;
 
             const cgpaValues = allStudents
                 .filter(s => s.cgpa)
                 .map(s => parseFloat(s.cgpa));
-            const avgCGPA = cgpaValues.length > 0 
+            const avgCGPA_val = cgpaValues.length > 0 
                 ? cgpaValues.reduce((a, b) => a + b, 0) / cgpaValues.length 
                 : 0;
 
-            const topPerformers = allStudents
+            const topPerformers_val = allStudents
                 .filter(s => s.cgpa)
                 .sort((a, b) => parseFloat(b.cgpa) - parseFloat(a.cgpa))
                 .slice(0, 10);
 
-            const skillDistribution: { [key: string]: number } = {};
+            const skillDistribution_val: { [key: string]: number } = {};
             allStudents.forEach(student => {
                 if (student.techSkills && Array.isArray(student.techSkills)) {
                     student.techSkills.forEach((skill: string) => {
-                        skillDistribution[skill] = (skillDistribution[skill] || 0) + 1;
+                        skillDistribution_val[skill] = (skillDistribution_val[skill] || 0) + 1;
                     });
                 }
             });
 
             setStats({
                 totalStudents: allStudents.length,
-                batch2022_26,
-                fourthYear,
-                csdsStudents,
-                avgCGPA,
-                topPerformers,
-                skillDistribution
+                batch2022_26: batch2022_26_val,
+                fourthYear: fourthYear_val,
+                csdsStudents: csdsStudents_val,
+                avgCGPA: avgCGPA_val,
+                topPerformers: topPerformers_val,
+                skillDistribution: skillDistribution_val
             });
         } catch (error) {
             console.error('Error fetching batch data:', error);

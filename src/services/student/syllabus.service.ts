@@ -1,6 +1,6 @@
-import { storage, db } from "../../lib/firebase";
+import { storage } from "../../lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { syllabusDb } from "../db/database.service";
 
 export interface SyllabusRecord {
   downloadUrl: string;
@@ -10,7 +10,7 @@ export interface SyllabusRecord {
 }
 
 /**
- * Uploads a syllabus PDF to Firebase Storage and writes metadata to Firestore.
+ * Uploads a syllabus PDF to Firebase Storage and writes metadata to the active database.
  * Requirements: 3.1, 3.2, 3.5
  */
 export async function uploadSyllabusPDF(
@@ -47,14 +47,14 @@ export async function uploadSyllabusPDF(
     fileName: file.name,
   };
 
-  const docRef = doc(db, `users/${sapId}/syllabi/semester_${semester}`);
-  await setDoc(docRef, record);
+  // Use the database-agnostic service layer
+  await syllabusDb.saveSyllabusRecord(sapId, semester, record);
 
   return record;
 }
 
 /**
- * Reads a syllabus record from Firestore.
+ * Reads a syllabus record from the active database.
  * Returns null if no record exists for the given sapId and semester.
  * Requirements: 3.3
  */
@@ -62,12 +62,5 @@ export async function getSyllabusRecord(
   sapId: string,
   semester: number
 ): Promise<SyllabusRecord | null> {
-  const docRef = doc(db, `users/${sapId}/syllabi/semester_${semester}`);
-  const snapshot = await getDoc(docRef);
-
-  if (!snapshot.exists()) {
-    return null;
-  }
-
-  return snapshot.data() as SyllabusRecord;
+  return await syllabusDb.getSyllabusRecord(sapId, semester);
 }

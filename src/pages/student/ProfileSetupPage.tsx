@@ -27,6 +27,7 @@ interface ProfileData {
     rollNo: string;
     cgpa: string;
     backlog: string;
+    currentSemester: string;
     class12Board: string;
     class10Board: string;
     class12Percent: string;
@@ -54,9 +55,16 @@ interface ProfileData {
 }
 
 const PROGRAMS = [
-    'B.Tech CSE', 'B.Tech CSE (AI/ML)', 'B.Tech CSE (Data Science)',
-    'B.Tech IT', 'B.Tech IT (Blockchain)', 'B.Tech ECE', 'B.Tech Mechanical',
-    'BCA', 'BBA', 'B.Com', 'M.Tech CSE', 'MBA'
+    'B.Tech CSE',
+    'B.Tech CSDS',
+    'B.Tech CSE (AI/ML)',
+    'B.Tech IT',
+    'B.Tech IT (Blockchain)',
+    'B.Tech ECE',
+    'B.Tech Mechanical',
+    'B.Tech Civil',
+    'B.Tech Chemical',
+    'B.Tech Electrical',
 ];
 
 const DIVISIONS = ['A', 'B', 'C', 'D', 'E'];
@@ -180,6 +188,9 @@ export default function ProfileSetupPage() {
     const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
     const [isInternshipModalOpen, setIsInternshipModalOpen] = useState(false);
 
+    // ── Year / Semester helpers (computed at component level, not inside JSX) ──
+    const currentYr = user?.currentYear || 1;
+
     const [data, setData] = useState<ProfileData>({
         fullName: user?.name || '',
         phone: '',
@@ -190,6 +201,7 @@ export default function ProfileSetupPage() {
         rollNo: user?.rollNo || '',
         cgpa: '',
         backlog: '0',
+        currentSemester: '',
         class12Board: '',
         class10Board: '',
         class12Percent: '',
@@ -254,33 +266,51 @@ export default function ProfileSetupPage() {
         if (!user) return;
         setIsSaving(true);
         try {
+            const leetcodeHandle = data.leetcodeUrl
+                ? data.leetcodeUrl.replace(/\/$/, '').split('/').pop() || ''
+                : '';
+
             const updatedUserData = {
                 ...user,
+                // Core identity
                 name: data.fullName,
                 phone: data.phone,
                 location: `${data.hometown}, ${data.state}`,
                 bio: data.bio,
                 branch: data.program,
                 rollNo: data.rollNo,
-                leetcode: data.leetcodeUrl ? data.leetcodeUrl.split('/').filter(Boolean).pop() : '',
+                // Skills & Interests — saved as TOP-LEVEL for Dashboard/SkillGap to read
+                cgpa: data.cgpa,
+                techSkills: data.knownTools,
+                clubs: data.clubs,
+                hobbies: data.hobbies,
+                languages: data.languages,
                 interests: [...data.knownTools, ...data.languages],
-                goals: [data.shortTermGoal, data.longTermGoal],
+                goals: [data.shortTermGoal, data.longTermGoal].filter(Boolean),
+                // Experience
                 projects: data.projects,
                 internships: data.internships,
-                profileCompleted: true,
+                // Social links — BOTH top-level and nested for compatibility
+                githubUrl: data.githubUrl,
+                linkedinUrl: data.linkedinUrl,
+                portfolioUrl: data.portfolioUrl,
+                leetcode: leetcodeHandle,
+                // Academic data nested for records
                 academicData: {
                     cgpa: data.cgpa,
                     backlog: data.backlog,
                     class12: { board: data.class12Board, percent: data.class12Percent },
-                    class10: { board: data.class10Board, percent: data.class10Percent }
+                    class10: { board: data.class10Board, percent: data.class10Percent },
+                    division: data.division,
                 },
-                socialLinks: {
-                    github: data.githubUrl,
-                    linkedin: data.linkedinUrl,
-                    portfolio: data.portfolioUrl
-                }
+                // Onboarding flags
+                profileCompleted: true,
+                // Assessment already done in Career Discovery — keep as true
+                assessmentCompleted: user.assessmentCompleted ?? true,
             };
+
             await updateUser(updatedUserData);
+            // Go directly to dashboard — assessment step is no longer separate
             navigate('/student/dashboard');
         } catch (error) {
             console.error('Failed to save profile:', error);
@@ -294,7 +324,7 @@ export default function ProfileSetupPage() {
         if (step === 0) return data.fullName && data.phone.length >= 10 && data.hometown;
         if (step === 1) return data.program && data.rollNo && data.class10Percent && data.class12Percent;
         if (step === 2) return data.githubUrl && data.linkedinUrl && data.leetcodeUrl;
-        if (step === 3) return data.knownTools.length > 0 || (user?.currentYear || 1) === 1;
+        if (step === 3) return true; // Projects are optional — Year 1 especially may have none
         if (step === 4) return data.shortTermGoal && data.longTermGoal;
         return true;
     };
@@ -471,6 +501,22 @@ export default function ProfileSetupPage() {
                                         </select>
                                     </div>
                                     <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Semester</label>
+                                        <select className="input-nmims" value={data.currentSemester} onChange={e => set('currentSemester', e.target.value)}>
+                                            <option value="">Select Semester</option>
+                                            {(() => {
+                                                const yr = user?.currentYear || 1;
+                                                const sems = yr === 1 ? [['1', 'Semester 1'], ['2', 'Semester 2']]
+                                                    : yr === 2 ? [['3', 'Semester 3'], ['4', 'Semester 4']]
+                                                    : yr === 3 ? [['5', 'Semester 5'], ['6', 'Semester 6']]
+                                                    : [['7', 'Semester 7'], ['8', 'Semester 8']];
+                                                return sems.map(([val, label]) => (
+                                                    <option key={val} value={val}>{label}</option>
+                                                ));
+                                            })()}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">SAP / Roll Number</label>
                                         <input className="input-nmims" placeholder="e.g. 70572212345" value={data.rollNo} onChange={e => set('rollNo', e.target.value)} />
                                     </div>
@@ -518,92 +564,267 @@ export default function ProfileSetupPage() {
                             <div className="space-y-8 relative">
                                 <div className="text-center space-y-2 mb-4">
                                     <h2 className="text-3xl font-black text-slate-900">Online Presence</h2>
-                                    <p className="text-slate-500 text-sm">Essential for placement analytics and verification.</p>
+                                    <p className="text-slate-500 text-sm">Enter your username — we'll build the link automatically.</p>
                                 </div>
-                                <div className="space-y-4">
-                                    { [
-                                        { id: 'githubUrl', icon: Github, label: 'GitHub', color: 'text-slate-800', border: 'border-slate-800/10' },
-                                        { id: 'linkedinUrl', icon: Linkedin, label: 'LinkedIn', color: 'text-blue-600', border: 'border-blue-600/10' },
-                                        { id: 'leetcodeUrl', icon: Code2, label: 'LeetCode', color: 'text-orange-500', border: 'border-orange-500/10' }
+
+                                <div className="space-y-5">
+                                    {[
+                                        {
+                                            id: 'githubUrl',
+                                            icon: Github,
+                                            label: 'GitHub',
+                                            base: 'https://github.com/',
+                                            placeholder: 'your-username',
+                                            color: 'text-slate-800',
+                                            bg: 'bg-slate-800/5',
+                                            border: 'border-slate-200',
+                                            required: true,
+                                        },
+                                        {
+                                            id: 'linkedinUrl',
+                                            icon: Linkedin,
+                                            label: 'LinkedIn',
+                                            base: 'https://linkedin.com/in/',
+                                            placeholder: 'firstname-lastname',
+                                            color: 'text-blue-600',
+                                            bg: 'bg-blue-50',
+                                            border: 'border-blue-100',
+                                            required: true,
+                                        },
+                                        {
+                                            id: 'leetcodeUrl',
+                                            icon: Code2,
+                                            label: 'LeetCode',
+                                            base: 'https://leetcode.com/u/',
+                                            placeholder: 'your-username',
+                                            color: 'text-orange-500',
+                                            bg: 'bg-orange-50',
+                                            border: 'border-orange-100',
+                                            required: true,
+                                        },
+                                        {
+                                            id: 'portfolioUrl',
+                                            icon: LinkIcon,
+                                            label: 'Portfolio',
+                                            base: 'https://',
+                                            placeholder: 'yoursite.vercel.app',
+                                            color: 'text-purple-600',
+                                            bg: 'bg-purple-50',
+                                            border: 'border-purple-100',
+                                            required: false,
+                                        },
                                     ].map(link => {
                                         const LinkIconComp = link.icon;
+                                        // Extract username from stored URL for display
+                                        const storedUrl: string = (data as any)[link.id] || '';
+                                        const displayValue = storedUrl.startsWith(link.base)
+                                            ? storedUrl.slice(link.base.length).replace(/\/$/, '')
+                                            : storedUrl;
+                                        const isConnected = displayValue.length > 0;
+
                                         return (
-                                            <div key={link.id} className={`p-4 rounded-2xl bg-white border ${link.border} shadow-sm space-y-2 transition-all hover:shadow-md`}>
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`p-2 rounded-xl bg-slate-50 ${link.color}`}>
-                                                            <LinkIconComp className="h-5 w-5" />
-                                                        </div>
-                                                        <span className="text-sm font-bold text-slate-800">{link.label} Profile</span>
+                                            <div key={link.id} className={`rounded-2xl bg-white border ${link.border} shadow-sm overflow-hidden transition-all hover:shadow-md`}>
+                                                {/* Header row */}
+                                                <div className={`flex items-center gap-3 px-4 py-3 ${link.bg} border-b ${link.border}`}>
+                                                    <div className={`p-1.5 rounded-lg bg-white ${link.color} shadow-sm`}>
+                                                        <LinkIconComp className="h-4 w-4" />
                                                     </div>
-                                                    {(data as any)[link.id]?.includes(link.label.toLowerCase()) ? (
-                                                         <span className="flex items-center gap-1 text-[10px] font-black text-green-500 uppercase tracking-widest">
-                                                            <Check className="h-3 w-3" /> Connected
-                                                         </span>
-                                                    ) : (
-                                                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Not Connected</span>
+                                                    <span className="text-sm font-bold text-slate-800">{link.label}</span>
+                                                    {!link.required && (
+                                                        <span className="ml-auto text-[9px] font-black text-slate-400 uppercase tracking-widest">Optional</span>
+                                                    )}
+                                                    {isConnected && (
+                                                        <span className="ml-auto flex items-center gap-1 text-[9px] font-black text-green-600 uppercase tracking-widest">
+                                                            <Check className="h-2.5 w-2.5" /> Connected
+                                                        </span>
                                                     )}
                                                 </div>
-                                                <input className="w-full bg-slate-50/50 border-none rounded-lg px-2 py-1.5 text-xs text-slate-600 outline-none focus:bg-slate-50" placeholder={`https://${link.label.toLowerCase()}.com/username`} value={(data as any)[link.id]} onChange={e => set(link.id as any, e.target.value)} />
+                                                {/* Username input with prefix */}
+                                                <div className="flex items-center">
+                                                    <span className="text-xs font-mono text-slate-400 bg-slate-50 px-3 py-3.5 border-r border-slate-100 whitespace-nowrap select-none">
+                                                        {link.base}
+                                                    </span>
+                                                    <input
+                                                        type="text"
+                                                        placeholder={link.placeholder}
+                                                        value={displayValue}
+                                                        onChange={e => {
+                                                            const handle = e.target.value.trim();
+                                                            // For portfolio, store as-is with https:// prefix
+                                                            if (link.id === 'portfolioUrl') {
+                                                                set(link.id as any, handle ? (handle.startsWith('http') ? handle : link.base + handle) : '');
+                                                            } else {
+                                                                set(link.id as any, handle ? link.base + handle : '');
+                                                            }
+                                                        }}
+                                                        className="flex-1 bg-transparent px-3 py-3.5 text-sm text-slate-800 font-medium outline-none placeholder:text-slate-300"
+                                                    />
+                                                </div>
+                                                {/* Preview URL */}
+                                                {isConnected && (
+                                                    <div className="px-4 py-2 bg-slate-50 border-t border-slate-100">
+                                                        <a
+                                                            href={(data as any)[link.id]}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className={`text-[10px] font-mono ${link.color} hover:underline break-all`}
+                                                        >
+                                                            {(data as any)[link.id]}
+                                                        </a>
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}
                                 </div>
+
                                 <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200">
                                     <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
-                                    <p className="text-[11px] text-amber-800 font-medium leading-relaxed">Ensure profiles are public. Recruiters will skip profiles they cannot access at a click.</p>
+                                    <p className="text-[11px] text-amber-800 font-medium leading-relaxed">Make sure all your profiles are <strong>public</strong>. Recruiters will skip profiles they can't access.</p>
                                 </div>
                             </div>
                         )}
 
                         {/* ── Step 3: Portfolio ── */}
-                        {step === 3 && (
+                        {step === 3 && (() => {
+                            const yr = user?.currentYear || 1;
+                            const sem = parseInt(data.currentSemester || '0');
+                            const isSem8 = yr === 4 && sem === 8;
+                            const isYear4 = yr === 4;
+
+                            const ProjectCard = ({ p, i }: { p: any; i: number }) => (
+                                <div key={p.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between group">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                                            <Rocket className="h-5 w-5 text-indigo-500" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-bold text-slate-800">{p.title}</h4>
+                                            <p className="text-[10px] text-slate-500 line-clamp-1">{p.description}</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => set('projects', data.projects.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-2"><Trash2 className="h-4 w-4" /></button>
+                                </div>
+                            );
+
+                            return (
                             <div className="space-y-8 relative">
                                 <div className="text-center space-y-2 mb-4">
-                                    <h2 className="text-3xl font-black text-slate-900">Skills & Projects</h2>
+                                    <h2 className="text-3xl font-black text-slate-900">Skills & Portfolio</h2>
                                     <p className="text-slate-500 text-sm">Show, don't just tell. Log your best work here.</p>
                                 </div>
+
                                 <TagInput label="Technical Tools" icon={Laptop} tags={data.knownTools} suggestions={TOOLS_SUGGESTIONS} onAdd={v => addTag('knownTools', v)} onRemove={v => removeTag('knownTools', v)} placeholder="Python, React, etc." colorClass="text-blue-500" />
-                                
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                            <Trophy className="h-4 w-4 text-indigo-500" /> Featured Projects
-                                        </p>
-                                        <button onClick={() => setIsProjectModalOpen(true)} className="text-[10px] font-black text-primary hover:underline">+ Add New</button>
-                                    </div>
-                                    <div className="grid gap-3">
-                                        {data.projects.length > 0 ? data.projects.map((p, i) => (
-                                            <div key={p.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between group">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                                                        <Rocket className="h-5 w-5 text-indigo-500" />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-sm font-bold text-slate-800">{p.title}</h4>
-                                                        <p className="text-[10px] text-slate-500 line-clamp-1">{p.description}</p>
-                                                    </div>
-                                                </div>
-                                                <button onClick={() => set('projects', data.projects.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-2"><Trash2 className="h-4 w-4" /></button>
-                                            </div>
-                                        )) : (
-                                            <div className="p-12 text-center border-2 border-dashed border-slate-100 rounded-3xl space-y-2">
-                                                <p className="text-xs text-slate-400 font-bold">No projects added yet.</p>
-                                                <p className="text-[10px] text-slate-300 font-medium">Add projects to increase your profile score.</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                {((user?.currentYear || 1) >= 3) && (
+
+                                {/* ── 4th Year: Capstone (Sem 7 only) ── */}
+                                {isYear4 && !isSem8 && (
                                     <div className="space-y-4">
-                                         <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-indigo-50 border border-indigo-100">
+                                            <div className="h-8 w-8 rounded-xl bg-indigo-500 flex items-center justify-center shrink-0">
+                                                <GraduationCap className="h-4 w-4 text-white" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-black text-indigo-900">Capstone Project — Sem 7</p>
+                                                <p className="text-[10px] text-indigo-500 font-medium">Your interdisciplinary team project from 7th semester</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                                <Trophy className="h-4 w-4 text-indigo-500" /> Capstone Projects
+                                            </p>
+                                            <button onClick={() => setIsProjectModalOpen(true)} className="text-[10px] font-black text-indigo-600 hover:underline">+ Add Capstone</button>
+                                        </div>
+                                        <div className="grid gap-3">
+                                            {data.projects.length > 0
+                                                ? data.projects.map((p, i) => <ProjectCard key={p.id} p={p} i={i} />)
+                                                : (
+                                                    <div className="p-10 text-center border-2 border-dashed border-indigo-100 rounded-3xl bg-indigo-50/30">
+                                                        <GraduationCap className="h-8 w-8 text-indigo-200 mx-auto mb-2" />
+                                                        <p className="text-xs text-indigo-400 font-bold">Add your Capstone Project from Sem 7</p>
+                                                    </div>
+                                                )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ── 4th Year: Major Project (Sem 8 only) ── */}
+                                {isSem8 && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-rose-50 border border-rose-100">
+                                            <div className="h-8 w-8 rounded-xl bg-rose-500 flex items-center justify-center shrink-0">
+                                                <Flag className="h-4 w-4 text-white" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-black text-rose-900">Major Project — Sem 8</p>
+                                                <p className="text-[10px] text-rose-400 font-medium">Your final year major project (thesis / research project)</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                                <Rocket className="h-4 w-4 text-rose-500" /> Major Project
+                                            </p>
+                                            <button onClick={() => setIsProjectModalOpen(true)} className="text-[10px] font-black text-rose-600 hover:underline">+ Add Major Project</button>
+                                        </div>
+                                        <div className="grid gap-3">
+                                            {data.projects.length > 0
+                                                ? data.projects.map((p, i) => <ProjectCard key={p.id} p={p} i={i} />)
+                                                : (
+                                                    <div className="p-10 text-center border-2 border-dashed border-rose-100 rounded-3xl bg-rose-50/30">
+                                                        <Flag className="h-8 w-8 text-rose-200 mx-auto mb-2" />
+                                                        <p className="text-xs text-rose-400 font-bold">Add your Final Year Major Project</p>
+                                                    </div>
+                                                )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ── Year 1–3: Regular Projects ── */}
+                                {!isYear4 && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                                <Trophy className="h-4 w-4 text-indigo-500" /> Featured Projects
+                                                {yr === 1 && (
+                                                    <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Optional</span>
+                                                )}
+                                            </p>
+                                            <button onClick={() => setIsProjectModalOpen(true)} className="text-[10px] font-black text-primary hover:underline">+ Add New</button>
+                                        </div>
+                                        {yr === 1 && (
+                                            <p className="text-[10px] text-slate-400 flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
+                                                <Sparkles className="h-3 w-3 text-primary shrink-0" />
+                                                1st year? No projects yet is completely fine — add any personal or college mini-project if you have one, or skip ahead.
+                                            </p>
+                                        )}
+                                        <div className="grid gap-3">
+                                            {data.projects.length > 0
+                                                ? data.projects.map((p, i) => <ProjectCard key={p.id} p={p} i={i} />)
+                                                : (
+                                                    <div className="p-12 text-center border-2 border-dashed border-slate-100 rounded-3xl space-y-2">
+                                                        <p className="text-xs text-slate-400 font-bold">
+                                                            {yr === 1 ? "No projects yet — that's okay!" : 'No projects added yet.'}
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-300 font-medium">
+                                                            {yr === 1 ? "Add one if you've built something, or hit Next to skip." : 'Add projects to boost your profile score.'}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                        </div>
+                                    </div>
+                                )}
+
+
+                                {/* ── Internships (Year 3+) ── */}
+                                {yr >= 3 && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                                 <Briefcase className="h-4 w-4 text-emerald-500" /> Internships
                                             </p>
                                             <button onClick={() => setIsInternshipModalOpen(true)} className="text-[10px] font-black text-primary hover:underline">+ Log Work</button>
                                         </div>
                                         <div className="grid gap-3">
-                                            {data.internships.map((int, i) => (
+                                            {data.internships.length > 0 ? data.internships.map((int, i) => (
                                                 <div key={int.id} className="p-4 rounded-2xl bg-emerald-50/30 border border-emerald-100 flex items-center justify-between group">
                                                     <div className="flex items-center gap-4">
                                                         <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
@@ -616,7 +837,12 @@ export default function ProfileSetupPage() {
                                                     </div>
                                                     <button onClick={() => set('internships', data.internships.filter((_, idx) => idx !== i))} className="text-emerald-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-2"><Trash2 className="h-4 w-4" /></button>
                                                 </div>
-                                            ))}
+                                            )) : (
+                                                <div className="p-10 text-center border-2 border-dashed border-emerald-100 rounded-3xl bg-emerald-50/20">
+                                                    <Briefcase className="h-8 w-8 text-emerald-200 mx-auto mb-2" />
+                                                    <p className="text-xs text-emerald-400 font-bold">No internships logged yet</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -627,7 +853,8 @@ export default function ProfileSetupPage() {
                                     </div>
                                 </div>
                             </div>
-                        )}
+                            );
+                        })()}
 
                         {/* ── Step 4: Motivation ── */}
                         {step === 4 && (

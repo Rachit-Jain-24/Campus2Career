@@ -58,9 +58,11 @@ function App() {
   const getDefaultPath = () => {
     if (!user) return '/login';
     if (user.role && user.role !== 'student') return getDefaultAdminRoute(user.role);
-    if (!user.careerDiscoveryCompleted) return '/career-discovery';
+    
+    // Student Onboarding — simplified: CareerDiscovery → ProfileSetup → Dashboard
+    const isDiscoveryDone = user.careerDiscoveryCompleted || (user as any).careerTrack;
+    if (!isDiscoveryDone) return '/career-discovery';
     if (!user.profileCompleted) return '/student/profile-setup';
-    if (!user.assessmentCompleted) return '/student/assessment';
     return '/student/dashboard';
   };
 

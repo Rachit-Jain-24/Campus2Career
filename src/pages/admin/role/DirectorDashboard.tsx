@@ -9,8 +9,9 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '../../../lib/firebase';
+import { 
+    studentsDb, drivesDb, companiesDb, offersDb 
+} from '../../../services/db/database.service';
 import { WelcomeCard } from '../../../components/admin/dashboard/WelcomeCard';
 
 const CHART_COLORS = ['#dc2626', '#2563eb', '#16a34a', '#d97706', '#7c3aed', '#0891b2'];
@@ -19,7 +20,7 @@ const TT_STYLE = { contentStyle: { background: 'var(--color-card)', border: '1px
 interface StudentRaw { id: string; placementStatus?: string; }
 interface DriveRaw { id: string; title?: string; companyName?: string; status?: string; applicantCount?: number; shortlistedCount?: number; interviewedCount?: number; offeredCount?: number; ctcOffered?: number; }
 interface CompanyRaw { id: string; name?: string; industry?: string; status?: string; }
-interface OfferRaw { id: string; ctc?: number; packageLPA?: number; status?: string; createdAt?: { seconds: number } | string; }
+interface OfferRaw { id: string; ctc?: number; packageLPA?: number; status?: string; createdAt?: any; }
 
 const KpiCard: React.FC<{ title: string; value: string | number; subtitle: string; icon: React.ElementType; accent: string; loading: boolean }> = ({ title, value, subtitle, icon: Icon, accent, loading }) => (
     <div className="card-nmims p-5">
@@ -57,18 +58,25 @@ export const DirectorDashboard: React.FC = () => {
 
     const fetchData = async () => {
         setIsLoading(true);
-        const [s, d, c, o] = await Promise.allSettled([
-            getDocs(query(collection(db, 'students'), orderBy('name'))),
-            getDocs(collection(db, 'drives')),
-            getDocs(collection(db, 'companies')),
-            getDocs(collection(db, 'offers')),
-        ]);
-        if (s.status === 'fulfilled') setStudents(s.value.docs.map(d => ({ id: d.id, ...d.data() } as StudentRaw)));
-        if (d.status === 'fulfilled') setDrives(d.value.docs.map(d => ({ id: d.id, ...d.data() } as DriveRaw)));
-        if (c.status === 'fulfilled') setCompanies(c.value.docs.map(d => ({ id: d.id, ...d.data() } as CompanyRaw)));
-        if (o.status === 'fulfilled') setOffers(o.value.docs.map(d => ({ id: d.id, ...d.data() } as OfferRaw)));
-        setLastRefreshed(new Date());
-        setIsLoading(false);
+        try {
+            const [s, d, c, o] = await Promise.allSettled([
+                studentsDb.fetchAllStudents(),
+                drivesDb.fetchAllDrives(),
+                companiesDb.fetchAllCompanies(),
+                offersDb.getAllOffers(),
+            ]);
+
+            if (s.status === 'fulfilled') setStudents(s.value.map(doc => ({ ...doc }) as StudentRaw));
+            if (d.status === 'fulfilled') setDrives(d.value.map(doc => ({ ...doc }) as DriveRaw));
+            if (c.status === 'fulfilled') setCompanies(c.value.map(doc => ({ ...doc, name: (doc as any).companyName || (doc as any).name }) as CompanyRaw));
+            if (o.status === 'fulfilled') setOffers(o.value.map(doc => ({ ...doc }) as OfferRaw));
+            
+            setLastRefreshed(new Date());
+        } catch (error) {
+            console.error('Error refreshing dashboard:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     useEffect(() => { fetchData(); }, []);
@@ -106,7 +114,7 @@ export const DirectorDashboard: React.FC = () => {
         const eligible = students.filter(s => s.placementStatus === 'eligible' || s.placementStatus === 'placed').length;
         const placed = students.filter(s => s.placementStatus === 'placed').length;
         return [
-            { label: 'Total Students', value: total, pct: 100, color: '#2563eb' },
+            { label: 'Total Students', value: total, pct: total > 0 ? 100 : 0, color: '#2563eb' },
             { label: 'Eligible', value: eligible, pct: total > 0 ? (eligible / total) * 100 : 0, color: '#7c3aed' },
             { label: 'Placed', value: placed, pct: total > 0 ? (placed / total) * 100 : 0, color: '#16a34a' },
         ];
@@ -151,9 +159,9 @@ export const DirectorDashboard: React.FC = () => {
                         : driveStatusData.length === 0 ? <div className="h-56 flex flex-col items-center justify-center text-muted-foreground gap-2"><Inbox className="w-8 h-8" /><p className="text-sm">No drives yet. Seed admin data first.</p></div>
                         : <ResponsiveContainer width="100%" height={220}>
                             <PieChart>
-                                <Pie data={driveStatusData} cx="50%" cy="50%" outerRadius={80} dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                                <Pie data={driveStatusData} cx="50%" cy="50%" outerRadius={80} dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`} labelLine={false}>
                                     {driveStatusData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                                </Pie>
+                                </Pie> 
                                 <Tooltip {...TT_STYLE} />
                                 <Legend iconSize={10} />
                             </PieChart>

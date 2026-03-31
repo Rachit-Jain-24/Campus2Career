@@ -1,74 +1,36 @@
-import {
-    collection,
-    getDocs,
-    doc,
-    setDoc,
-    updateDoc,
-    query,
-    orderBy,
-    serverTimestamp,
-    Timestamp
-} from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { offersDb } from '../db/database.service';
 import type { AdminOffer, OfferFormData } from '../../types/offerAdmin';
 
-const COLLECTION_NAME = 'offers';
-
+/**
+ * Service to handle fetching and managing student placement offers.
+ * This automatically uses the active provider (Firestore or Supabase).
+ */
 export const offersService = {
 
     async getAllOffers(): Promise<AdminOffer[]> {
-        const offersRef = collection(db, COLLECTION_NAME);
-        const q = query(offersRef, orderBy('updatedAt', 'desc'));
-
-        const snapshot = await getDocs(q);
-
-        return snapshot.docs.map(docSnap => {
-            const data = docSnap.data();
-            return {
-                id: docSnap.id,
-                ...data,
-                joiningDate: data.joiningDate ? data.joiningDate.toDate() : null,
-                createdAt: data.createdAt?.toDate() || new Date(),
-                updatedAt: data.updatedAt?.toDate() || new Date(),
-            } as AdminOffer;
-        });
+        try {
+            return await offersDb.getAllOffers();
+        } catch (error) {
+            console.error('Error fetching offers:', error);
+            throw new Error('Failed to fetch offer directory data');
+        }
     },
 
     async createOffer(data: OfferFormData): Promise<AdminOffer> {
-        const offersRef = collection(db, COLLECTION_NAME);
-        const newOfferRef = doc(offersRef);
-
-        const now = new Date();
-        const documentData = {
-            ...data,
-            joiningDate: data.joiningDate ? Timestamp.fromDate(new Date(data.joiningDate)) : null,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-        };
-
-        await setDoc(newOfferRef, documentData);
-
-        return {
-            id: newOfferRef.id,
-            ...data,
-            joiningDate: data.joiningDate ? new Date(data.joiningDate) : null,
-            createdAt: now,
-            updatedAt: now
-        };
+        try {
+            return await offersDb.createOffer(data);
+        } catch (error) {
+            console.error('Error creating offer:', error);
+            throw new Error('Failed to create offer profile');
+        }
     },
 
     async updateOffer(id: string, data: Partial<OfferFormData>): Promise<void> {
-        const offerRef = doc(db, COLLECTION_NAME, id);
-
-        const updateData: any = {
-            ...data,
-            updatedAt: serverTimestamp()
-        };
-
-        if (data.joiningDate !== undefined) {
-            updateData.joiningDate = data.joiningDate ? Timestamp.fromDate(new Date(data.joiningDate)) : null;
+        try {
+            await offersDb.updateOffer(id, data);
+        } catch (error) {
+            console.error('Error updating offer:', error);
+            throw new Error('Failed to update offer profile');
         }
-
-        await updateDoc(offerRef, updateData);
     }
 };

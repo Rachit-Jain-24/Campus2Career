@@ -1,69 +1,44 @@
-import {
-    collection,
-    getDocs,
-    doc,
-    setDoc,
-    updateDoc,
-    query,
-    orderBy,
-    serverTimestamp
-} from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { eligibilityDb } from '../db/database.service';
 import type { AdminEligibilityRule, EligibilityFormData } from '../../types/eligibilityAdmin';
-
-const COLLECTION_NAME = 'eligibility_rules';
 
 export const eligibilityService = {
 
     async getAllRules(): Promise<AdminEligibilityRule[]> {
-        const rulesRef = collection(db, COLLECTION_NAME);
-        const q = query(rulesRef, orderBy('updatedAt', 'desc'));
+        const rules = await eligibilityDb.fetchAllRules();
 
-        const snapshot = await getDocs(q);
-
-        return snapshot.docs.map(docSnap => {
-            const data = docSnap.data();
+        return rules.map(data => {
             return {
-                id: docSnap.id,
                 ...data,
-                // Explicit JS Date instantiation from Firestore Timestamps
-                createdAt: data.createdAt?.toDate() || new Date(),
-                updatedAt: data.updatedAt?.toDate() || new Date(),
+                // Handle both Firestore Timestamps and Supabase Date strings
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt),
             } as AdminEligibilityRule;
         });
     },
 
     async createRule(data: EligibilityFormData): Promise<AdminEligibilityRule> {
-        const rulesRef = collection(db, COLLECTION_NAME);
-        const newRuleRef = doc(rulesRef);
-
         const now = new Date();
-        const ruleDocument = {
+        const ruleData = {
             ...data,
             linkedDriveIds: [], // default empty arrays on new
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
+            createdAt: now.toISOString(),
+            updatedAt: now.toISOString(),
         };
 
-        await setDoc(newRuleRef, ruleDocument);
+        const newRule = await eligibilityDb.createRule(ruleData);
 
         return {
-            id: newRuleRef.id,
-            ...data,
-            linkedDriveIds: [],
+            ...newRule,
             createdAt: now,
             updatedAt: now
-        };
+        } as AdminEligibilityRule;
     },
 
     async updateRule(id: string, data: Partial<EligibilityFormData>): Promise<void> {
-        const ruleRef = doc(db, COLLECTION_NAME, id);
+        await eligibilityDb.updateRule(id, data);
+    },
 
-        const updateData = {
-            ...data,
-            updatedAt: serverTimestamp()
-        };
-
-        await updateDoc(ruleRef, updateData);
+    async deleteRule(id: string): Promise<void> {
+        await eligibilityDb.deleteRule(id);
     }
 };

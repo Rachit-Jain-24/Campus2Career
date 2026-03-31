@@ -9,6 +9,7 @@ import { StudentsPage } from '../pages/admin/StudentsPage';
 import { BatchAnalytics } from '../pages/admin/BatchAnalytics';
 import { ReportsPage } from '../pages/admin/ReportsPage';
 import { EligibilityRulesPage } from '../pages/admin/EligibilityRulesPage';
+import { CurriculumManager } from '../pages/admin/CurriculumManager';
 
 const ProgramChairShell: React.FC = () => (
     <RoleLayout
@@ -27,6 +28,7 @@ export const ProgramChairPortalRoutes: React.FC = () => (
             <Route path="students" element={<StudentsPage />} />
             <Route path="batch-analytics" element={<BatchAnalytics />} />
             <Route path="reports" element={<ReportsPage />} />
+            <Route path="curriculum" element={<CurriculumManager />} />
             <Route path="eligibility-rules" element={<EligibilityRulesPage />} />
         </Route>
     </Routes>

@@ -336,6 +336,13 @@ const seedConfig = async () => {
         allowLateRegistrations: false,
         maintenanceMode: false,
         supportEmail: 'support@nmims.edu',
+        // Strategic Targets for the Dean
+        targets: {
+            placementRate: 95,
+            averageCTC: 12.5,
+            nirfHigherStudies: 15,
+            medianSalary: 10.5
+        },
         updatedAt: serverTimestamp()
     };
     await setDoc(doc(db, 'config', 'platformSettings'), settings);

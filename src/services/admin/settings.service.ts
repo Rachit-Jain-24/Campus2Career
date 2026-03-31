@@ -1,13 +1,5 @@
-// ─────────────────────────────────────────────────────────────
-// Settings Firestore Service
-// All persistence logic lives here – UI state is in useSettings hook.
-// ─────────────────────────────────────────────────────────────
-
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { settingsDb } from '../db/database.service';
 import type { PlatformSettings, SettingsSection } from '../../types/settingsAdmin';
-
-const DOC_PATH = 'config/platformSettings';
 
 // ── Default / Fallback Settings ──────────────────────────────
 
@@ -62,59 +54,51 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
 
 // ── Service Methods ──────────────────────────────────────────
 
+/**
+ * Service to handle platform-wide settings.
+ * This automatically uses the active provider (Firestore or Supabase).
+ */
 export const settingsService = {
 
     async getSettings(): Promise<PlatformSettings> {
         try {
-            const docRef = doc(db, DOC_PATH);
-            const snapshot = await getDoc(docRef);
-
-            if (snapshot.exists()) {
-                const data = snapshot.data();
-                return {
-                    general: data.general || DEFAULT_SETTINGS.general,
-                    departments: data.departments || DEFAULT_SETTINGS.departments,
-                    academic: data.academic || DEFAULT_SETTINGS.academic,
-                    placement: data.placement || DEFAULT_SETTINGS.placement,
-                    notifications: data.notifications || DEFAULT_SETTINGS.notifications,
-                    security: data.security || DEFAULT_SETTINGS.security,
-                    updatedAt: data.updatedAt?.toDate() || undefined,
-                    updatedBy: data.updatedBy || undefined
-                };
-            }
-
-            // No document exists yet — return defaults
-            return { ...DEFAULT_SETTINGS };
+            const settings = await settingsDb.getSettings();
+            return {
+                ...DEFAULT_SETTINGS,
+                ...settings,
+                general: { ...DEFAULT_SETTINGS.general, ...settings.general },
+                placement: { ...DEFAULT_SETTINGS.placement, ...settings.placement }
+            };
         } catch (err) {
-            console.warn('Failed to fetch settings from Firestore, using defaults:', err);
+            console.warn('Failed to fetch settings, using defaults:', err);
             return { ...DEFAULT_SETTINGS };
         }
     },
 
     async saveSettings(settings: PlatformSettings, adminEmail?: string): Promise<void> {
-        const docRef = doc(db, DOC_PATH);
-        await setDoc(docRef, {
-            ...settings,
-            updatedAt: serverTimestamp(),
-            updatedBy: adminEmail || 'system_admin'
-        }, { merge: true });
+        try {
+            await settingsDb.saveSettings(settings, adminEmail);
+        } catch (err) {
+            console.error('Failed to save settings:', err);
+            throw new Error('Failed to update platform settings');
+        }
     },
 
     async saveSection(section: SettingsSection, data: any, adminEmail?: string): Promise<void> {
-        const docRef = doc(db, DOC_PATH);
-        await setDoc(docRef, {
-            [section]: data,
-            updatedAt: serverTimestamp(),
-            updatedBy: adminEmail || 'system_admin'
-        }, { merge: true });
+        try {
+            await settingsDb.saveSection(section, data, adminEmail);
+        } catch (err) {
+            console.error(`Failed to save settings section ${section}:`, err);
+            throw new Error(`Failed to update settings section: ${section}`);
+        }
     },
 
     async resetToDefaults(adminEmail?: string): Promise<void> {
-        const docRef = doc(db, DOC_PATH);
-        await setDoc(docRef, {
-            ...DEFAULT_SETTINGS,
-            updatedAt: serverTimestamp(),
-            updatedBy: adminEmail || 'system_admin'
-        });
+        try {
+            await settingsDb.saveSettings(DEFAULT_SETTINGS, adminEmail);
+        } catch (err) {
+            console.error('Failed to reset settings:', err);
+            throw new Error('Failed to reset settings to defaults');
+        }
     }
 };

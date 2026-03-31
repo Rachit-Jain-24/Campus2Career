@@ -1,8 +1,6 @@
 // Feature: ai-career-advisor-chatbot
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
-import type { StudentUser } from '@/types/auth';
+import type { StudentUser } from '../../types/auth';
 import type { ChatbotResponse, TransparencyMeta, KnowledgeChunk, IntentResult } from './types';
 import * as ragEngine from './ragEngine';
 import * as contextManager from './contextManager';
@@ -10,6 +8,7 @@ import { classify } from './intentClassifier';
 import { analyze } from './sentimentAnalyzer';
 import { rank } from './personalizationEngine';
 import { build } from './promptBuilder';
+import { studentsDb } from '../../services/db/database.service';
 
 const MODEL_NAME = 'gemini-2.5-flash';
 const TIMEOUT_MS = 15_000; // 15s to get the first token
@@ -29,27 +28,27 @@ async function* singleChunkIterable(text: string): AsyncIterable<string> {
 }
 
 /**
- * 1. FIRESTORE INTEGRATION
- * Fetch student data from the 'students' collection or cache.
+ * 1. DATABASE AGNOSTIC INTEGRATION
+ * Fetch student data from the active database or cache.
  */
-async function getCachedStudentProfile(uid: string, fallbackStudent: StudentUser): Promise<StudentUser> {
-  if (!uid) return fallbackStudent;
-  if (studentCache.has(uid)) return studentCache.get(uid)!;
+async function getCachedStudentProfile(sapId: string, fallbackStudent: StudentUser): Promise<StudentUser> {
+  if (!sapId) return fallbackStudent;
+  if (studentCache.has(sapId)) return studentCache.get(sapId)!;
 
   try {
-    const docRef = doc(db, 'students', uid);
-    const snap = await getDoc(docRef);
-    if (snap.exists()) {
-      const data = snap.data() as StudentUser;
-      studentCache.set(uid, data);
-      return data;
+    const data = await studentsDb.getStudentBySapId(sapId);
+    if (data) {
+      // Map AdminStudentProfile back to StudentUser if needed, or assume interface compatibility
+      const studentData = data as unknown as StudentUser;
+      studentCache.set(sapId, studentData);
+      return studentData;
     }
   } catch (err) {
-    console.error('Failed to fetch student from Firestore, using fallback:', err);
+    console.error('Failed to fetch student from database, using fallback:', err);
   }
 
-  // Use the UI-provided student if firestore fetch fails
-  studentCache.set(uid, fallbackStudent);
+  // Use the UI-provided student if database fetch fails
+  studentCache.set(sapId, fallbackStudent);
   return fallbackStudent;
 }
 
@@ -105,7 +104,7 @@ function generateSuggestedPrompts(student: StudentUser, intent: IntentResult): s
  */
 export async function initialize(student: StudentUser): Promise<void> {
   // Pre-fetch/cache to have memory ready
-  await getCachedStudentProfile(student.uid, student);
+  await getCachedStudentProfile(student.sapId, student);
   await ragEngine.initialize(student);
   contextManager.restore(student.uid);
 }
@@ -118,7 +117,7 @@ export async function sendMessage(
   uiStudent: StudentUser
 ): Promise<ChatbotResponse> {
   // Step 1: Input Processing
-  const student = await getCachedStudentProfile(uiStudent.uid, uiStudent);
+  const student = await getCachedStudentProfile(uiStudent.sapId, uiStudent);
 
   if (!ragEngine.isInitialized()) {
     await ragEngine.initialize(student);

@@ -3,7 +3,7 @@ import {
     Code2, Compass, Target, CheckCircle2, Zap,
     Briefcase, GraduationCap, LayoutGrid, BookOpen, Sparkles, Server,
     Upload, RefreshCw, Info, FileText, X, Clock,
-    TrendingUp, Award, Layers
+    TrendingUp, Award, Layers, Brain, FileQuestion, Sparkle, Search, Book
 } from 'lucide-react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { useAuth } from '../../contexts/AuthContext';
@@ -11,6 +11,9 @@ import { generateIntelligentRoadmap, type IntelligentRoadmap } from '../../lib/r
 import { generateSyllabusRoadmap } from '../../lib/gemini';
 import { uploadSyllabusPDF, getSyllabusRecord, type SyllabusRecord } from '../../services/student/syllabus.service';
 import { extractTextFromLocalPDF } from '../../lib/pdfParser';
+import { copilotEngine } from '../../lib/ai/copilotEngine';
+import type { AcademicNote, AcademicQuiz } from '../../types/copilot';
+import { curriculumDb } from '../../services/db/database.service';
 
 const ICON_MAP: Record<string, React.ElementType> = {
     Code2, LayoutGrid, Briefcase, Target, Compass, GraduationCap, Server, BookOpen
@@ -37,17 +40,36 @@ export default function RoadmapPage() {
     const [semester, setSemester] = useState<number>(() => (currentYear - 1) * 2 + 1);
     const [syllabusText, setSyllabusText] = useState<string | null>(null);
     const [syllabusRecord, setSyllabusRecord] = useState<SyllabusRecord | null>(null);
-    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-    const [uploadError, setUploadError] = useState<string | null>(null);
-    const [isAiGenerated, setIsAiGenerated] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [storageError, setStorageError] = useState<string | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [checkedMilestones, setCheckedMilestones] = useState<Record<string, boolean>>({});
-    const [activeTab, setActiveTab] = useState<'roadmap' | 'syllabus' | 'skills'>('roadmap');
+    const [activeTab, setActiveTab] = useState<'roadmap' | 'syllabus' | 'skills' | 'planning'>('roadmap');
+    const [masterCurriculum, setMasterCurriculum] = useState<any | null>(null);
+    const [selectedStudySubject, setSelectedStudySubject] = useState<string | null>(null);
+    const [studyKits, setStudyKits] = useState<Record<string, { notes: AcademicNote; quiz: AcademicQuiz }>>({});
+    const [isGeneratingStudyKit, setIsGeneratingStudyKit] = useState(false);
+    const [showStudyModal, setShowStudyModal] = useState(false);
+    const [isAiGenerated, setIsAiGenerated] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    const [uploadError, setUploadError] = useState<string | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const prevRoleRef = useRef(targetRole);
+
+    useEffect(() => {
+        const fetchMasterCurriculum = async () => {
+            const branch = u?.branch || 'B.Tech CSE';
+            const batch = u?.batch || '2022-2026';
+            try {
+                const data = await curriculumDb.getCurriculum(branch, batch);
+                if (data) setMasterCurriculum(data);
+            } catch (err) {
+                console.error("Failed to fetch curriculum:", err);
+            }
+        };
+        if (u) fetchMasterCurriculum();
+    }, [u]);
 
     useEffect(() => {
         const saved = localStorage.getItem(`c2c_roadmap_milestones_${u?.sapId}`);
@@ -134,6 +156,31 @@ export default function RoadmapPage() {
             uploadSyllabusPDF(sapId, semester, file, pct => setUploadProgress(pct))
                 .then(r => { setSyllabusRecord(r); setUploadProgress(null); })
                 .catch(() => { setStorageError('Failed to save syllabus. Your roadmap was still generated.'); setUploadProgress(null); });
+        }
+    };
+
+    const handleGenerateStudyKit = async (subject: string) => {
+        if (studyKits[subject]) {
+            setSelectedStudySubject(subject);
+            setShowStudyModal(true);
+            return;
+        }
+
+        setIsGeneratingStudyKit(true);
+        try {
+            const [notes, quiz] = await Promise.all([
+                copilotEngine.generateNotesDirect(subject, `Industry-relevant mastery of ${subject} for a ${targetRole} role.`),
+                copilotEngine.generateQuizDirect(subject, 5)
+            ]);
+
+            setStudyKits(prev => ({ ...prev, [subject]: { notes, quiz } }));
+            setSelectedStudySubject(subject);
+            setShowStudyModal(true);
+        } catch (err) {
+            console.error("Failed to generate study kit:", err);
+            // Optionally show error toast
+        } finally {
+            setIsGeneratingStudyKit(false);
         }
     };
 
@@ -310,8 +357,9 @@ export default function RoadmapPage() {
                         {/* ── Tab Bar ── */}
                         <div className="flex gap-1 bg-slate-100 p-1 rounded-2xl w-fit">
                             {([
-                                { id: 'roadmap', label: 'Roadmap', icon: TrendingUp },
-                                ...(isAiGenerated && roadmap.subjectIndustryMap?.length ? [{ id: 'syllabus', label: 'Syllabus Analysis', icon: Layers }] : []),
+                                { id: 'roadmap', label: 'Career Roadmap', icon: TrendingUp },
+                                { id: 'planning', label: '4-Year Academic Plan', icon: Layers },
+                                ...(isAiGenerated && roadmap.subjectIndustryMap?.length ? [{ id: 'syllabus', label: 'Semester Analysis', icon: Search }] : []),
                                 { id: 'skills', label: 'Skills & Certs', icon: Award },
                             ] as { id: string; label: string; icon: React.ElementType }[]).map(tab => (
                                 <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
@@ -512,6 +560,28 @@ export default function RoadmapPage() {
                                                 <div className="h-1 bg-slate-100 rounded-full mb-3 overflow-hidden">
                                                     <div className={`h-full rounded-full ${bar}`} />
                                                 </div>
+                                                
+                                                <div className="mb-4">
+                                                    <button 
+                                                        onClick={() => handleGenerateStudyKit(entry.subject)}
+                                                        disabled={isGeneratingStudyKit}
+                                                        className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                                            studyKits[entry.subject] 
+                                                                ? 'bg-green-50 text-green-700 border border-green-200' 
+                                                                : 'bg-primary/10 text-primary hover:bg-primary/20'
+                                                        }`}
+                                                    >
+                                                        {isGeneratingStudyKit && selectedStudySubject === entry.subject ? (
+                                                            <RefreshCw className="h-3 w-3 animate-spin" />
+                                                        ) : studyKits[entry.subject] ? (
+                                                            <Brain className="h-3 w-3" />
+                                                        ) : (
+                                                            <Sparkle className="h-3 w-3" />
+                                                        )}
+                                                        {studyKits[entry.subject] ? 'View Study Kit' : 'Generate Study Kit'}
+                                                    </button>
+                                                </div>
+
                                                 {entry.supplementarySkills.length > 0 && (
                                                     <div>
                                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Learn alongside</p>
@@ -581,9 +651,166 @@ export default function RoadmapPage() {
                                 </div>
                             </div>
                         )}
+
+                        {/* ══ TAB: 4-YEAR PLANNING ══ */}
+                        {activeTab === 'planning' && (
+                            <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+                                <div className="bg-amber-50 border border-amber-100 p-6 rounded-3xl flex items-center gap-4">
+                                    <div className="h-12 w-12 rounded-2xl bg-amber-200 flex items-center justify-center shrink-0">
+                                        <Layers className="h-6 w-6 text-amber-700" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-black text-amber-900">Program Chair's Academic Blueprint</h3>
+                                        <p className="text-sm text-amber-700 font-medium">Full 8-semester course structure for your {u?.branch || 'B.Tech CSE'} degree.</p>
+                                    </div>
+                                </div>
+
+                                {masterCurriculum ? (
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        {masterCurriculum.semesters.map((sem: any, sIdx: number) => (
+                                            <div key={sIdx} className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+                                                <div className="p-5 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-9 w-9 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xs font-black italic">
+                                                            S{sem.semester}
+                                                        </div>
+                                                        <h4 className="font-black text-slate-800">Semester {sem.semester}</h4>
+                                                    </div>
+                                                </div>
+                                                <div className="p-4 space-y-3 flex-1">
+                                                    {sem.subjects.map((sub: any, subIdx: number) => (
+                                                        <div key={subIdx} className="group p-4 bg-slate-50 rounded-2xl hover:bg-white hover:shadow-lg transition-all border border-transparent hover:border-amber-200">
+                                                            <div className="flex items-start justify-between gap-4 mb-3">
+                                                                <div>
+                                                                    <p className="text-sm font-black text-slate-800">{sub.name}</p>
+                                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{sub.industryRelevance} RELEVANCE</p>
+                                                                </div>
+                                                                <button 
+                                                                    onClick={() => handleGenerateStudyKit(sub.name)}
+                                                                    className="shrink-0 h-8 w-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
+                                                                    title="Start Subject Planning"
+                                                                >
+                                                                    <Brain className="h-4 w-4" />
+                                                                </button>
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-white border border-slate-100 rounded text-slate-500">AI Notes</span>
+                                                                <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-white border border-slate-100 rounded text-slate-500">Practice Quiz</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="bg-white rounded-3xl p-12 text-center border-2 border-dashed border-slate-200">
+                                        <Book className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                                        <p className="font-bold text-slate-500">Master Curriculum not uploaded by Program Chair yet.</p>
+                                        <p className="text-sm text-slate-400 mt-1">Check back soon for your full 4-year subject clarity.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
+
+            {/* ── Study Kit Modal ── */}
+            {showStudyModal && selectedStudySubject && studyKits[selectedStudySubject] && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+                        {/* Modal Header */}
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between gradient-primary text-white">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-white/20 rounded-2xl">
+                                    <Brain className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black">{selectedStudySubject}</h2>
+                                    <p className="text-white/70 text-xs font-bold uppercase tracking-widest">AI Academic Copilot • Study Kit</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setShowStudyModal(false)}
+                                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                            >
+                                <X className="h-6 w-6" />
+                            </button>
+                        </div>
+
+                        {/* Modal Content */}
+                        <div className="flex-1 overflow-y-auto p-8 space-y-12">
+                            {/* AI Notes Section */}
+                            <section>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                                        <FileText className="h-4 w-4 text-blue-600" />
+                                    </div>
+                                    <h3 className="text-lg font-black text-slate-800">Smart Study Notes</h3>
+                                </div>
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    {studyKits[selectedStudySubject].notes.modules.map((mod, i) => (
+                                        <div key={i} className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+                                            <h4 className="font-black text-slate-800 mb-3 flex items-center gap-2">
+                                                <span className="h-5 w-5 rounded-full bg-blue-500 text-white text-[10px] flex items-center justify-center">{i + 1}</span>
+                                                {mod.title}
+                                            </h4>
+                                            <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{mod.content}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <hr className="border-slate-100" />
+
+                            {/* Practice Quiz Section */}
+                            <section className="pb-8">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="h-8 w-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                                        <FileQuestion className="h-4 w-4 text-orange-600" />
+                                    </div>
+                                    <h3 className="text-lg font-black text-slate-800">Knowledge Check</h3>
+                                </div>
+                                <div className="space-y-6">
+                                    {studyKits[selectedStudySubject].quiz.questions.map((q, i) => (
+                                        <div key={i} className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+                                            <p className="font-bold text-slate-800 mb-4">{i + 1}. {q.question}</p>
+                                            <div className="grid sm:grid-cols-2 gap-3">
+                                                {q.options.map((opt, oi) => {
+                                                    const isCorrect = oi === q.correctAnswer;
+                                                    return (
+                                                        <div key={oi} className={`p-4 rounded-xl border text-sm font-medium transition-all ${
+                                                            isCorrect ? 'bg-green-50 border-green-200 text-green-700' : 'bg-slate-50 border-slate-100 text-slate-600'
+                                                        }`}>
+                                                            {opt}
+                                                            {isCorrect && <CheckCircle2 className="h-3 w-3 inline ml-2" />}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                                                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Explanation</p>
+                                                <p className="text-xs text-blue-800">{q.explanation}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        </div>
+                        
+                        {/* Modal Footer */}
+                        <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end">
+                            <button 
+                                onClick={() => setShowStudyModal(false)}
+                                className="px-6 py-2.5 bg-slate-900 text-white text-sm font-black rounded-xl hover:bg-slate-800 transition-all"
+                            >
+                                Done Studying
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </DashboardLayout>
     );
 }

@@ -49,21 +49,21 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         return <Navigate to="/admin/dashboard" replace />;
     }
 
-    const isCareerDiscoveryDone = user.careerDiscoveryCompleted === true;
+    const isCareerDiscoveryDone = user.careerDiscoveryCompleted === true || !!(user as any).careerTrack;
     const isProfileSetupDone = user.profileCompleted === true;
-    const isAssessmentDone = user.assessmentCompleted === true;
+    // Assessment is now done as part of Career Discovery (track selection = assessment)
+    // Grant access if assessmentCompleted flag is set OR if profile is done (legacy students)
+    const isAssessmentDone = user.assessmentCompleted === true || isProfileSetupDone || isCareerDiscoveryDone;
 
     // Student specific requirement checks (admins bypass this)
     if (!isUserAdmin) {
-        // Reverse checking for onboarding forms (if they try to visit it again after doing it)
+        // Prevent revisiting completed onboarding steps
         if (location.pathname === '/career-discovery' && isCareerDiscoveryDone) {
             if (!isProfileSetupDone) return <Navigate to="/student/profile-setup" replace />;
-            if (!isAssessmentDone) return <Navigate to="/student/assessment" replace />;
             return <Navigate to="/student/dashboard" replace />;
         }
 
         if (location.pathname === '/student/profile-setup' && isProfileSetupDone) {
-            if (!isAssessmentDone) return <Navigate to="/student/assessment" replace />;
             return <Navigate to="/student/dashboard" replace />;
         }
 
@@ -71,11 +71,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             return <Navigate to="/student/dashboard" replace />;
         }
 
-        // Forward checks (prevent visiting dashboard while setup is incomplete)
+        // Forward guards — prevent skipping steps
         if (requireAssessment && !isAssessmentDone) {
             if (!isCareerDiscoveryDone) return <Navigate to="/career-discovery" replace />;
             if (!isProfileSetupDone) return <Navigate to="/student/profile-setup" replace />;
-            return <Navigate to="/student/assessment" replace />;
+            return <Navigate to="/student/dashboard" replace />;
         }
 
         if (requireProfileSetup && !isProfileSetupDone) {

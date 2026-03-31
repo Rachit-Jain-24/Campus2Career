@@ -1,7 +1,7 @@
 import {
-    LayoutDashboard, Users, GraduationCap, Building2, Briefcase,
+    Users, GraduationCap, Building2, Briefcase,
     ShieldCheck, CalendarCheck, Award, BarChart3, Settings, History,
-    Landmark, Target, BookOpen, UserCheck, Handshake, ServerCog,
+    Landmark, Target, BookOpen, UserCheck, Handshake, ServerCog, Layers
 } from 'lucide-react';
 
 export interface RoleNavItem {
@@ -45,6 +45,7 @@ export const PROGRAM_CHAIR_NAV: RoleNavItem[] = [
     { path: '/program-chair/students', label: 'Students Directory', icon: GraduationCap, section: 'Directory' },
     { path: '/program-chair/batch-analytics', label: 'Batch Analytics', icon: BarChart3, section: 'Directory' },
     { path: '/program-chair/reports', label: 'Reports & Analytics', icon: BarChart3, section: 'Insights' },
+    { path: '/program-chair/curriculum', label: 'Curriculum Manager', icon: Layers, section: 'Academic' },
     { path: '/program-chair/eligibility-rules', label: 'Eligibility Rules', icon: ShieldCheck, section: 'Configuration' },
 ];
 

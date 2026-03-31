@@ -9,8 +9,9 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, Cell
 } from 'recharts';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '../../../lib/firebase';
+import { 
+    studentsDb, interviewsDb 
+} from '../../../services/db/database.service';
 import { WelcomeCard } from '../../../components/admin/dashboard/WelcomeCard';
 import { BatchSWOCSection } from '../../../components/admin/dashboard/BatchSWOCSection';
 
@@ -31,7 +32,7 @@ interface StudentRaw {
 }
 interface InterviewRaw {
     id: string; companyName?: string; roundType?: string;
-    scheduledDate?: string | { seconds: number }; status?: string;
+    scheduledDate?: any; status?: string;
 }
 
 const KpiCard: React.FC<{ title: string; value: string | number; subtitle: string; icon: React.ElementType; colorClass: string; loading: boolean }> = ({ title, value, subtitle, icon: Icon, colorClass, loading }) => (
@@ -60,14 +61,26 @@ export const FacultyDashboard: React.FC = () => {
 
     const fetchData = async () => {
         setIsLoading(true);
-        const results = await Promise.allSettled([
-            getDocs(query(collection(db, 'students'), orderBy('name'))),
-            getDocs(collection(db, 'interviews')),
-        ]);
-        if (results[0].status === 'fulfilled') setStudents(results[0].value.docs.map(d => ({ id: d.id, ...d.data() } as StudentRaw)));
-        if (results[1].status === 'fulfilled') setInterviews(results[1].value.docs.map(d => ({ id: d.id, ...d.data() } as InterviewRaw)));
-        setLastRefreshed(new Date());
-        setIsLoading(false);
+        try {
+            const results = await Promise.allSettled([
+                studentsDb.fetchAllStudents(),
+                interviewsDb.getAllInterviews(),
+            ]);
+
+            if (results[0].status === 'fulfilled') setStudents(results[0].value.map(d => ({ 
+                ...d, 
+                name: (d as any).fullName || (d as any).name,
+                branch: (d as any).department || (d as any).branch,
+                currentYear: parseInt((d as any).currentYear || 0)
+            }) as StudentRaw));
+            if (results[1].status === 'fulfilled') setInterviews(results[1].value.map(d => ({ ...d }) as InterviewRaw));
+            
+            setLastRefreshed(new Date());
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     useEffect(() => { fetchData(); }, []);

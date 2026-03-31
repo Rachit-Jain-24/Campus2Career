@@ -473,7 +473,8 @@ interface StudentProfile {
 export async function generateSyllabusRoadmap(
     syllabusText: string,
     studentProfile: StudentProfile,
-    targetRole: string
+    targetRole: string,
+    preferences?: string
 ): Promise<IntelligentRoadmap> {
     const {
         currentYear,
@@ -484,10 +485,8 @@ export async function generateSyllabusRoadmap(
         cgpa
     } = studentProfile;
 
-    // Import inline to avoid circular module evaluation
     const { generateIntelligentRoadmap } = await import('./roadmapGenerator');
 
-    // Fallback helper
     const fallback = () =>
         generateIntelligentRoadmap(
             currentYear,
@@ -499,21 +498,11 @@ export async function generateSyllabusRoadmap(
             parseFloat(cgpa ?? '0') || 0
         );
 
-    if (!API_KEY) {
-        return fallback();
-    }
-
-    // Truncate syllabus to avoid token limits while keeping key content
-    const truncatedSyllabus = syllabusText.length > 6000
-        ? syllabusText.slice(0, 6000) + '\n...[truncated]'
-        : syllabusText;
-
     const leetcodeSolved = leetcodeStats?.totalSolved ?? 0;
     const projectCount = projects?.length ?? 0;
     const internshipCount = internships?.length ?? 0;
     const cgpaNum = parseFloat(cgpa ?? '0') || 0;
 
-    // Estimate progress based on profile
     const estimatedProgress = Math.min(90, Math.round(
         (Math.min(leetcodeSolved / 150, 1) * 25) +
         (Math.min(projectCount / 4, 1) * 25) +
@@ -521,83 +510,86 @@ export async function generateSyllabusRoadmap(
         (Math.min(cgpaNum / 10, 1) * 25)
     ));
 
-    const prompt = `You are a senior placement advisor at a top engineering college. A student has shared their semester syllabus and profile. Your job is to create a HIGHLY SPECIFIC career roadmap that directly references the subjects in their syllabus and maps each one to industry skills needed for their target role.
+    const prompt = `You are a senior placement advisor at a top engineering college. A student has shared their semester syllabus and profile. Create a HIGHLY SPECIFIC 4-year career roadmap that directly references the subjects in their syllabus.
 
-SEMESTER SYLLABUS (read carefully — your roadmap MUST reference these subjects):
----
-${truncatedSyllabus}
----
+SYLLABUS DATA:
+${syllabusText.slice(0, 8000)}
 
 STUDENT PROFILE:
 - Target Role: ${targetRole}
-- Current Year of Study: Year ${currentYear}
-- Existing Tech Skills: ${techSkills.length > 0 ? techSkills.join(', ') : 'None listed'}
-- LeetCode Problems Solved: ${leetcodeSolved}
-- Projects Built: ${projectCount}
-- Internships Done: ${internshipCount}
-- CGPA: ${cgpaNum > 0 ? cgpaNum : 'Not provided'}
+- Current Year: Year ${currentYear}
+- Tech Skills: ${techSkills.join(', ')}
+- LeetCode: ${leetcodeSolved}
+- Projects: ${projectCount}
+- Internships: ${internshipCount}
+- CGPA: ${cgpaNum}
+- PERSONALIZED LEARNING PERSPECTIVE/PREFERENCES: "${preferences || 'General career growth'}"
 
-CRITICAL INSTRUCTIONS:
-1. roadmapSteps MUST be based on the actual subjects in the syllabus above. Reference subject names directly.
-2. Each roadmapStep should explain HOW that subject connects to the ${targetRole} role.
-3. skillsToMaster should be skills that COMPLEMENT the syllabus subjects for ${targetRole}.
-4. projectsToBuild should use technologies from the syllabus subjects.
-5. subjectIndustryMap MUST list every subject found in the syllabus.
-6. overallProgress should reflect the student's current profile strength (0-100).
-
-Return ONLY valid JSON, no markdown, no extra text:
+Return ONLY valid JSON:
 {
   "targetRole": "${targetRole}",
   "currentYear": ${currentYear},
   "overallProgress": ${estimatedProgress},
   "roadmapSteps": [
-    { "title": "Leverage [Subject from syllabus] for ${targetRole}", "desc": "Specific advice connecting this subject to industry...", "iconKey": "Code2", "priority": "critical", "timeframe": "This semester" },
-    { "title": "...", "desc": "...", "iconKey": "Target", "priority": "high", "timeframe": "2 months" }
+    { "title": "string", "desc": "string", "iconKey": "Code2", "priority": "critical", "timeframe": "string" }
   ],
-  "skillsToMaster": ["skill directly related to syllabus subjects"],
-  "certifications": ["cert relevant to ${targetRole}"],
-  "projectsToBuild": ["project using syllabus subject technologies"],
-  "milestones": ["milestone tied to syllabus completion"],
-  "academicFocus": ["specific advice for this semester's subjects"],
-  "internshipGoals": "internship goal specific to ${targetRole} and current year",
+  "skillsToMaster": ["string"],
+  "certifications": ["string"],
+  "projectsToBuild": ["string"],
+  "milestones": ["string"],
+  "academicFocus": ["string"],
+  "internshipGoals": "string",
   "curriculumMapping": [
-    { "year": ${currentYear}, "focus": "Current Semester Focus", "subject": "Subject from syllabus", "reason": "Why this matters for ${targetRole}" }
+    { "year": ${currentYear}, "focus": "string", "subject": "string", "reason": "string" }
   ],
-  "nextMilestone": "Most important next step based on syllabus",
-  "estimatedTimeToReady": "Realistic estimate based on current year and profile",
+  "nextMilestone": "string",
+  "estimatedTimeToReady": "string",
   "subjectIndustryMap": [
-    { "subject": "EXACT subject name from syllabus", "industryRelevance": "high", "supplementarySkills": ["skill1", "skill2", "skill3"] }
+    { "subject": "string", "industryRelevance": "high", "supplementarySkills": ["string"] }
   ]
-}
+}`;
 
-iconKey must be one of: Code2, LayoutGrid, Briefcase, Target, Compass, GraduationCap, Server, BookOpen
-priority must be one of: critical, high, medium`;
+    const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
-    try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-
-        const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('TIMEOUT')), 30000)
-        );
-
-        const geminiPromise = model.generateContent(prompt);
-
-        const result = await Promise.race([geminiPromise, timeoutPromise]);
-        const text = (await result.response).text().replace(/```json|```/g, '').trim();
-
+    // Try Gemini 2.0 Flash First (User Preferred)
+    if (API_KEY) {
         try {
-            return JSON.parse(text) as IntelligentRoadmap;
-        } catch (parseError) {
-            console.error('generateSyllabusRoadmap: failed to parse Gemini response', parseError);
-            return fallback();
+            const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+            const result = await model.generateContent(prompt);
+            const text = (await result.response).text().replace(/```json|```/g, '').trim();
+            if (text) return JSON.parse(text) as IntelligentRoadmap;
+        } catch (error) {
+            console.error('Gemini 2.0 Roadmap generation failed, falling back:', error);
         }
-    } catch (error) {
-        if (error instanceof Error && error.message === 'TIMEOUT') {
-            return fallback();
-        }
-        console.error('generateSyllabusRoadmap: Gemini call failed', error);
-        return fallback();
     }
+
+    // Fallback to Groq
+    if (GROQ_API_KEY) {
+        try {
+            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${GROQ_API_KEY}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b-versatile",
+                    messages: [{ role: "user", content: prompt }],
+                    temperature: 0.1,
+                    response_format: { type: "json_object" }
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return JSON.parse(data.choices[0].message.content) as IntelligentRoadmap;
+            }
+        } catch (err) {
+            console.warn("Groq Roadmap fallback failed:", err);
+        }
+    }
+
+    return fallback();
 }
 
 // ── Interview Engine Extensions ──────────────────────────────────────────────

@@ -10,8 +10,9 @@ import {
     ResponsiveContainer, PieChart, Pie, Cell, Legend,
     AreaChart, Area
 } from 'recharts';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../../lib/firebase';
+import { 
+    drivesDb, companiesDb, interviewsDb, offersDb 
+} from '../../../services/db/database.service';
 import { WelcomeCard } from '../../../components/admin/dashboard/WelcomeCard';
 
 const DEPT_COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
@@ -19,7 +20,7 @@ const TT = { contentStyle: { background: 'var(--card)', border: '1px solid var(-
 
 interface DriveRaw { id: string; title?: string; companyName?: string; status?: string; applicantCount?: number; shortlistedCount?: number; }
 interface CompanyRaw { id: string; name?: string; industry?: string; status?: string; }
-interface InterviewRaw { id: string; companyName?: string; roundType?: string; scheduledDate?: string | { seconds: number }; status?: string; }
+interface InterviewRaw { id: string; companyName?: string; roundType?: string; scheduledDate?: any; status?: string; }
 interface OfferRaw { id: string; studentName?: string; companyName?: string; ctc?: number; packageLPA?: number; status?: string; role?: string; }
 
 const KpiCard: React.FC<{ title: string; value: string | number; subtitle: string; icon: React.ElementType; colorClass: string; loading: boolean }> = ({ title, value, subtitle, icon: Icon, colorClass, loading }) => (
@@ -65,22 +66,39 @@ export const PlacementOfficerDashboard: React.FC = () => {
     const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
     const fetchData = async () => {
-        setIsLoading(true);
-        const results = await Promise.allSettled([
-            getDocs(collection(db, 'drives')),
-            getDocs(collection(db, 'companies')),
-            getDocs(collection(db, 'interviews')),
-            getDocs(collection(db, 'offers')),
-        ]);
-        if (results[0].status === 'fulfilled') setDrives(results[0].value.docs.map(d => ({ id: d.id, ...d.data() } as DriveRaw)));
-        if (results[1].status === 'fulfilled') setCompanies(results[1].value.docs.map(d => ({ id: d.id, ...d.data() } as CompanyRaw)));
-        if (results[2].status === 'fulfilled') setInterviews(results[2].value.docs.map(d => ({ id: d.id, ...d.data() } as InterviewRaw)));
-        if (results[3].status === 'fulfilled') setOffers(results[3].value.docs.map(d => ({ id: d.id, ...d.data() } as OfferRaw)));
-        setLastRefreshed(new Date());
-        setIsLoading(false);
+        try {
+            const [compRes, intRes] = await Promise.allSettled([
+                companiesDb.fetchAllCompanies(),
+                interviewsDb.getAllInterviews(),
+            ]);
+            if (compRes.status === 'fulfilled') setCompanies(compRes.value.map(d => ({ ...d, name: (d as any).companyName || (d as any).name }) as CompanyRaw));
+            if (intRes.status === 'fulfilled') setInterviews(intRes.value.map(d => ({ ...d }) as InterviewRaw));
+            setLastRefreshed(new Date());
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        }
     };
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => {
+        fetchData(); // Initial manual fetch
+
+        // Real-time Subscriptions
+
+        // Real-time Subscriptions
+        const unsubDrives = drivesDb.onDrivesChange((d) => {
+            setDrives(d as any as DriveRaw[]);
+            setIsLoading(false);
+        });
+
+        const unsubOffers = offersDb.onOffersChange((o) => {
+            setOffers(o as any as OfferRaw[]);
+        });
+
+        return () => {
+            unsubDrives();
+            unsubOffers();
+        };
+    }, []);
 
     const todayStr = new Date().toDateString();
 
