@@ -12,8 +12,8 @@ export default function DirectorLoginPage() {
             accentBorder="border-blue-500/30"
             accentText="text-blue-400"
             icon={Target}
-            demoEmail="director@c2c.com"
-            demoPassword="director123"
+            demoEmail="director@nmims.edu"
+            demoPassword="director2026"
             description="Operational oversight — drives, companies, reports"
         />
     );

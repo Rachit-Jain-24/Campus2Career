@@ -129,7 +129,7 @@ export async function sendMessage(
   const sentimentResult = analyze(message);
 
   // Step 2 & 3: RAG Retrieval + Context Building + Personalization
-  const ragResult = ragEngine.retrieve(message);
+  const ragResult = await ragEngine.retrieve(message);
   const personalizationResult = rank(ragResult, student, intentResult.intent);
 
   // Step 4: Prompt Construction

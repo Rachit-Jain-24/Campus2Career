@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react';
-import { Upload, FileText, CheckCircle, Plus, X, ArrowUp, ArrowDown, Play } from 'lucide-react';
+import { Upload, FileText, CheckCircle, Plus, X, ArrowUp, ArrowDown, Play, AlertTriangle, Sparkles } from 'lucide-react';
 import type { Difficulty, InterviewMode, InterviewRound, SessionConfig } from '../../types/interview';
 import { DIFFICULTY_INFO, ROUND_TEMPLATES, COMPANIES, CODE_LANGUAGES } from '../../lib/interviewEngine';
 import { extractTextFromLocalPDF } from '../../lib/pdfParser';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Props {
   defaultRole: string;
@@ -12,6 +13,9 @@ interface Props {
 }
 
 export function InterviewLobby({ defaultRole, defaultResumeName, defaultResumeText, onStart }: Props) {
+  const { user } = useAuth();
+  const u = user as any;
+
   const [difficulty, setDifficulty] = useState<Difficulty>('mid');
   const [targetRole, setTargetRole] = useState(defaultRole || 'Software Engineer');
   const [targetCompany, setTargetCompany] = useState('');
@@ -21,6 +25,40 @@ export function InterviewLobby({ defaultRole, defaultResumeName, defaultResumeTe
   const [resumeText, setResumeText] = useState(defaultResumeText);
   const [isParsing, setIsParsing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Build a rich resume context from profile data even without a PDF
+  const buildProfileContext = (): string => {
+    if (resumeText?.trim()) return resumeText;
+    if (!u) return '';
+
+    const lines: string[] = [];
+    if (u.name) lines.push(`Name: ${u.name}`);
+    if (u.branch) lines.push(`Degree: ${u.branch}, Year ${u.currentYear}`);
+    if (u.cgpa) lines.push(`CGPA: ${u.cgpa}`);
+    if (u.techSkills?.length) lines.push(`Skills: ${u.techSkills.join(', ')}`);
+    if (u.projects?.length) {
+      lines.push('Projects:');
+      u.projects.forEach((p: any) => {
+        lines.push(`  - ${p.title}: ${p.description || ''} ${p.tech ? `[${p.tech}]` : ''}`);
+      });
+    }
+    if (u.internships?.length) {
+      lines.push('Internships:');
+      u.internships.forEach((i: any) => {
+        lines.push(`  - ${i.role} at ${i.company} (${i.period}): ${i.description || ''}`);
+      });
+    }
+    if (u.certifications?.length) {
+      lines.push(`Certifications: ${u.certifications.map((c: any) => c.name).join(', ')}`);
+    }
+    if (u.leetcodeStats?.totalSolved) lines.push(`LeetCode: ${u.leetcodeStats.totalSolved} problems solved`);
+    return lines.join('\n');
+  };
+
+  const profileContext = buildProfileContext();
+  const hasResume = !!(resumeText?.trim());
+  const hasProfileData = !hasResume && profileContext.trim().length > 50;
+  const hasAnyContext = hasResume || hasProfileData;
 
   const totalMinutes = rounds.reduce((a, r) => a + r.durationMinutes, 0);
   const totalQuestions = rounds.reduce((a, r) => a + r.questionCount, 0);
@@ -42,19 +80,33 @@ export function InterviewLobby({ defaultRole, defaultResumeName, defaultResumeTe
 
   const handleResume = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || file.type !== 'application/pdf') return;
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      alert('Please upload a PDF file.');
+      return;
+    }
     setIsParsing(true);
     try {
       const text = await extractTextFromLocalPDF(file);
+      if (!text?.trim() || text.trim().length < 50) {
+        alert('Could not extract readable text from this PDF. Make sure it is a text-based PDF (not a scanned image). Try copy-pasting your resume text instead.');
+        return;
+      }
       setResumeName(file.name);
       setResumeText(text);
-    } catch { alert('Failed to parse PDF.'); }
-    finally { setIsParsing(false); }
+    } catch (err) {
+      alert('Failed to parse PDF. Make sure it is a valid, text-based PDF file.');
+    } finally {
+      setIsParsing(false);
+      e.target.value = '';
+    }
   };
 
   const handleStart = () => {
     if (rounds.length === 0) return;
-    onStart({ difficulty, targetRole, targetCompany, rounds, codeLanguage, resumeText, resumeName });
+    // Use uploaded resume first, then fall back to profile context
+    const contextToUse = resumeText?.trim() || profileContext;
+    onStart({ difficulty, targetRole, targetCompany, rounds, codeLanguage, resumeText: contextToUse, resumeName: resumeName || (hasProfileData ? 'Profile Data' : '') });
   };
 
   const availableModes = (Object.keys(ROUND_TEMPLATES) as InterviewMode[]).filter(m => !rounds.find(r => r.mode === m));
@@ -149,20 +201,51 @@ export function InterviewLobby({ defaultRole, defaultResumeName, defaultResumeTe
             </div>
           </div>
 
-          {/* Resume */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-3 shadow-sm">
-            <p className="text-xs text-slate-500 uppercase tracking-widest">Resume (Recommended)</p>
-            <p className="text-[10px] text-slate-500">Upload to get questions grounded in your actual experience.</p>
-            {resumeName ? (
-              <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg p-3">
-                <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
-                <span className="text-xs text-green-700 truncate flex-1">{resumeName}</span>
-                <button onClick={() => { setResumeName(''); setResumeText(''); }} className="text-[10px] text-red-600 hover:underline">Remove</button>
+          {/* Resume / Profile Context */}
+          <div className={`bg-white border rounded-xl p-5 space-y-3 shadow-sm ${hasAnyContext ? 'border-green-200' : 'border-amber-200'}`}>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-slate-500 uppercase tracking-widest">Resume Context</p>
+              {hasResume && <span className="text-[10px] font-black text-green-600 bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1"><Sparkles className="w-2.5 h-2.5" /> AI will use your resume</span>}
+              {hasProfileData && !hasResume && <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full flex items-center gap-1"><Sparkles className="w-2.5 h-2.5" /> AI will use your profile</span>}
+              {!hasAnyContext && <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full flex items-center gap-1"><AlertTriangle className="w-2.5 h-2.5" /> Generic questions only</span>}
+            </div>
+
+            {!hasAnyContext && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                No resume or profile data found. Upload your resume PDF for personalized questions based on your actual projects and experience.
+              </p>
+            )}
+
+            {hasProfileData && !hasResume && (
+              <div className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-1">
+                <p className="font-bold">Using your profile data to personalize questions:</p>
+                <p className="text-blue-600 line-clamp-3 whitespace-pre-line">{profileContext.slice(0, 200)}...</p>
+                <p className="text-blue-500 text-[10px]">Upload a resume PDF for even more specific questions.</p>
+              </div>
+            )}
+
+            {hasResume ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg p-3">
+                  <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-green-700 font-bold truncate">{resumeName}</p>
+                    <p className="text-[10px] text-green-600">{resumeText.length} characters extracted — Gemini will reference your specific projects</p>
+                  </div>
+                  <button onClick={() => { setResumeName(''); setResumeText(''); }} className="text-[10px] text-red-500 hover:underline shrink-0">Remove</button>
+                </div>
+                {/* Show extracted text preview so student can verify */}
+                <details className="text-[10px] text-slate-400 cursor-pointer">
+                  <summary className="hover:text-slate-600 transition-colors">Preview extracted text</summary>
+                  <pre className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-lg text-[10px] text-slate-600 whitespace-pre-wrap max-h-32 overflow-y-auto leading-relaxed">
+                    {resumeText.slice(0, 500)}...
+                  </pre>
+                </details>
               </div>
             ) : (
               <button onClick={() => fileRef.current?.click()} disabled={isParsing}
                 className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl p-4 text-xs text-slate-500 hover:border-primary hover:text-primary transition-colors">
-                {isParsing ? 'Parsing…' : <><Upload className="w-4 h-4" /> Upload PDF Resume</>}
+                {isParsing ? 'Parsing PDF…' : <><Upload className="w-4 h-4" /> Upload Resume PDF (Recommended)</>}
               </button>
             )}
             <input ref={fileRef} type="file" accept="application/pdf" className="hidden" onChange={handleResume} />
@@ -196,7 +279,9 @@ export function InterviewLobby({ defaultRole, defaultResumeName, defaultResumeTe
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500">Resume</span>
-                <span className={resumeName ? 'text-green-600' : 'text-slate-500'}>{resumeName ? '✓ Loaded' : 'Not uploaded'}</span>
+                <span className={hasResume ? 'text-green-600 font-bold' : hasProfileData ? 'text-blue-600 font-bold' : 'text-amber-500'}>
+                  {hasResume ? '✓ Resume loaded' : hasProfileData ? '✓ Profile data' : '⚠ Not uploaded'}
+                </span>
               </div>
             </div>
 

@@ -64,13 +64,8 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
         try {
             await adminLogin(email, password);
         } catch (err: any) {
-            // If Firebase fails, fall back to mock login for preview
-            if (email === demoEmail) {
-                mockLogin(role, `${roleLabel}`, demoEmail);
-            } else {
-                setError(err.message || 'Login failed. Use the Preview button to bypass Firebase.');
-                setIsLoading(false);
-            }
+            setError(err.message || 'Login failed. Please check your credentials.');
+            setIsLoading(false);
         }
     };
 
@@ -109,7 +104,7 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
 
                     <div className="flex items-center gap-3 mb-5">
                         <div className="flex-1 h-px bg-border" />
-                        <span className="text-xs text-muted-foreground">or sign in with Firebase</span>
+                        <span className="text-xs text-muted-foreground">or sign in with credentials</span>
                         <div className="flex-1 h-px bg-border" />
                     </div>
 

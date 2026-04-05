@@ -172,9 +172,9 @@ export const DriveFormModal: React.FC<DriveFormModalProps> = ({
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-foreground mb-1">Linking Partner Company *</label>
-                                <select required name="companyId" value={formData.companyId} onChange={handleChange} className="w-full bg-background border border-border rounded-lg px-4 py-2 text-slate-200 focus:border-primary">
-                                    <option value="" disabled>-- Select Company --</option>
+                                <label className="block text-sm font-medium text-foreground mb-1">Linking Partner Company</label>
+                                <select name="companyId" value={formData.companyId} onChange={handleChange} className="w-full bg-background border border-border rounded-lg px-4 py-2 text-slate-200 focus:border-primary">
+                                    <option value="">-- Select Company (optional) --</option>
                                     {companies.map(c => <option key={c.id} value={c.id}>{c.companyName}</option>)}
                                 </select>
                             </div>

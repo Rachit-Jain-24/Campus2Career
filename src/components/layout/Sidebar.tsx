@@ -25,6 +25,10 @@ import {
     StickyNote,
     LayoutGrid,
     Sparkles,
+    Dna,
+    Flame,
+    Compass,
+    Calendar,
 } from "lucide-react";
 
 export type UserRole = "student" | "admin" | "dean" | "director" | "program_chair" | "faculty_mentor" | "course_coordinator" | "placement_dept" | "alumni";
@@ -36,13 +40,17 @@ interface SidebarProps {
 }
 
 const studentNavItems = [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/student/dashboard", group: "main" },
-    { icon: User, label: "My Profile", href: "/student/profile", group: "main" },
-    { icon: Sparkles, label: "AI Skill Gap Analysis", href: "/student/skill-gap-analysis", group: "prep" },
-    { icon: Target, label: "AI Roadmap", href: "/student/roadmap", group: "prep" },
-    { icon: MessageSquare, label: "AI Mock Interview", href: "/student/interview", group: "prep" },
-    { icon: FileText, label: "Resume ATS Analyzer", href: "/student/resume-analyzer", group: "prep" },
-    { icon: Code2, label: "LeetCode Tracker", href: "/student/leetcode", group: "prep" },
+    { icon: LayoutDashboard, label: "Dashboard",            href: "/student/dashboard",       group: "main" },
+    { icon: User,            label: "My Profile",           href: "/student/profile",          group: "main" },
+    { icon: Dna,             label: "Career DNA",           href: "/student/career-dna",       group: "discover" },
+    { icon: Flame,           label: "Daily Spark",          href: "/student/daily-spark",      group: "discover" },
+    { icon: Compass,         label: "Peer Compass",         href: "/student/peer-compass",     group: "discover" },
+    { icon: Calendar,        label: "Monthly Nudge",        href: "/student/monthly-nudge",    group: "discover" },
+    { icon: Sparkles,        label: "AI Skill Gap",         href: "/student/skill-gap-analysis", group: "prep" },
+    { icon: Target,          label: "AI Roadmap",           href: "/student/roadmap",          group: "prep" },
+    { icon: MessageSquare,   label: "AI Mock Interview",    href: "/student/interview",        group: "prep" },
+    { icon: FileText,        label: "Resume Analyzer",      href: "/student/resume-analyzer",  group: "prep" },
+    { icon: Code2,           label: "LeetCode Tracker",     href: "/student/leetcode",         group: "prep" },
 ];
 
 const facultyMentorNavItems = [
@@ -82,11 +90,12 @@ const alumniNavItems = [
 ];
 
 const groupLabels: Record<string, string> = {
-    main: "Overview",
-    prep: "Preparation",
+    main:     "Overview",
+    discover: "Discover Yourself",
+    prep:     "Placement Prep",
     placement: "Placement",
     insights: "Insights",
-    other: "General",
+    other:    "General",
 };
 
 function getNavItems(role: UserRole) {

@@ -79,6 +79,20 @@ export default function FixStudentData() {
                         Comprehensive fix for all student database issues
                     </p>
 
+                    <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6">
+                        <div className="flex items-start gap-2">
+                            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                            <div>
+                                <h4 className="font-semibold text-amber-900 mb-1">⚠️ Legacy Firebase Tool</h4>
+                                <p className="text-sm text-amber-800">
+                                    This tool creates Firebase Auth accounts. The app now uses <strong>Supabase Auth</strong>.
+                                    Students created here will <strong>not</strong> be able to log in via Supabase.
+                                    Use the Supabase migration scripts instead for new account creation.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
                         <h3 className="font-semibold text-gray-900 mb-2">This tool will:</h3>
                         <ul className="list-disc list-inside text-gray-700 space-y-1 text-sm">

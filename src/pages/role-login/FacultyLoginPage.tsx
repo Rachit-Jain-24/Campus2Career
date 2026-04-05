@@ -12,8 +12,8 @@ export default function FacultyLoginPage() {
             accentBorder="border-emerald-500/30"
             accentText="text-emerald-400"
             icon={UserCheck}
-            demoEmail="faculty@c2c.com"
-            demoPassword="faculty123"
+            demoEmail="faculty@nmims.edu"
+            demoPassword="faculty2026"
             description="Student mentorship — profiles, interviews, batch data"
         />
     );

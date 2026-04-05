@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
     Building2, Briefcase, Clock, ArrowRight, Loader2, RefreshCw,
     Target, FilePlus, Search, UserCheck, TrendingUp, Layers, Activity,
@@ -14,6 +14,9 @@ import {
     drivesDb, companiesDb, interviewsDb, offersDb 
 } from '../../../services/db/database.service';
 import { WelcomeCard } from '../../../components/admin/dashboard/WelcomeCard';
+import { DriveFormModal } from '../../../components/admin/drives/DriveFormModal';
+import { drivesService } from '../../../services/admin/drives.service';
+import type { DriveFormData } from '../../../types/driveAdmin';
 
 const DEPT_COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
 const TT = { contentStyle: { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8 } };
@@ -58,12 +61,15 @@ const offerStatusColor = (s?: string) => {
 };
 
 export const PlacementOfficerDashboard: React.FC = () => {
+    const navigate = useNavigate();
     const [drives, setDrives] = useState<DriveRaw[]>([]);
     const [companies, setCompanies] = useState<CompanyRaw[]>([]);
     const [interviews, setInterviews] = useState<InterviewRaw[]>([]);
     const [offers, setOffers] = useState<OfferRaw[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+    const [showNewDriveModal, setShowNewDriveModal] = useState(false);
+    const [isSavingDrive, setIsSavingDrive] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -99,6 +105,19 @@ export const PlacementOfficerDashboard: React.FC = () => {
             unsubOffers();
         };
     }, []);
+
+    const handleSaveDrive = async (data: DriveFormData) => {
+        setIsSavingDrive(true);
+        try {
+            await drivesService.createDrive(data);
+            setShowNewDriveModal(false);
+            fetchData();
+        } catch (err) {
+            console.error('Failed to create drive:', err);
+        } finally {
+            setIsSavingDrive(false);
+        }
+    };
 
     const todayStr = new Date().toDateString();
 
@@ -204,17 +223,33 @@ export const PlacementOfficerDashboard: React.FC = () => {
                     </div>
                     <SectionHeader icon={FilePlus} title="Placement Hub" />
                     <div className="grid grid-cols-1 gap-2.5 mt-4 relative">
-                        {[
-                            { label: 'Post New Job Drive', icon: FilePlus, path: '/placement/drives/new', color: 'bg-emerald-50 text-emerald-700' },
-                            { label: 'Review Applications', icon: Search, path: '/placement/drives', color: 'bg-blue-50 text-blue-700' },
-                            { label: 'Verify Offer Letters', icon: Briefcase, path: '/placement/offers', color: 'bg-amber-50 text-amber-700' },
-                        ].map((a, i) => (
-                            <NavLink key={i} to={a.path} className="flex items-center gap-3 p-3.5 rounded-xl border border-border/60 hover:border-primary/50 hover:bg-secondary/50 transition-all group bg-white/50 backdrop-blur-sm">
-                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${a.color}`}><a.icon className="w-5 h-5" /></div>
-                                <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{a.label}</span>
-                                <ArrowRight className="w-4 h-4 ml-auto text-muted-foreground group-hover:translate-x-1 transition-transform" />
-                            </NavLink>
-                        ))}
+                        {/* Post New Job Drive — opens modal directly */}
+                        <button
+                            onClick={() => setShowNewDriveModal(true)}
+                            className="flex items-center gap-3 p-3.5 rounded-xl border border-border/60 hover:border-primary/50 hover:bg-secondary/50 transition-all group bg-white/50 backdrop-blur-sm w-full text-left"
+                        >
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-emerald-50 text-emerald-700">
+                                <FilePlus className="w-5 h-5" />
+                            </div>
+                            <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Post New Job Drive</span>
+                            <ArrowRight className="w-4 h-4 ml-auto text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                        </button>
+                        {/* Review Applications — goes to drives page */}
+                        <NavLink to="/placement/drives" className="flex items-center gap-3 p-3.5 rounded-xl border border-border/60 hover:border-primary/50 hover:bg-secondary/50 transition-all group bg-white/50 backdrop-blur-sm">
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-blue-50 text-blue-700">
+                                <Search className="w-5 h-5" />
+                            </div>
+                            <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Review Applications</span>
+                            <ArrowRight className="w-4 h-4 ml-auto text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                        </NavLink>
+                        {/* Verify Offer Letters — goes to offers page */}
+                        <NavLink to="/placement/offers" className="flex items-center gap-3 p-3.5 rounded-xl border border-border/60 hover:border-primary/50 hover:bg-secondary/50 transition-all group bg-white/50 backdrop-blur-sm">
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-amber-50 text-amber-700">
+                                <Briefcase className="w-5 h-5" />
+                            </div>
+                            <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Verify Offer Letters</span>
+                            <ArrowRight className="w-4 h-4 ml-auto text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                        </NavLink>
                     </div>
                 </div>
             </div>
@@ -337,6 +372,14 @@ export const PlacementOfficerDashboard: React.FC = () => {
             </div>
 
             <p className="text-xs text-muted-foreground text-center">Last refreshed: {lastRefreshed.toLocaleTimeString()}</p>
+
+            {/* New Drive Modal */}
+            <DriveFormModal
+                isOpen={showNewDriveModal}
+                onClose={() => setShowNewDriveModal(false)}
+                onSave={handleSaveDrive}
+                isSaving={isSavingDrive}
+            />
         </div>
     );
 };

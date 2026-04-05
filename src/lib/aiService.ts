@@ -11,7 +11,7 @@ export const generateStudentBio = async (studentData: {
     interests: string[];
 }) => {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const prompt = `
             You are a professional career coach at NMIMS Hyderabad.
@@ -46,7 +46,7 @@ export const generateStudentBio = async (studentData: {
 };
 export const generateSWOC = async (studentData: any) => {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const prompt = `
             You are an expert career counselor at NMIMS Hyderabad.
@@ -123,7 +123,7 @@ export const generateSWOC = async (studentData: any) => {
 
 export const generateBatchSWOC = async (batchSummary: any) => {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const prompt = `
             You are a placement director at NMIMS Hyderabad.

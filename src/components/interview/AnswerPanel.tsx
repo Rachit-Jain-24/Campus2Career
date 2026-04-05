@@ -102,9 +102,9 @@ export function AnswerPanel({ mode, codeLanguage, onSubmit, onEmpty }: Props) {
   };
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode; show: boolean }[] = [
-    { id: 'voice', label: 'Voice', icon: <Mic className="w-3.5 h-3.5" />, show: voiceSupported },
-    { id: 'text', label: 'Text', icon: <Type className="w-3.5 h-3.5" />, show: mode === 'system_design' || !voiceSupported },
-    { id: 'code', label: 'Code', icon: <Code2 className="w-3.5 h-3.5" />, show: mode === 'dsa' },
+    { id: 'voice' as Tab, label: 'Voice', icon: <Mic className="w-3.5 h-3.5" />, show: voiceSupported },
+    { id: 'text' as Tab, label: 'Text', icon: <Type className="w-3.5 h-3.5" />, show: mode === 'system_design' || !voiceSupported },
+    { id: 'code' as Tab, label: 'Code', icon: <Code2 className="w-3.5 h-3.5" />, show: mode === 'dsa' },
   ].filter(t => t.show);
 
   return (

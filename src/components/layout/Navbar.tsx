@@ -29,6 +29,7 @@ export function Navbar({ userName: propUserName, role: propRole, userYear: propY
     const { user, logout } = useAuth();
     const [notifOpen, setNotifOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [isSigningOut, setIsSigningOut] = useState(false);
     const userMenuRef = useRef<HTMLDivElement>(null);
 
     // Prefer context values; fall back to props (for pages that still pass them directly)
@@ -155,11 +156,17 @@ export function Navbar({ userName: propUserName, role: propRole, userYear: propY
                         </div>
                         <div className="p-1">
                             <button
-                                onClick={() => { setUserMenuOpen(false); logout(); }}
-                                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                onClick={async () => {
+                                    if (isSigningOut) return;
+                                    setUserMenuOpen(false);
+                                    setIsSigningOut(true);
+                                    await logout();
+                                }}
+                                disabled={isSigningOut}
+                                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-60"
                             >
-                                <LogOut className="h-4 w-4" />
-                                Sign out
+                                <LogOut className={`h-4 w-4 ${isSigningOut ? 'animate-spin' : ''}`} />
+                                {isSigningOut ? 'Signing out...' : 'Sign out'}
                             </button>
                         </div>
                     </div>

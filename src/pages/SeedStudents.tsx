@@ -371,7 +371,7 @@ export default function SeedStudents() {
 
                 {/* Links */}
                 <div className="text-center space-y-2">
-                    <a href="/admin/login" className="text-sm text-primary hover:underline block">
+                    <a href="/login/admin" className="text-sm text-primary hover:underline block">
                         Go to Admin Login
                     </a>
                     <a href="/login" className="text-sm text-primary hover:underline block">

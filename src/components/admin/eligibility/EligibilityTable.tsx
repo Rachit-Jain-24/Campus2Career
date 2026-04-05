@@ -112,9 +112,9 @@ export const EligibilityTable: React.FC<EligibilityTableProps> = ({
                                                 {rule.description}
                                             </div>
                                             <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                                                <span>{rule.linkedDriveIds.length} Linked Drives</span>
+                                                <span>{(rule.linkedDriveIds || []).length} Linked Drives</span>
                                                 <span className="w-1 h-1 rounded-full bg-secondary"></span>
-                                                <span>Updated {rule.updatedAt.toLocaleDateString()}</span>
+                                                <span>Updated {rule.updatedAt ? new Date(rule.updatedAt).toLocaleDateString() : '—'}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -126,18 +126,18 @@ export const EligibilityTable: React.FC<EligibilityTableProps> = ({
                                         <div>
                                             <span className="text-[10px] text-muted-foreground font-bold uppercase mr-2">Min CGPA</span>
                                             <span className="text-sm font-bold text-foreground bg-secondary px-2 py-0.5 rounded border border-border">
-                                                {rule.minCGPA.toFixed(1)}
+                                                {(rule.minCgpa ?? rule.minCGPA ?? 6.0).toFixed(1)}
                                             </span>
                                         </div>
                                         <div className="flex flex-wrap gap-1 mt-1">
-                                            {rule.allowedDepartments.slice(0, 2).map(dep => (
+                                            {(rule.allowedDepartments || []).slice(0, 2).map(dep => (
                                                 <span key={dep} className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-foreground border border-border">
                                                     {dep}
                                                 </span>
                                             ))}
-                                            {rule.allowedDepartments.length > 2 && (
+                                            {(rule.allowedDepartments || []).length > 2 && (
                                                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground border border-border">
-                                                    +{rule.allowedDepartments.length - 2}
+                                                    +{(rule.allowedDepartments || []).length - 2}
                                                 </span>
                                             )}
                                         </div>
@@ -153,8 +153,12 @@ export const EligibilityTable: React.FC<EligibilityTableProps> = ({
                                                 <span className="text-foreground">Active Bt.: {rule.maxActiveBacklogs}</span>
                                             </div>
                                             <div className="flex items-center gap-1">
+                                                <span className="w-2 h-2 rounded-full bg-slate-500"></span>
+                                                <span className="text-foreground">Active Bt.: {rule.maxBacklogs ?? rule.maxActiveBacklogs ?? 0}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
                                                 <span className="w-2 h-2 rounded-full bg-slate-600"></span>
-                                                <span className="text-muted-foreground">Total Bk.: {rule.maxHistoryBacklogs}</span>
+                                                <span className="text-muted-foreground">Total Bk.: {rule.maxHistoryBacklogs ?? 0}</span>
                                             </div>
                                         </div>
                                         <div className="flex gap-2">

@@ -18,6 +18,7 @@ export default function InterviewSimulator() {
   const [view, setView] = useState<View>('lobby');
   const [activeConfig, setActiveConfig] = useState<SessionConfig | null>(null);
   const [completedSession, setCompletedSession] = useState<InterviewSession | null>(null);
+  const [isSavingSession, setIsSavingSession] = useState(false);
 
   // Year 1 gate
   if (u?.currentYear === 1) {
@@ -47,14 +48,18 @@ export default function InterviewSimulator() {
     setCompletedSession(session);
     setView('report');
     if (user) {
+      setIsSavingSession(true);
       try {
         const existing: InterviewSession[] = u?.interviewSessions || [];
-        // Strip undefined values — Firestore rejects them
+        // Strip undefined values before saving to Supabase jsonb
         const clean = JSON.parse(JSON.stringify(session));
-        await updateUser({ ...user, interviewSessions: [...existing, clean] } as AppUser);
+        // Keep only last 20 sessions to avoid bloating the jsonb column
+        const updated = [clean, ...existing].slice(0, 20);
+        await updateUser({ ...user, interviewSessions: updated } as AppUser);
       } catch (err) {
-        console.error('Failed to save session:', err);
-        // Don't block the report view if save fails
+        console.error('Failed to save session to Supabase:', err);
+      } finally {
+        setIsSavingSession(false);
       }
     }
   };
@@ -122,7 +127,7 @@ export default function InterviewSimulator() {
         )}
 
         {view === 'report' && completedSession && (
-          <SessionReport session={completedSession} onRestart={handleRestart} />
+          <SessionReport session={completedSession} onRestart={handleRestart} isSaving={isSavingSession} />
         )}
       </div>
     </DashboardLayout>

@@ -12,8 +12,8 @@ export default function PlacementLoginPage() {
             accentBorder="border-cyan-500/30"
             accentText="text-cyan-400"
             icon={Handshake}
-            demoEmail="placement@c2c.com"
-            demoPassword="placement123"
+            demoEmail="placement@nmims.edu"
+            demoPassword="placement2026"
             description="Placement operations — companies, drives, offers"
         />
     );

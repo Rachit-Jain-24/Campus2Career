@@ -129,7 +129,7 @@ export default function StudentDashboard() {
                         user.leetcodeStats.streak !== stats.streak;
 
                     if (hasChanged) {
-                        updateUser({
+                        await updateUser({
                             ...user,
                             leetcodeStats: {
                                 totalSolved: stats.totalSolved,

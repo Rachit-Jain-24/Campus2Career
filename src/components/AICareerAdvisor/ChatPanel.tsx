@@ -1,12 +1,13 @@
 // Feature: ai-career-advisor-chatbot 
 // chatpanel
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Send, Maximize2, Minimize2, Trash2 } from 'lucide-react';
+import { X, Send, Maximize2, Minimize2, Trash2, ThumbsUp, ThumbsDown, Copy, Check } from 'lucide-react';
 import * as chatbotService from '@/lib/ai/chatbotService';
 import type { StudentUser } from '@/types/auth';
 import type { TransparencyMeta, Message } from '@/lib/ai/types';
 import { TransparencyPanel } from './TransparencyPanel';
 import { SuggestedPrompts } from './SuggestedPrompts';
+import { MarkdownMessage } from './MarkdownMessage';
 
 export interface ChatPanelProps {
   student: StudentUser;
@@ -40,9 +41,23 @@ export function ChatPanel({ student, onClose, onUnreadChange }: ChatPanelProps) 
   const [isLoading, setIsLoading] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleFeedback = (id: string, value: 'up' | 'down') => {
+    setMessages(prev => prev.map(m =>
+      m.id === id ? { ...m, feedback: m.feedback === value ? null : value } : m
+    ));
+  };
+
+  const handleCopy = (id: string, content: string) => {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
 
   // Initialize chatbot service on mount
   useEffect(() => {
@@ -272,22 +287,78 @@ export function ChatPanel({ student, onClose, onUnreadChange }: ChatPanelProps) 
             key={message.id}
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`max-w-[85%] ${message.role === 'user' ? 'order-1' : ''}`}>
+            <div className={`max-w-[88%] ${message.role === 'user' ? 'order-1' : ''}`}>
+
+              {/* Avatar for assistant */}
+              {message.role === 'assistant' && (
+                <div className="flex items-center gap-1.5 mb-1">
+                  <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-[10px]">🤖</span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">AI Mentor</span>
+                </div>
+              )}
+
               {/* Bubble */}
               <div
                 className={
                   message.role === 'user'
-                    ? 'bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm'
-                    : 'bg-muted text-foreground rounded-2xl rounded-tl-sm px-4 py-2.5 text-sm'
+                    ? 'bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm leading-relaxed'
+                    : 'bg-muted/60 border border-border/50 text-foreground rounded-2xl rounded-tl-sm px-4 py-3'
                 }
               >
-                {message.content}
-                {message.isStreaming && (
-                  <span className="inline-block ml-1 animate-pulse">▋</span>
+                {message.role === 'user' ? (
+                  <p className="text-sm leading-relaxed">{message.content}</p>
+                ) : (
+                  <MarkdownMessage content={message.content} isStreaming={message.isStreaming} />
                 )}
               </div>
 
-              {/* Transparency panel for assistant messages */}
+              {/* Feedback + Copy row — only for completed assistant messages */}
+              {message.role === 'assistant' && !message.isStreaming && message.content && message.id !== 'welcome' && (
+                <div className="flex items-center gap-1 mt-1.5 ml-1">
+                  <button
+                    onClick={() => handleFeedback(message.id, 'up')}
+                    title="Helpful"
+                    className={`p-1 rounded-md transition-colors ${
+                      message.feedback === 'up'
+                        ? 'text-green-600 bg-green-50'
+                        : 'text-muted-foreground hover:text-green-600 hover:bg-green-50'
+                    }`}
+                  >
+                    <ThumbsUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleFeedback(message.id, 'down')}
+                    title="Not helpful"
+                    className={`p-1 rounded-md transition-colors ${
+                      message.feedback === 'down'
+                        ? 'text-red-500 bg-red-50'
+                        : 'text-muted-foreground hover:text-red-500 hover:bg-red-50'
+                    }`}
+                  >
+                    <ThumbsDown className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleCopy(message.id, message.content)}
+                    title="Copy response"
+                    className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  >
+                    {copiedId === message.id
+                      ? <Check className="h-3.5 w-3.5 text-green-500" />
+                      : <Copy className="h-3.5 w-3.5" />
+                    }
+                  </button>
+                  {message.feedback === 'up' && (
+                    <span className="text-[10px] text-green-600 font-medium ml-0.5">Thanks!</span>
+                  )}
+                  {message.feedback === 'down' && (
+                    <span className="text-[10px] text-muted-foreground font-medium ml-0.5">Noted, I'll improve.</span>
+                  )}
+                </div>
+              )}
+
+              {/* Transparency panel */}
               {message.role === 'assistant' && message.transparencyMeta && (
                 <TransparencyPanel meta={message.transparencyMeta} />
               )}

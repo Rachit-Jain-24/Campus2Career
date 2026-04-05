@@ -323,13 +323,35 @@ export default function CareerDiscoveryPage() {
                 careerTrack: domain.title,
                 careerTrackEmoji: '🎯',
                 careerDiscoveryCompleted: true,
-                assessmentCompleted: true,       // skip separate assessment step
+                assessmentCompleted: true,
                 profileCompleted: false,
                 interests: [domain.title],
             });
             navigate('/student/profile-setup');
         } catch (error: any) {
             console.error('Error in Discovery:', error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Allow freshers to skip track selection — they can decide later
+    const handleSkip = async () => {
+        if (!user) return;
+        setIsSaving(true);
+        try {
+            await updateUser({
+                ...user,
+                careerTrack: 'Exploring',
+                careerTrackEmoji: '🔍',
+                careerDiscoveryCompleted: true,
+                assessmentCompleted: true,
+                profileCompleted: false,
+                interests: [],
+            });
+            navigate('/student/profile-setup');
+        } catch (error: any) {
+            console.error('Error skipping discovery:', error);
         } finally {
             setIsSaving(false);
         }
@@ -361,20 +383,40 @@ export default function CareerDiscoveryPage() {
                                 Which engineering path is <span className="text-primary">yours?</span>
                             </h1>
                             <p className="text-lg text-slate-500 leading-relaxed max-w-xl">
-                                Most students don't know their path yet — and that's perfectly normal.
-                                Explore <strong>12 trending career tracks</strong> with real salary data, roadmaps, and certifications. Find where you belong.
+                                Not sure yet? That's completely normal for Year 1.
+                                Let our <strong>AI Career Quiz</strong> analyze your personality and suggest the best-fit track — or explore all 12 tracks yourself.
                             </p>
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-2">
-                                <Button className="h-16 px-10 text-lg rounded-2xl shadow-2xl shadow-primary/30" onClick={() => setView('explorer')}>
-                                    Explore All Careers <ArrowRight className="ml-2 w-5 h-5" />
-                                </Button>
+
+                            {/* Primary CTA — AI Quiz (recommended for freshers) */}
+                            <div className="w-full max-w-md space-y-3">
+                                <div className="relative">
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] font-black px-3 py-0.5 rounded-full uppercase tracking-widest">
+                                        Recommended for Year 1
+                                    </div>
+                                    <button
+                                        className="w-full flex items-center justify-center gap-3 h-16 px-8 text-base font-black rounded-2xl bg-primary text-white shadow-2xl shadow-primary/30 hover:bg-primary/90 transition-all"
+                                        onClick={() => setView('mentor')}
+                                    >
+                                        <Brain className="w-5 h-5" /> Let AI Help Me Choose
+                                    </button>
+                                </div>
+
                                 <button
-                                    className="flex items-center gap-2 text-slate-500 font-bold hover:text-slate-800 transition-colors px-6 py-3 border border-slate-200 rounded-2xl bg-white hover:border-primary/40"
-                                    onClick={() => setView('mentor')}
+                                    className="w-full flex items-center justify-center gap-2 h-12 px-8 text-sm font-bold rounded-2xl border border-slate-200 bg-white text-slate-600 hover:border-primary/40 hover:text-primary transition-all"
+                                    onClick={() => setView('explorer')}
                                 >
-                                    <Brain className="w-5 h-5 text-primary" /> Help me choose (AI Quiz)
+                                    <TrendingUp className="w-4 h-4" /> I'll Explore All 12 Tracks Myself
+                                </button>
+
+                                <button
+                                    onClick={handleSkip}
+                                    disabled={isSaving}
+                                    className="w-full text-xs text-slate-400 hover:text-slate-600 transition-colors py-2 disabled:opacity-50"
+                                >
+                                    {isSaving ? 'Saving...' : "I'm not sure yet — I'll decide later from my dashboard"}
                                 </button>
                             </div>
+
                             {/* Trending badge strip */}
                             <div className="flex flex-wrap justify-center gap-2 pt-2 max-w-2xl">
                                 {CAREER_DOMAINS.map(d => (

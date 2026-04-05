@@ -119,4 +119,5 @@ export interface Message {
   timestamp: number;
   transparencyMeta?: TransparencyMeta;
   isStreaming?: boolean;
+  feedback?: 'up' | 'down' | null;
 }

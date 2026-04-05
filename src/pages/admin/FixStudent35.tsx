@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { auth } from '../../lib/firebase';
+import { supabase } from '../../lib/supabase';
 import { studentsDb } from '../../services/db/database.service';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { AlertCircle } from 'lucide-react';
 
 export default function FixStudent35() {
   const [updating, setUpdating] = useState(false);
@@ -27,17 +27,18 @@ export default function FixStudent35() {
         message += "No old record to delete. ";
       }
 
-      // 2. Try to create Auth Account since it was deleted
+      // 2. Try to create Supabase Auth account
       try {
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        uid = cred.user.uid;
-        message += "Created New Auth Account with password 'nmims2026'. ";
-      } catch (error: any) {
-        if (error.code === 'auth/email-already-in-use') {
-           message += "Auth account still exists! (Make sure you deleted it in Firebase Console). ";
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error && !error.message?.toLowerCase().includes('already registered')) throw error;
+        if (data?.user?.id) {
+          uid = data.user.id;
+          message += "Created New Auth Account with password 'nmims2026'. ";
         } else {
-           throw error;
+          message += "Auth account already exists — using fallback UID. ";
         }
+      } catch (error: any) {
+        message += `Auth warning: ${error.message}. `;
       }
 
       // 3. Create fresh Student document using the service layer
@@ -127,7 +128,11 @@ export default function FixStudent35() {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-black">
       <div className="bg-white p-8 rounded-lg shadow-lg max-w-lg w-full">
         <h1 className="text-2xl font-bold mb-4">Fix Student 35</h1>
-        <p className="mb-6 text-gray-600 font-medium">Re-create Account and profile from Excel after deleting in Firebase Auth.</p>
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+          <p className="text-xs text-amber-800">Now uses <strong>Supabase Auth</strong>. Ensure the student's old Supabase auth entry is removed before running.</p>
+        </div>
+        <p className="mb-6 text-gray-600 font-medium">Re-create Account and profile for Venkatesh M (Student 35).</p>
         <button 
           onClick={handleUpdate} 
           disabled={updating}

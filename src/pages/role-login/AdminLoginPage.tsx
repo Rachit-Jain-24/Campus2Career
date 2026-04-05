@@ -12,8 +12,8 @@ export default function AdminLoginPage() {
             accentBorder="border-rose-500/30"
             accentText="text-rose-400"
             icon={ServerCog}
-            demoEmail="admin@c2c.com"
-            demoPassword="admin123"
+            demoEmail="admin@nmims.edu"
+            demoPassword="admin2026"
             description="Full platform access — users, settings, audit logs"
         />
     );

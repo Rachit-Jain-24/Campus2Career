@@ -856,35 +856,145 @@ export default function ProfileSetupPage() {
                             );
                         })()}
 
-                        {/* ── Step 4: Motivation ── */}
+                        {/* ── Step 4: Career Vision ── */}
                         {step === 4 && (
                             <div className="space-y-8 relative">
                                 <div className="text-center space-y-2 mb-4">
+                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full mb-2">
+                                        <Rocket className="h-3.5 w-3.5 text-primary" />
+                                        <span className="text-[10px] font-black text-primary uppercase tracking-widest">Final Step</span>
+                                    </div>
                                     <h2 className="text-3xl font-black text-slate-900">Career Vision</h2>
-                                    <p className="text-slate-500 text-sm">Setting targets helps us tailor your daily roadmaps.</p>
+                                    <p className="text-slate-500 text-sm">Your goals shape your personalized roadmap, daily challenges, and AI nudges.</p>
                                 </div>
-                                <div className="space-y-6">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                            <Target className="h-4 w-4 text-primary" /> Short-Term Goal
-                                        </label>
-                                        <div className="grid gap-2">
-                                            {SHORT_TERM_GOALS.map(goal => (
-                                                <button key={goal} onClick={() => set('shortTermGoal', goal)} className={`p-4 rounded-2xl text-left text-xs font-bold transition-all border-2 ${data.shortTermGoal === goal ? 'border-primary bg-primary/5 text-primary' : 'border-slate-50 bg-slate-50/50 text-slate-500 hover:border-slate-200'}`}>{goal}</button>
-                                            ))}
-                                        </div>
+
+                                {/* Short-term goal */}
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Target className="h-3.5 w-3.5 text-primary" /> This Semester's Focus
+                                    </label>
+                                    <div className="grid sm:grid-cols-2 gap-2">
+                                        {SHORT_TERM_GOALS.map(goal => (
+                                            <button
+                                                type="button"
+                                                key={goal}
+                                                onClick={() => set('shortTermGoal', data.shortTermGoal === goal ? '' : goal)}
+                                                className={`p-4 rounded-2xl text-left text-xs font-bold transition-all border-2 flex items-center gap-3 ${
+                                                    data.shortTermGoal === goal
+                                                        ? 'border-primary bg-primary/5 text-primary shadow-sm'
+                                                        : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-primary/30 hover:bg-primary/5'
+                                                }`}
+                                            >
+                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${data.shortTermGoal === goal ? 'border-primary bg-primary' : 'border-slate-300'}`}>
+                                                    {data.shortTermGoal === goal && <CheckCircle2 className="w-3 h-3 text-white" />}
+                                                </div>
+                                                {goal}
+                                            </button>
+                                        ))}
                                     </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                            <Flag className="h-4 w-4 text-indigo-500" /> Long-Term Vision
-                                        </label>
-                                        <div className="grid gap-2">
-                                            {LONG_TERM_GOALS.map(goal => (
-                                                <button key={goal} onClick={() => set('longTermGoal', goal)} className={`p-4 rounded-2xl text-left text-xs font-bold transition-all border-2 ${data.longTermGoal === goal ? 'border-indigo-500 bg-indigo-50/50 text-indigo-700' : 'border-slate-50 bg-slate-50/50 text-slate-500 hover:border-slate-200'}`}>{goal}</button>
-                                            ))}
-                                        </div>
-                                    </div>
+                                    <input
+                                        className="input-nmims mt-2"
+                                        placeholder="Or type your own short-term goal..."
+                                        value={SHORT_TERM_GOALS.includes(data.shortTermGoal) ? '' : data.shortTermGoal}
+                                        onChange={e => set('shortTermGoal', e.target.value)}
+                                    />
                                 </div>
+
+                                {/* Long-term vision */}
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Flag className="h-3.5 w-3.5 text-indigo-500" /> Long-Term Vision (After Graduation)
+                                    </label>
+                                    <div className="grid sm:grid-cols-2 gap-2">
+                                        {LONG_TERM_GOALS.map(goal => (
+                                            <button
+                                                type="button"
+                                                key={goal}
+                                                onClick={() => set('longTermGoal', data.longTermGoal === goal ? '' : goal)}
+                                                className={`p-4 rounded-2xl text-left text-xs font-bold transition-all border-2 flex items-center gap-3 ${
+                                                    data.longTermGoal === goal
+                                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
+                                                        : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-indigo-200 hover:bg-indigo-50/50'
+                                                }`}
+                                            >
+                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${data.longTermGoal === goal ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300'}`}>
+                                                    {data.longTermGoal === goal && <CheckCircle2 className="w-3 h-3 text-white" />}
+                                                </div>
+                                                {goal}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <input
+                                        className="input-nmims mt-2"
+                                        placeholder="Or type your own long-term vision..."
+                                        value={LONG_TERM_GOALS.includes(data.longTermGoal) ? '' : data.longTermGoal}
+                                        onChange={e => set('longTermGoal', e.target.value)}
+                                    />
+                                </div>
+
+                                {/* Skills & interests */}
+                                <div className="space-y-6 pt-2 border-t border-slate-100">
+                                    <TagInput
+                                        label="Tech Skills & Tools"
+                                        icon={Laptop}
+                                        tags={data.knownTools}
+                                        suggestions={TOOLS_SUGGESTIONS}
+                                        onAdd={v => addTag('knownTools', v)}
+                                        onRemove={v => removeTag('knownTools', v)}
+                                        placeholder="Add a skill (e.g. Python, React)..."
+                                        colorClass="text-primary"
+                                    />
+                                    <TagInput
+                                        label="Hobbies & Interests"
+                                        icon={Heart}
+                                        tags={data.hobbies}
+                                        suggestions={HOBBY_SUGGESTIONS}
+                                        onAdd={v => addTag('hobbies', v)}
+                                        onRemove={v => removeTag('hobbies', v)}
+                                        placeholder="Add a hobby..."
+                                        colorClass="text-rose-500"
+                                    />
+                                    <TagInput
+                                        label="Clubs & Committees"
+                                        icon={Star}
+                                        tags={data.clubs}
+                                        suggestions={CLUB_SUGGESTIONS}
+                                        onAdd={v => addTag('clubs', v)}
+                                        onRemove={v => removeTag('clubs', v)}
+                                        placeholder="Add a club..."
+                                        colorClass="text-amber-500"
+                                    />
+                                </div>
+
+                                {/* Summary preview */}
+                                {(data.shortTermGoal || data.longTermGoal) && (
+                                    <div className="p-5 bg-gradient-to-br from-primary/5 to-indigo-50 border border-primary/20 rounded-2xl space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <Sparkles className="w-4 h-4 text-primary" />
+                                            <span className="text-xs font-black text-primary uppercase tracking-widest">Your Vision Summary</span>
+                                        </div>
+                                        {data.shortTermGoal && (
+                                            <div className="flex items-start gap-2">
+                                                <Target className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                                                <p className="text-xs text-slate-700 font-medium"><span className="font-black">This semester:</span> {data.shortTermGoal}</p>
+                                            </div>
+                                        )}
+                                        {data.longTermGoal && (
+                                            <div className="flex items-start gap-2">
+                                                <Rocket className="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                                                <p className="text-xs text-slate-700 font-medium"><span className="font-black">After graduation:</span> {data.longTermGoal}</p>
+                                            </div>
+                                        )}
+                                        {data.knownTools.length > 0 && (
+                                            <div className="flex flex-wrap gap-1.5 pt-1">
+                                                {data.knownTools.slice(0, 5).map(t => (
+                                                    <span key={t} className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full">{t}</span>
+                                                ))}
+                                                {data.knownTools.length > 5 && <span className="text-[10px] text-slate-400 font-bold">+{data.knownTools.length - 5} more</span>}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
 

@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../lib/firebase';
+import { supabase } from '../../lib/supabase';
 import { adminUsersDb } from '../../services/db/database.service';
-import { Shield, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Shield, CheckCircle2, XCircle, Loader2, AlertCircle } from 'lucide-react';
 
 export default function CreateAdminAccount() {
     const [email, setEmail] = useState('admin@nmims.edu.in');
@@ -17,16 +16,19 @@ export default function CreateAdminAccount() {
         setResult(null);
 
         try {
-            // Step 1: Create Firebase Auth account
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const uid = userCredential.user.uid;
+            // Step 1: Create Supabase Auth account
+            const { data: authData, error: signUpError } = await supabase.auth.signUp({ email, password });
+            if (signUpError && !signUpError.message?.toLowerCase().includes('already registered')) {
+                throw signUpError;
+            }
+            const uid = authData?.user?.id ?? email;
 
             // Step 2: Create Admin document using the service layer
             await adminUsersDb.createAdmin({
-                id: email, // Changed to readable email for ID
-                uid: uid,
-                email: email,
-                name: name,
+                id: email,
+                uid,
+                email,
+                name,
                 role: 'system_admin',
                 createdAt: Date.now(),
                 updatedAt: Date.now()
@@ -34,30 +36,22 @@ export default function CreateAdminAccount() {
 
             setResult({
                 success: true,
-                message: `Admin account created successfully! You can now login at /admin/login with email: ${email}`
+                message: `Admin account created successfully! You can now login at /login/admin with email: ${email}`
             });
 
-            // Clear form
             setEmail('');
             setPassword('');
             setName('');
         } catch (error: any) {
             let errorMessage = 'Failed to create admin account.';
-            
-            if (error.code === 'auth/email-already-in-use') {
+            if (error.message?.includes('already registered') || error.message?.includes('already been registered')) {
                 errorMessage = 'This email is already registered. Try logging in or use a different email.';
-            } else if (error.code === 'auth/weak-password') {
+            } else if (error.message?.includes('weak') || error.message?.includes('password')) {
                 errorMessage = 'Password should be at least 6 characters.';
-            } else if (error.code === 'auth/invalid-email') {
-                errorMessage = 'Invalid email address.';
             } else {
                 errorMessage = error.message || errorMessage;
             }
-
-            setResult({
-                success: false,
-                message: errorMessage
-            });
+            setResult({ success: false, message: errorMessage });
         } finally {
             setIsCreating(false);
         }
@@ -174,14 +168,14 @@ export default function CreateAdminAccount() {
                     <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
                         <p className="text-xs text-blue-800">
                             <strong>Note:</strong> This will create a System Admin account with full access to all features.
-                            After creation, you can login at <code className="bg-blue-100 px-1 py-0.5 rounded">/admin/login</code>
+                            After creation, you can login at <code className="bg-blue-100 px-1 py-0.5 rounded">/login/admin</code>
                         </p>
                     </div>
 
                     {/* Links */}
                     <div className="mt-6 text-center space-y-2">
                         <a 
-                            href="/admin/login" 
+                            href="/login/admin" 
                             className="text-sm text-primary hover:underline block"
                         >
                             Already have an account? Login here

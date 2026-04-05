@@ -131,7 +131,7 @@ export function SkillGapDashboard({ analysis, onNavigateToProfile }: SkillGapDas
                                                 <div className="h-2 w-2 rounded-full bg-red-500" />
                                                 <h4 className="font-bold text-sm">{skill.skill}</h4>
                                             </div>
-                                            <Badge variant="destructive" className="text-[10px]">
+                                            <Badge variant="danger" className="text-[10px]">
                                                 {skill.priority.toUpperCase()}
                                             </Badge>
                                         </div>

@@ -88,8 +88,9 @@ export interface InterviewSession {
 // --- END OF INTERFACE DEFINITIONS ---
 
 export async function analyzeResumeWithAI(resumeText: string, jdText: string): Promise<AtsAnalysisResult> {
+    const backendUrl = import.meta.env.VITE_AI_BACKEND_URL || 'http://localhost:8000';
     try {
-        const response = await fetch("http://localhost:8000/api/analyze-resume", {
+        const response = await fetch(`${backendUrl}/api/analyze-resume`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ resumeText, jdText })
@@ -224,8 +225,9 @@ export async function generateRoadmapWithAI(
         milestones: ["Solve 50 coding problems", "Learn version control", "Build 2 mini projects"]
     };
 
+    const backendUrl = import.meta.env.VITE_AI_BACKEND_URL || 'http://localhost:8000';
     try {
-        const response = await fetch("http://localhost:8000/api/generate-roadmap", {
+        const response = await fetch(`${backendUrl}/api/generate-roadmap`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -238,7 +240,6 @@ export async function generateRoadmapWithAI(
                 projectsCount,
                 internshipsCount,
                 resumeUrl,
-                apiKey: API_KEY
             })
         });
 
@@ -626,8 +627,19 @@ export async function generateInterviewQuestionsStructured(params: {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const resumeSection = resumeText?.trim()
-      ? `RESUME:\n"""\n${resumeText.slice(0, 3000)}\n"""`
-      : 'No resume provided.';
+      ? `CANDIDATE RESUME / PROFILE (read every word carefully):
+\`\`\`
+${resumeText.slice(0, 6000)}
+\`\`\`
+
+Before generating questions, mentally extract:
+- Every project name and what it does
+- Every technology/framework mentioned
+- Every company/internship and the role
+- Every certification or achievement
+
+Your questions MUST reference these specific items by name.`
+      : 'No resume provided. Generate role-specific questions based on the target role.';
 
     const prompt = `You are a ${difficulty}-level interviewer at ${targetCompany || 'a top tech company'} conducting a ${modeLabel} interview for a ${targetRole} role.
 
@@ -637,7 +649,9 @@ Generate exactly ${count} interview question(s) for a ${difficulty} ${modeLabel}
 
 Rules:
 - Questions must match ${difficulty} difficulty precisely
-- ${resumeText?.trim() ? 'Reference specific projects/technologies from the resume where relevant' : 'Use industry-standard questions for this role'}
+- ${resumeText?.trim()
+  ? `CRITICAL: You MUST read the resume/profile above carefully. Every question must reference something SPECIFIC from it — a project name, a technology they listed, a company they interned at, or a skill they mentioned. Do NOT ask generic questions that could apply to any candidate. If they listed a project called "X", ask about X specifically. If they used React, ask about their React experience specifically.`
+  : 'Use industry-standard questions for this role and difficulty level.'}
 - For DSA: include the actual problem statement with constraints and examples
 - For System Design: specify scale requirements (e.g., "design for 10M users")
 - For Behavioral: use STAR-eliciting phrasing ("Tell me about a time when...")

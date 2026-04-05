@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getDefaultAdminRoute } from '../config/admin/roleRoutes';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
@@ -17,10 +18,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     requireProfileSetup,
     requireAssessment,
 }) => {
-    const { user, isLoading } = useAuth();
+    const { user, isInitializing } = useAuth();
     const location = useLocation();
 
-    if (isLoading) {
+    if (isInitializing) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-secondary">
                 <div className="flex flex-col items-center gap-4">
@@ -45,8 +46,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
 
     if (allowedRole === 'student' && isUserAdmin) {
-        // Admin trying to access student pages
-        return <Navigate to="/admin/dashboard" replace />;
+        // Admin trying to access student pages — redirect to their role-specific dashboard
+        return <Navigate to={getDefaultAdminRoute(user.role)} replace />;
     }
 
     const isCareerDiscoveryDone = user.careerDiscoveryCompleted === true || !!(user as any).careerTrack;
@@ -93,9 +94,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
 // GuestRoute ensures logged in users can't see the login/signup page again
 export const GuestRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { user, isLoading } = useAuth();
+    const { user, isInitializing } = useAuth();
 
-    if (isLoading) {
+    if (isInitializing) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-secondary">
                 <div className="flex flex-col items-center gap-4">

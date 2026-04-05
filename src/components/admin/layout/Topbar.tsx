@@ -19,7 +19,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onMobileMenuToggle }) => {
     const handleLogout = async () => {
         try {
             await logout();
-            navigate('/admin/login');
+            // AuthContext.logout() already navigates to /login
         } catch (error) {
             console.error('Logout error:', error);
         }

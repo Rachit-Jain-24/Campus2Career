@@ -20,29 +20,25 @@ export default function LoginPage() {
         setError('');
         try {
             await login(sapId, password);
-            // After login, read the updated user from context to navigate correctly.
-            // We use a short timeout so onAuthStateChanged can hydrate the user first.
-            setTimeout(() => {
-                // Re-read user from localStorage since state may not have updated yet
-                const stored = localStorage.getItem('c2c_user');
-                if (stored) {
-                    const u = JSON.parse(stored);
-                    if (u.role && u.role !== 'student') {
-                        // Admin — go to their role-specific dashboard
-                        navigate(getDefaultAdminRoute(u.role));
-                    } else if (!u.careerDiscoveryCompleted) {
-                        navigate('/career-discovery');
-                    } else if (!u.profileCompleted) {
-                        navigate('/student/profile-setup');
-                    } else if (!u.assessmentCompleted) {
-                        navigate('/student/assessment');
-                    } else {
-                        navigate('/student/dashboard');
-                    }
+            // AuthContext.login() sets user in state and localStorage synchronously.
+            // Read directly from localStorage to navigate without waiting for re-render.
+            const stored = localStorage.getItem('c2c_user');
+            if (stored) {
+                const u = JSON.parse(stored);
+                if (u.role && u.role !== 'student') {
+                    navigate(getDefaultAdminRoute(u.role));
+                } else if (!u.careerDiscoveryCompleted) {
+                    navigate('/career-discovery');
+                } else if (!u.profileCompleted) {
+                    navigate('/student/profile-setup');
+                } else if (!u.assessmentCompleted) {
+                    navigate('/student/assessment');
                 } else {
-                    navigate('/');
+                    navigate('/student/dashboard');
                 }
-            }, 500);
+            } else {
+                navigate('/');
+            }
         } catch (err: any) {
             setError(err.message || 'Login failed. Please check your credentials.');
         }

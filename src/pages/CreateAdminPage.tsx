@@ -96,7 +96,7 @@ export default function CreateAdminPage() {
                         </div>
 
                         <a
-                            href="/admin/login"
+                            href="/login/admin"
                             className="block w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700 transition-colors text-center"
                         >
                             Go to Admin Login →

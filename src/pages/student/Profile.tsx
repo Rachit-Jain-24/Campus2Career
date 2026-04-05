@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Ca
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
 import {
-    User, Mail, Phone, Hash, UserCircle, Star, Github, Linkedin, Code2, Link as LinkIcon, Edit3, Trash2, X, GraduationCap, MapPin, Plus, Save, CheckCircle2, Trophy, BookOpen, ExternalLink, Upload, Zap, Sparkles, Flame, Briefcase, Award
+    User, Mail, Phone, Hash, UserCircle, Star, Github, Linkedin, Code2, Link as LinkIcon, Edit3, Trash2, X, GraduationCap, MapPin, Plus, Save, CheckCircle2, Trophy, BookOpen, ExternalLink, Upload, Zap, Sparkles, Flame, Briefcase, Award, RefreshCw, Target
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
@@ -13,6 +13,55 @@ import { cn } from "../../lib/utils";
 import { storage } from "../../lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import type { ProfileAnalysis } from "../../lib/gemini";
+import { userDb } from "../../services/db/database.service";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+
+async function generateProfessionalBio(user: any): Promise<string> {
+    if (!GEMINI_API_KEY) {
+        // Fallback — build a clean bio without AI
+        const skills = (user.techSkills || []).slice(0, 4).join(', ');
+        const track = user.careerTrack || 'technology';
+        const yr = user.currentYear || 1;
+        const yearLabel = ['', '1st', '2nd', '3rd', '4th'][yr] || `${yr}th`;
+        return `${yearLabel} year ${user.branch || 'CSE'} student at NMIMS Hyderabad, focused on ${track}. ${skills ? `Skilled in ${skills}.` : ''} Passionate about building impactful solutions and continuously growing through hands-on projects and real-world challenges.`.trim();
+    }
+
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+    const prompt = `Write a professional LinkedIn-style bio for this student. 
+
+STUDENT PROFILE:
+- Name: ${user.name}
+- Year: ${user.currentYear} of 4
+- Branch: ${user.branch || 'B.Tech CSE'}
+- Career Track: ${user.careerTrack || 'Software Engineering'}
+- Tech Skills: ${(user.techSkills || []).join(', ') || 'Not listed'}
+- Projects: ${user.projects?.length || 0}
+- Internships: ${user.internships?.length || 0}
+- LeetCode Solved: ${user.leetcodeStats?.totalSolved || 0}
+- CGPA: ${user.cgpa || 'Not set'}
+- Certifications: ${(user.certifications || []).map((c: any) => c.name).join(', ') || 'None'}
+
+STRICT RULES — violating any of these is not acceptable:
+1. NEVER use the word "English" anywhere in the bio — these are engineering students, not English majors
+2. Keep it to 2-3 sentences maximum
+3. Sound confident, specific, and professional
+4. Mention their actual career track and 2-3 real skills
+5. End with what they are working toward or building
+
+Return ONLY the bio text. No quotes, no labels, no explanation.`;
+
+    try {
+        const result = await model.generateContent(prompt);
+        return result.response.text().trim().replace(/^["']|["']$/g, '');
+    } catch {
+        const skills = (user.techSkills || []).slice(0, 3).join(', ');
+        return `${user.currentYear}${['st','nd','rd','th'][Math.min((user.currentYear||1)-1,3)]} year ${user.branch || 'CSE'} student at NMIMS Hyderabad, building in ${user.careerTrack || 'software engineering'}. ${skills ? `Working with ${skills}.` : ''} Focused on shipping real projects and growing through consistent practice.`;
+    }
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Project {
@@ -57,6 +106,7 @@ export default function ProfilePage() {
     });
 
     const [editingBasic, setEditingBasic] = useState(false);
+    const [isGeneratingBio, setIsGeneratingBio] = useState(false);
     const [skills, setSkills] = useState<string[]>(user?.techSkills || []);
     const [newSkill, setNewSkill] = useState("");
     const [projects, setProjects] = useState(user?.projects || []);
@@ -79,9 +129,10 @@ export default function ProfilePage() {
     const [newInternship, setNewInternship] = useState<Omit<Internship, "id">>({ role: "", company: "", period: "", description: "" });
     const [newAchievement, setNewAchievement] = useState<Omit<Achievement, "id">>({ title: "", description: "", year: "" });
 
-    // Sync state when user object loads or updates
+    // Sync state only on initial load (when user first becomes available)
+    const [initialized, setInitialized] = useState(false);
     useEffect(() => {
-        if (user) {
+        if (user && !initialized) {
             setProfile({
                 name: user.name || "",
                 email: user.email || "",
@@ -108,8 +159,9 @@ export default function ProfilePage() {
             setAchievements(user.achievements || []);
             setInterests(user.interests || []);
             setResumeRef(user.resumeUrl || null);
+            setInitialized(true);
         }
-    }, [user]);
+    }, [user, initialized]);
 
     // Resume States
     const [, setResumeRef] = useState<string | null>(user?.resumeUrl || null);
@@ -163,44 +215,54 @@ export default function ProfilePage() {
         // Prevent passing React event objects as overrides
         const finalOverrides = (overrides && (overrides as any).nativeEvent) ? {} : overrides;
 
-        if (user) {
-            let parsedLeetcode = user.leetcode || "";
-            if (profile.leetcodeUrl && profile.leetcodeUrl.trim() !== "") {
-                const parts = profile.leetcodeUrl.replace(/\/$/, '').split('/');
-                parsedLeetcode = parts[parts.length - 1] || profile.leetcodeUrl;
-            }
+        if (!user) return;
 
-            const updatedUser: any = {
-                ...user,
-                name: profile.name,
-                phone: profile.phone,
-                bio: profile.bio,
-                location: profile.location,
-                placementStatus: profile.placementStatus,
-                githubUrl: profile.githubUrl,
-                linkedinUrl: profile.linkedinUrl,
-                leetcode: parsedLeetcode,
-                interests: interests,
-                techSkills: skills,
-                projects: projects,
-                certifications: certs,
-                internships: internships,
-                achievements: achievements,
-                assessmentResults: {
-                    ...(user.assessmentResults || {}),
-                    cgpa: profile.cgpa
-                },
-                ...finalOverrides
-            };
+        let parsedLeetcode = user.leetcode || "";
+        if (profile.leetcodeUrl && profile.leetcodeUrl.trim() !== "") {
+            const parts = profile.leetcodeUrl.replace(/\/$/, '').split('/');
+            parsedLeetcode = parts[parts.length - 1] || profile.leetcodeUrl;
+        }
 
-            if (!parsedLeetcode) {
-                delete updatedUser.leetcodeStats;
-            }
+        // Build the final data — overrides win over state
+        const saveData: any = {
+            ...user,
+            name: profile.name,
+            phone: profile.phone,
+            bio: profile.bio,
+            location: profile.location,
+            placementStatus: profile.placementStatus,
+            githubUrl: profile.githubUrl,
+            linkedinUrl: profile.linkedinUrl,
+            leetcode: parsedLeetcode,
+            interests,
+            techSkills: skills,
+            projects,
+            certifications: certs,
+            internships,
+            achievements,
+            assessmentResults: { ...(user.assessmentResults || {}), cgpa: profile.cgpa },
+            ...finalOverrides,
+        };
 
-            await updateUser(updatedUser);
+        if (!parsedLeetcode) delete saveData.leetcodeStats;
+
+        // Update local state immediately so UI reflects the change
+        updateUser(saveData);
+        localStorage.setItem('c2c_user', JSON.stringify(saveData));
+
+        try {
+            // Save directly to DB — use uid (UUID) as the Supabase primary key
+            const docId = user.uid || (user as any).sapId;
+            if (!docId) throw new Error('User ID missing from session');
+
+            await userDb.updateUser('students', docId, saveData);
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
+        } catch (err: any) {
+            console.error('[Profile] Save failed:', err);
+            alert(`Save failed: ${err.message || 'Unknown error'}. Please try again.`);
         }
+
         setEditingBasic(false);
     };
 
@@ -209,14 +271,20 @@ export default function ProfilePage() {
             const updated = [...skills, newSkill.trim()];
             setSkills(updated);
             setNewSkill("");
-            if (user) await updateUser({ ...user, techSkills: updated });
+            if (user) {
+                const docId = user.uid || (user as any).sapId;
+                await userDb.updateUser('students', docId, { ...user, techSkills: updated });
+            }
         }
     };
 
     const removeSkill = async (s: string) => {
         const updated = skills.filter(sk => sk !== s);
         setSkills(updated);
-        if (user) await updateUser({ ...user, techSkills: updated });
+        if (user) {
+            const docId = user.uid || (user as any).sapId;
+            await userDb.updateUser('students', docId, { ...user, techSkills: updated });
+        }
     };
 
     const addInterest = async () => {
@@ -224,14 +292,20 @@ export default function ProfilePage() {
             const updated = [...interests, newInterest.trim()];
             setInterests(updated);
             setNewInterest("");
-            if (user) await updateUser({ ...user, interests: updated });
+            if (user) {
+                const docId = user.uid || (user as any).sapId;
+                await userDb.updateUser('students', docId, { ...user, interests: updated });
+            }
         }
     };
 
     const removeInterest = async (i: string) => {
         const updated = interests.filter(x => x !== i);
         setInterests(updated);
-        if (user) await updateUser({ ...user, interests: updated });
+        if (user) {
+            const docId = user.uid || (user as any).sapId;
+            await userDb.updateUser('students', docId, { ...user, interests: updated });
+        }
     };
 
     const completionFields = [
@@ -361,11 +435,37 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        {/* Placement Status badge */}
-                        <div className="mt-4 flex items-center gap-2">
-                            <Flame className="h-4 w-4 text-primary animate-pulse" />
-                            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Status:</span>
-                            <Badge variant="outline" className="border-primary text-primary bg-primary/5 font-black text-[10px] uppercase tracking-wider">{profile.placementStatus}</Badge>
+                        {/* Placement Status + Career Track */}
+                        <div className="mt-4 flex flex-wrap items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                <Flame className="h-4 w-4 text-primary animate-pulse" />
+                                <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Status:</span>
+                                <Badge variant="outline" className="border-primary text-primary bg-primary/5 font-black text-[10px] uppercase tracking-wider">{profile.placementStatus}</Badge>
+                            </div>
+                            {user?.careerTrack && (
+                                <div className="flex items-center gap-2">
+                                    <Target className="h-4 w-4 text-indigo-500" />
+                                    <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Career Track:</span>
+                                    <span className="text-xs font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+                                        {user.careerTrackEmoji} {user.careerTrack}
+                                    </span>
+                                    <a
+                                        href="/career-discovery"
+                                        className="text-[10px] font-bold text-slate-400 hover:text-primary transition-colors underline underline-offset-2"
+                                    >
+                                        Change
+                                    </a>
+                                </div>
+                            )}
+                            {!user?.careerTrack && (
+                                <div className="flex items-center gap-2">
+                                    <Target className="h-4 w-4 text-slate-400" />
+                                    <span className="text-xs text-slate-400">No career track selected.</span>
+                                    <a href="/career-discovery" className="text-xs font-bold text-primary hover:underline">
+                                        Choose one →
+                                    </a>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -439,10 +539,32 @@ export default function ProfilePage() {
                                             </div>
                                         ))}
                                         <div className="md:col-span-2 space-y-1.5">
-                                            <label className="text-xs font-medium text-muted-foreground">Bio</label>
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-xs font-medium text-muted-foreground">Professional Bio</label>
+                                                <button
+                                                    type="button"
+                                                    disabled={isGeneratingBio}
+                                                    onClick={async () => {
+                                                        setIsGeneratingBio(true);
+                                                        try {
+                                                            const bio = await generateProfessionalBio({ ...user, ...profile, techSkills: skills });
+                                                            setProfile(p => ({ ...p, bio }));
+                                                        } finally {
+                                                            setIsGeneratingBio(false);
+                                                        }
+                                                    }}
+                                                    className="flex items-center gap-1.5 text-[11px] font-bold text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                                                >
+                                                    {isGeneratingBio
+                                                        ? <><RefreshCw className="w-3 h-3 animate-spin" /> Generating...</>
+                                                        : <><Sparkles className="w-3 h-3" /> AI Generate</>
+                                                    }
+                                                </button>
+                                            </div>
                                             <textarea
                                                 value={profile.bio}
                                                 onChange={e => setProfile({ ...profile, bio: e.target.value })}
+                                                placeholder="Write your professional bio or click AI Generate above..."
                                                 rows={3}
                                                 className="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-all resize-none"
                                             />

@@ -172,7 +172,7 @@ const AcademicCopilot: React.FC = () => {
                                 <BookOpen className="h-5 w-5 text-primary" />
                                 Syllabus Modules
                             </h3>
-                            <Badge variant="secondary">{activeSyllabus.modules.length} Modules Found</Badge>
+                            <Badge variant="default">{activeSyllabus.modules.length} Modules Found</Badge>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -201,7 +201,7 @@ const AcademicCopilot: React.FC = () => {
                                     
                                     <div className="pt-5 flex gap-2">
                                         <Button 
-                                            variant="secondary" 
+                                            variant="outline" 
                                             size="sm" 
                                             className="flex-1 h-9 rounded-lg"
                                             onClick={() => handleGenerateNotes(msg)}
@@ -210,7 +210,7 @@ const AcademicCopilot: React.FC = () => {
                                             Notes
                                         </Button>
                                         <Button 
-                                            variant="secondary" 
+                                            variant="outline" 
                                             size="sm" 
                                             className="flex-1 h-9 rounded-lg"
                                             onClick={() => handleGenerateQuiz(msg)}
@@ -272,7 +272,7 @@ const AcademicCopilot: React.FC = () => {
             {step === 'learning' && selectedModule && (
                 <div className="space-y-6">
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" onClick={() => setStep('dashboard')}>
+                        <Button variant="ghost" size="sm" onClick={() => setStep('dashboard')}>
                             <ArrowRight className="h-5 w-5 rotate-180" />
                         </Button>
                         <div>
@@ -328,7 +328,7 @@ const AcademicCopilot: React.FC = () => {
                                         <div className="mt-12 p-6 bg-secondary/50 rounded-2xl">
                                             <h4 className="text-sm font-bold uppercase tracking-widest text-primary mb-4">Key Takeaways</h4>
                                             <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 list-none p-0">
-                                                {activeNote.keyTakeaways.map((point, i) => (
+                                                {(activeNote.keyTakeaways ?? []).map((point, i) => (
                                                     <li key={i} className="flex gap-2 text-sm">
                                                         <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
                                                         {point}

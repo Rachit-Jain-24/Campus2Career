@@ -12,8 +12,8 @@ export default function ProgramChairLoginPage() {
             accentBorder="border-amber-500/30"
             accentText="text-amber-400"
             icon={BookOpen}
-            demoEmail="program@c2c.com"
-            demoPassword="program123"
+            demoEmail="programchair@nmims.edu"
+            demoPassword="programchair2026"
             description="Department management — eligibility, students, analytics"
         />
     );

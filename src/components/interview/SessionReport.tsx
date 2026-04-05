@@ -1,5 +1,5 @@
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
-import { Trophy, RefreshCw, TrendingUp } from 'lucide-react';
+import { Trophy, RefreshCw, TrendingUp, CheckCircle2, Loader2, History } from 'lucide-react';
 import type { InterviewSession } from '../../types/interview';
 import { FeedbackCard } from './FeedbackCard';
 import { scoreColor, getHireLabel } from '../../lib/interviewEngine';
@@ -7,6 +7,7 @@ import { scoreColor, getHireLabel } from '../../lib/interviewEngine';
 interface Props {
   session: InterviewSession;
   onRestart: () => void;
+  isSaving?: boolean;
 }
 
 const HIRE_BADGE: Record<string, string> = {
@@ -17,7 +18,7 @@ const HIRE_BADGE: Record<string, string> = {
   strong_no: 'bg-red-100 text-red-800 border-red-400',
 };
 
-export function SessionReport({ session, onRestart }: Props) {
+export function SessionReport({ session, onRestart, isSaving = false }: Props) {
   const durationMin = Math.round(session.durationSec / 60);
 
   // Build radar data
@@ -40,6 +41,14 @@ export function SessionReport({ session, onRestart }: Props) {
 
   return (
     <div className="space-y-6 pb-12">
+      {/* Save status */}
+      <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold ${isSaving ? 'bg-blue-50 border border-blue-200 text-blue-700' : 'bg-green-50 border border-green-200 text-green-700'}`}>
+        {isSaving
+          ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving session to your history...</>
+          : <><CheckCircle2 className="w-3.5 h-3.5" /> Session saved to history — view it anytime in the History tab</>
+        }
+      </div>
+
       {/* Hero banner */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-start justify-between gap-4 flex-wrap">

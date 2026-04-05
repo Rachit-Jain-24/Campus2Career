@@ -43,7 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const handleLogout = async () => {
         try {
             await logout();
-            navigate('/admin/login');
+            // AuthContext.logout() already navigates to /login
         } catch (error) {
             console.error('Failed to log out', error);
         }
