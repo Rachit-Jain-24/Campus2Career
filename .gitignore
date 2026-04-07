@@ -45,7 +45,8 @@ dist-ssr
 
 # Extracted/temporary folders
 admin_updates_extracted/
-ai-engine/
+# Note: ai-engine/ is now included in git for deployment
+# ai-engine/
 
 # Firebase hosting cache
 .firebase/

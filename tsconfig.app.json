@@ -26,21 +26,15 @@
     /* Path aliases */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src_1/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src_1"],
   "exclude": [
-    "src/**/__tests__/**",
-    "src/**/*.test.ts",
-    "src/**/*.test.tsx",
-    "src/**/*.property.test.ts",
-    "src/tests/**",
-    "src/utils/seedDemoAccounts.ts",
-    "src/utils/seedBatchAccounts.ts",
-    "src/utils/updateAllStudentProfiles.ts",
-    "src/utils/fixAllStudentIssues.ts",
-    "src/utils/fixStudentProfilesData.ts",
-    "src/utils/completeStudentSetup.ts"
+    "src_1/**/__tests__/**",
+    "src_1/**/*.test.ts",
+    "src_1/**/*.test.tsx",
+    "src_1/**/*.property.test.ts",
+    "src_1/tests/**"
   ]
 }
