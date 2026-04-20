@@ -1,5 +1,5 @@
 import { useReducer, useEffect, useRef, useCallback, useState } from 'react';
-import { Loader2, ChevronRight, CheckCircle, TrendingUp, MessageSquare, Mic } from 'lucide-react';
+import { Loader2, ChevronRight, CheckCircle, TrendingUp, MessageSquare, Mic, XCircle, Sparkles, ArrowRight } from 'lucide-react';
 import { interviewReducer, initialInterviewState, getHireSignal, scoreColor } from '../../lib/interviewEngine';
 import {
   generateInterviewQuestionsStructured, evaluateAnswerWithRubric,
@@ -45,6 +45,7 @@ export function InterviewRoom({ config, onComplete, onAbort }: Props) {
           targetCompany: config.targetCompany,
           resumeText: config.resumeText,
           count: round.questionCount,
+          codeLanguage: config.codeLanguage,
         })
       )
     ).then(questionArrays => {
@@ -103,7 +104,7 @@ export function InterviewRoom({ config, onComplete, onAbort }: Props) {
   }, [state.phase]);
 
   // ── Answer submission ───────────────────────────────────────────────────────
-  const handleAnswerSubmit = useCallback(async (answer: string, code?: string, duration?: number) => {
+  const handleAnswerSubmit = useCallback(async (answer: string, code?: string, codeOutput?: string, duration?: number) => {
     if (!currentQuestion) return;
     dispatch({ type: 'ANSWER_SUBMITTED', answer, code, duration: duration || 0 });
     dispatch({ type: 'SET_AI_MESSAGE', message: 'Got it, let me review that…', speaking: true });
@@ -112,6 +113,7 @@ export function InterviewRoom({ config, onComplete, onAbort }: Props) {
       question: currentQuestion,
       answer,
       codeSubmission: code,
+      codeOutput,
       mode: currentQuestion.mode,
       difficulty: config.difficulty,
       resumeContext: config.resumeText?.slice(0, 500),
@@ -193,20 +195,30 @@ export function InterviewRoom({ config, onComplete, onAbort }: Props) {
       <div className="border-b border-slate-200 bg-white px-6 py-3 shadow-sm">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 flex-1">
-            <div className="h-2 flex-1 bg-slate-100 rounded-full overflow-hidden max-w-xs border border-slate-200">
-              <div className="h-full bg-primary rounded-full transition-all duration-700" style={{ width: `${progressPct}%` }} />
+            {/* Progress bar with glow */}
+            <div className="h-2 flex-1 bg-slate-100 rounded-full overflow-hidden max-w-xs border border-slate-200 relative">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${progressPct}%`,
+                  background: 'linear-gradient(90deg, #4f8ef7, #8b5cf6)',
+                  boxShadow: progressPct > 0 ? '0 0 8px rgba(79,142,247,0.5)' : 'none',
+                }}
+              />
             </div>
-            <span className="text-xs text-slate-400 font-bold whitespace-nowrap">
-              {state.currentQuestionIndex + 1} / {Math.max(totalQuestions, 1)}
+            <span className="text-xs text-slate-400 font-bold whitespace-nowrap font-mono">
+              {state.currentQuestionIndex + 1}<span className="text-slate-300">/</span>{Math.max(totalQuestions, 1)}
             </span>
           </div>
           <div className="flex items-center gap-3">
             {currentQuestion && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-500 uppercase tracking-widest">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary uppercase tracking-widest font-bold">
                 {currentQuestion.mode.replace('_', ' ')}
               </span>
             )}
-            <button onClick={onAbort} className="text-xs text-slate-500 hover:text-red-400 transition-colors">Abort</button>
+            <button onClick={onAbort} className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-50">
+              <XCircle className="w-3.5 h-3.5" /> Abort
+            </button>
           </div>
         </div>
       </div>
@@ -216,11 +228,20 @@ export function InterviewRoom({ config, onComplete, onAbort }: Props) {
 
         {/* Briefing / Generating */}
         {(state.phase === 'briefing' || state.questions.length === 0) && (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
-            <AIInterviewerAvatar state="thinking" message={state.aiMessage} />
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Generating your personalized questions…
+          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8">
+            <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-8 max-w-xs w-full">
+              <AIInterviewerAvatar state="thinking" message={state.aiMessage} />
+            </div>
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex items-center gap-2 text-sm text-slate-500">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                <span>Generating your personalized questions…</span>
+              </div>
+              <div className="flex gap-1.5">
+                {[0,1,2].map(i => (
+                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: `${i * 0.2}s` }} />
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -303,33 +324,71 @@ export function InterviewRoom({ config, onComplete, onAbort }: Props) {
         {/* Between questions flash */}
         {state.phase === 'between_questions' && lastEval && (
           <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="bg-white border border-slate-100 rounded-2xl p-8 max-w-sm w-full space-y-5 text-center shadow-sm">
-              <p className="text-xs text-slate-500 uppercase tracking-widest">Question {state.currentQuestionIndex + 1} Complete</p>
-              <div className={`text-5xl font-bold font-mono ${scoreColor(lastEval.overallScore)}`}>
-                {lastEval.overallScore.toFixed(1)}<span className="text-xl text-slate-500">/10</span>
+            <div className="bg-white border border-slate-200 rounded-2xl p-8 max-w-sm w-full space-y-5 shadow-lg">
+              {/* Header */}
+              <div className="text-center space-y-1">
+                <div className="flex items-center justify-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">Q{state.currentQuestionIndex + 1} Score</p>
+                </div>
               </div>
-              <div className="space-y-2 text-left">
+
+              {/* Score ring */}
+              <div className="flex flex-col items-center gap-1">
+                <div className={`text-6xl font-black font-mono tabular-nums ${scoreColor(lastEval.overallScore)}`}>
+                  {lastEval.overallScore.toFixed(1)}
+                </div>
+                <div className="text-sm text-slate-400 font-bold">/10</div>
+                {/* Score bar */}
+                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mt-2">
+                  <div
+                    className="h-full rounded-full transition-all duration-1000"
+                    style={{
+                      width: `${lastEval.overallScore * 10}%`,
+                      background: lastEval.overallScore >= 7 ? '#22c55e' : lastEval.overallScore >= 5 ? '#f59e0b' : '#ef4444',
+                    }}
+                  />
+                </div>
+                <p className={`text-xs font-bold mt-1 ${
+                  lastEval.hireSignal === 'strong_yes' || lastEval.hireSignal === 'yes' ? 'text-green-600' :
+                  lastEval.hireSignal === 'lean_yes' ? 'text-amber-600' : 'text-red-500'
+                }`}>
+                  {lastEval.hireSignal === 'strong_yes' ? '⭐ Excellent' :
+                   lastEval.hireSignal === 'yes' ? '✓ Good answer' :
+                   lastEval.hireSignal === 'lean_yes' ? '~ Decent' : '↑ Needs work'}
+                </p>
+              </div>
+
+              {/* Strengths & improvements */}
+              <div className="space-y-2">
                 {lastEval.strengths[0] && (
-                  <div className="flex items-start gap-2 text-xs text-green-600">
-                    <CheckCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                    {lastEval.strengths[0]}
+                  <div className="flex items-start gap-2 p-2.5 bg-green-50 border border-green-100 rounded-xl text-xs text-green-700">
+                    <CheckCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-green-500" />
+                    <span>{lastEval.strengths[0]}</span>
                   </div>
                 )}
                 {lastEval.improvements[0] && (
-                  <div className="flex items-start gap-2 text-xs text-amber-600">
-                    <TrendingUp className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                    {lastEval.improvements[0]}
+                  <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-700">
+                    <TrendingUp className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-500" />
+                    <span>{lastEval.improvements[0]}</span>
                   </div>
                 )}
               </div>
+
+              {/* Next question hint */}
               {state.currentQuestionIndex + 1 < totalQuestions && (
-                <p className="text-xs text-slate-500">Next: Question {state.currentQuestionIndex + 2} of {totalQuestions}</p>
+                <p className="text-center text-xs text-slate-400">
+                  Up next: Question {state.currentQuestionIndex + 2} of {totalQuestions}
+                </p>
               )}
+
               <button
                 onClick={() => { if (flashTimerRef.current) clearInterval(flashTimerRef.current); dispatch({ type: 'ADVANCE_QUESTION' }); }}
-                className="w-full py-3 bg-primary text-white font-bold text-sm rounded-xl hover:bg-primary/90 transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-3 bg-primary text-white font-bold text-sm rounded-xl hover:bg-primary/90 transition-colors shadow-sm"
               >
-                Continue → <span className="text-white/60 text-xs">({flashCountdown}s)</span>
+                <ArrowRight className="w-4 h-4" />
+                Continue
+                <span className="text-white/60 text-xs ml-1">({flashCountdown}s)</span>
               </button>
             </div>
           </div>
@@ -353,7 +412,7 @@ export function InterviewRoom({ config, onComplete, onAbort }: Props) {
             <p className="text-sm font-bold text-slate-800">Your answer appears empty.</p>
             <p className="text-xs text-slate-500">Submit anyway? This will result in a low score for this question.</p>
             <div className="flex gap-3">
-              <button onClick={() => { setEmptyConfirm(false); handleAnswerSubmit('', undefined, 0); }}
+              <button onClick={() => { setEmptyConfirm(false); handleAnswerSubmit('', undefined, undefined, 0); }}
                 className="flex-1 py-2.5 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors">
                 Submit Anyway
               </button>

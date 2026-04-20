@@ -1,0 +1,70 @@
+name: Deploy Backend to Cloud Run
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ai-engine/**'
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: campus2career-assistant
+  REGION: asia-south1        # Mumbai — closest to NMIMS
+  SERVICE: campus2career-ai
+  IMAGE: gcr.io/campus2career-assistant/campus2career-ai
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker --quiet
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.IMAGE }}:${{ github.sha }} \
+                       -t ${{ env.IMAGE }}:latest \
+                       ./ai-engine
+
+      - name: Push to Container Registry
+        run: |
+          docker push ${{ env.IMAGE }}:${{ github.sha }}
+          docker push ${{ env.IMAGE }}:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE }} \
+            --image ${{ env.IMAGE }}:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --min-instances 1 \
+            --max-instances 10 \
+            --memory 512Mi \
+            --cpu 1 \
+            --concurrency 80 \
+            --timeout 60 \
+            --set-env-vars "ALLOWED_ORIGIN=https://campus2career-assistant.web.app" \
+            --set-secrets "OPENROUTER_API_KEY=openrouter-api-key:latest" \
+            --quiet
+
+      - name: Get Service URL
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE }} \
+            --region ${{ env.REGION }} \
+            --format 'value(status.url)')
+          echo "Backend deployed at: $URL"

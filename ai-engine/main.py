@@ -1,11 +1,13 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import json
 import logging
 import traceback
+import time
+from collections import defaultdict
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import re
@@ -13,11 +15,23 @@ import requests
 
 app = FastAPI()
 
-# OpenRouter configuration
+# ── Rate limiting (in-memory, per IP) ────────────────────────────────────────
+RATE_LIMIT_REQUESTS = 30   # max requests
+RATE_LIMIT_WINDOW   = 60   # per 60 seconds
+_rate_store: dict = defaultdict(list)
+
+def check_rate_limit(ip: str):
+    now = time.time()
+    window_start = now - RATE_LIMIT_WINDOW
+    _rate_store[ip] = [t for t in _rate_store[ip] if t > window_start]
+    if len(_rate_store[ip]) >= RATE_LIMIT_REQUESTS:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
+    _rate_store[ip].append(now)
+
+# ── OpenRouter configuration (server-side only — never sent to browser) ───────
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# Models to try in order
 MODELS = [
     "google/gemini-2.0-flash-001",
     "anthropic/claude-3.5-haiku",
@@ -74,8 +88,10 @@ def call_openrouter(prompt: str, json_mode: bool = False) -> str:
 
 # CORS configuration - restrict to known origins
 ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Vite dev server
-    "http://localhost:4173",  # Vite preview
+    "http://localhost:5173",
+    "http://localhost:4173",
+    "https://campus2career-assistant.web.app",
+    "https://campus2career-assistant.firebaseapp.com",
 ]
 
 # Add custom origin from environment if available
@@ -90,6 +106,29 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
 )
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+# ── AI Proxy endpoint — keeps API key server-side ─────────────────────────────
+class AIProxyRequest(BaseModel):
+    prompt: str
+    json_mode: bool = False
+    temperature: float = 0.7
+    max_tokens: int = 2000
+
+@app.post("/api/ai")
+async def ai_proxy(req: AIProxyRequest, request: Request):
+    # Rate limit by IP
+    client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
+    check_rate_limit(client_ip.split(",")[0].strip())
+
+    if not OPENROUTER_API_KEY:
+        raise HTTPException(status_code=503, detail="AI service not configured")
+
+    result = call_openrouter(req.prompt, json_mode=req.json_mode)
+    return {"result": result}
 
 class RoadmapRequest(BaseModel):
     currentYear: int

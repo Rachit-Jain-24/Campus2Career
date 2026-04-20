@@ -39,7 +39,30 @@ export function QuestionDisplay({ question, questionNumber, totalQuestions }: Pr
       </div>
 
       {/* Question text */}
-      <div className="bg-slate-50 border border-slate-100 rounded-xl p-5">
+      <div 
+        className="bg-slate-50 border border-slate-100 rounded-xl p-5"
+        role="region"
+        aria-label={`Question ${questionNumber} of ${totalQuestions}`}
+      >
+        {/* Screen reader announcement - brief only, not the full question */}
+        <div 
+          aria-live="polite" 
+          style={{
+            position: 'absolute',
+            width: '1px',
+            height: '1px',
+            padding: 0,
+            margin: '-1px',
+            overflow: 'hidden',
+            clip: 'rect(0, 0, 0, 0)',
+            whiteSpace: 'nowrap',
+            borderWidth: 0,
+          }}
+        >
+          New question {questionNumber} of {totalQuestions}. Use Tab key to navigate.
+        </div>
+        
+        {/* Question content - visible but not auto-announced */}
         <p className="text-slate-800 text-base leading-relaxed whitespace-pre-wrap">
           {question.text}
         </p>

@@ -17,7 +17,7 @@ import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
 
 describe('Bug Condition: Duplicate Data Files', () => {
-  const dataDirectory = 'src/data';
+  const dataDirectory = 'src_1/data'; // Fixed: Changed from 'src/data' to 'src_1/data'
   
   // List of all student data files that should be checked
   const expectedDuplicateFiles = [

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Mic, MicOff, Type, Code2, AlertCircle } from 'lucide-react';
+import { Mic, MicOff, Type, Code2, AlertCircle, Clock, Send } from 'lucide-react';
 import { TranscriptPanel } from './TranscriptPanel';
 import { CodeSandbox } from './CodeSandbox';
 import type { InterviewMode } from '../../types/interview';
@@ -7,27 +7,46 @@ import type { InterviewMode } from '../../types/interview';
 interface Props {
   mode: InterviewMode;
   codeLanguage: string;
-  onSubmit: (answer: string, code?: string, duration?: number) => void;
+  onSubmit: (answer: string, code?: string, codeOutput?: string, duration?: number) => void;
   onEmpty: () => void;
 }
 
 type Tab = 'voice' | 'text' | 'code';
 
+const MIN_WORDS: Record<InterviewMode, number> = {
+  behavioral: 60,
+  hr: 40,
+  project: 50,
+  system_design: 80,
+  dsa: 0, // code-based
+};
+
 export function AnswerPanel({ mode, codeLanguage, onSubmit, onEmpty }: Props) {
-  const defaultTab: Tab = mode === 'dsa' ? 'code' : mode === 'system_design' ? 'text' : 'voice';
+  const defaultTab: Tab = mode === 'dsa' ? 'code' : 'voice';
   const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
   const [transcript, setTranscript] = useState('');
   const [wordCount, setWordCount] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [textAnswer, setTextAnswer] = useState('');
   const [codeAnswer, setCodeAnswer] = useState('');
+  const [codeOutput, setCodeOutput] = useState('');
   const [voiceSupported, setVoiceSupported] = useState(true);
   const [micError, setMicError] = useState('');
   const [startTime] = useState(Date.now());
+  const [elapsedSec, setElapsedSec] = useState(0);
 
   const transcriptRef = useRef('');
   const recognitionRef = useRef<any>(null);
   const isRecordingRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Elapsed timer
+  useEffect(() => {
+    timerRef.current = setInterval(() => setElapsedSec(Math.floor((Date.now() - startTime) / 1000)), 1000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [startTime]);
+
+  const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
   useEffect(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -94,37 +113,52 @@ export function AnswerPanel({ mode, codeLanguage, onSubmit, onEmpty }: Props) {
       : activeTab === 'text' ? textAnswer
       : transcript || textAnswer;
     const code = activeTab === 'code' ? codeAnswer : undefined;
+    const output = activeTab === 'code' ? codeOutput : undefined;
 
     if (!answer?.trim() && !code?.trim()) { onEmpty(); return; }
     stopRecording();
     const duration = (Date.now() - startTime) / 1000;
-    onSubmit(answer || '', code, duration);
+    onSubmit(answer || '', code, output, duration);
   };
+
+  // Current answer word count for the active tab
+  const currentWords = activeTab === 'voice' ? wordCount
+    : activeTab === 'text' ? textAnswer.split(/\s+/).filter(Boolean).length
+    : 0;
+  const minWords = MIN_WORDS[mode] || 0;
+  const wordProgress = minWords > 0 ? Math.min(100, (currentWords / minWords) * 100) : 100;
+  const meetsMinWords = currentWords >= minWords;
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode; show: boolean }[] = [
     { id: 'voice' as Tab, label: 'Voice', icon: <Mic className="w-3.5 h-3.5" />, show: voiceSupported },
-    { id: 'text' as Tab, label: 'Text', icon: <Type className="w-3.5 h-3.5" />, show: mode === 'system_design' || !voiceSupported },
+    { id: 'text' as Tab, label: 'Type', icon: <Type className="w-3.5 h-3.5" />, show: true },
     { id: 'code' as Tab, label: 'Code', icon: <Code2 className="w-3.5 h-3.5" />, show: mode === 'dsa' },
   ].filter(t => t.show);
 
   return (
     <div className="space-y-4">
-      {/* Tab bar */}
-      {tabs.length > 1 && (
+      {/* Header row: tab bar + timer */}
+      <div className="flex items-center justify-between gap-3">
         <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit border border-slate-200">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === tab.id ? 'bg-white text-slate-800' : 'text-slate-500 hover:text-slate-800'
+                activeTab === tab.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               {tab.icon}{tab.label}
             </button>
           ))}
         </div>
-      )}
+
+        {/* Elapsed timer */}
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-lg">
+          <Clock className="w-3 h-3" />
+          <span className="font-mono font-bold">{fmtTime(elapsedSec)}</span>
+        </div>
+      </div>
 
       {/* Mic error banner */}
       {micError && (
@@ -149,8 +183,8 @@ export function AnswerPanel({ mode, codeLanguage, onSubmit, onEmpty }: Props) {
               </button>
             ) : (
               <button onClick={stopRecording}
-                className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors animate-pulse">
-                <MicOff className="w-4 h-4" /> Stop Recording
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors">
+                <MicOff className="w-4 h-4 animate-pulse" /> Stop Recording
               </button>
             )}
           </div>
@@ -163,12 +197,34 @@ export function AnswerPanel({ mode, codeLanguage, onSubmit, onEmpty }: Props) {
           <textarea
             value={textAnswer}
             onChange={e => setTextAnswer(e.target.value)}
-            placeholder="Type your answer here… Use markdown for structure."
-            className="w-full h-48 bg-white border border-slate-200 rounded-xl p-4 text-sm text-slate-800 placeholder-slate-400 resize-none focus:outline-none focus:border-primary transition-colors"
+            placeholder={
+              mode === 'system_design'
+                ? 'Describe your design: components, data flow, scalability, trade-offs…'
+                : mode === 'behavioral' || mode === 'hr'
+                ? 'Use STAR method: Situation → Task → Action → Result…'
+                : mode === 'dsa'
+                ? 'Explain your approach, algorithm choice, and complexity…'
+                : 'Type your answer here…'
+            }
+            className="w-full h-48 bg-white border border-slate-200 rounded-xl p-4 text-sm text-slate-800 placeholder-slate-400 resize-none focus:outline-none focus:border-primary transition-colors leading-relaxed"
           />
-          <div className="flex justify-between text-[10px] text-slate-500">
-            <span>{textAnswer.split(/\s+/).filter(Boolean).length} words</span>
-            {textAnswer.length > 2000 && <span className="text-amber-600">AI evaluates up to ~500 words</span>}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className={`text-xs font-bold ${meetsMinWords ? 'text-green-600' : 'text-slate-500'}`}>
+                {currentWords}{minWords > 0 ? `/${minWords}` : ''} words
+              </span>
+              {minWords > 0 && (
+                <div className="w-24 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${meetsMinWords ? 'bg-green-500' : 'bg-primary'}`}
+                    style={{ width: `${wordProgress}%` }}
+                  />
+                </div>
+              )}
+            </div>
+            {!meetsMinWords && minWords > 0 && (
+              <span className="text-[10px] text-amber-600">Aim for {minWords}+ words for a strong score</span>
+            )}
           </div>
         </div>
       )}
@@ -176,16 +232,16 @@ export function AnswerPanel({ mode, codeLanguage, onSubmit, onEmpty }: Props) {
       {/* Code tab */}
       {activeTab === 'code' && (
         <div className="space-y-3">
-          <CodeSandbox language={codeLanguage} onChange={setCodeAnswer} />
+          <CodeSandbox language={codeLanguage} onChange={setCodeAnswer} onOutputChange={setCodeOutput} />
           <TranscriptPanel transcript={transcript} wordCount={wordCount} isRecording={isRecording} />
           {!isRecording ? (
             <button onClick={startRecording}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 text-xs text-slate-500 rounded-lg hover:text-slate-800 transition-colors">
+              className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 text-xs text-slate-500 rounded-lg hover:text-slate-800 hover:border-primary/50 transition-colors">
               <Mic className="w-3.5 h-3.5" /> Also record voice explanation (optional)
             </button>
           ) : (
             <button onClick={stopRecording}
-              className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 text-xs text-red-700 rounded-lg">
+              className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 text-xs text-red-700 rounded-lg hover:bg-red-100 transition-colors">
               <MicOff className="w-3.5 h-3.5" /> Stop voice recording
             </button>
           )}
@@ -195,9 +251,10 @@ export function AnswerPanel({ mode, codeLanguage, onSubmit, onEmpty }: Props) {
       {/* Submit */}
       <button
         onClick={handleSubmit}
-        className="w-full py-3.5 bg-green-600 text-white font-bold text-sm rounded-xl hover:bg-green-700 transition-colors"
+        className="w-full flex items-center justify-center gap-2 py-3.5 bg-primary text-white font-bold text-sm rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all shadow-sm"
       >
-        Submit Answer →
+        <Send className="w-4 h-4" />
+        Submit Answer
       </button>
     </div>
   );

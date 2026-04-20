@@ -14,6 +14,9 @@ export interface QuestionMetadata {
   rubric: RubricCriteria[];
   followUpSeeds: string[];
   answerMethod: AnswerMethod;
+  modelSolution?: string;       // reference solution for DSA evaluation
+  testCases?: string;           // sample test cases for correctness checking
+  progressionLevel?: number;    // 1 = easiest, N = hardest within session
 }
 
 // ── Rubric ──────────────────────────────────────────────────────────────────

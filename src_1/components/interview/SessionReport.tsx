@@ -1,5 +1,5 @@
-import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
-import { Trophy, RefreshCw, TrendingUp, CheckCircle2, Loader2, History } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts';
+import { Trophy, RefreshCw, TrendingUp, CheckCircle2, Loader2, Download } from 'lucide-react';
 import type { InterviewSession } from '../../types/interview';
 import { FeedbackCard } from './FeedbackCard';
 import { scoreColor, getHireLabel } from '../../lib/interviewEngine';
@@ -21,16 +21,7 @@ const HIRE_BADGE: Record<string, string> = {
 export function SessionReport({ session, onRestart, isSaving = false }: Props) {
   const durationMin = Math.round(session.durationSec / 60);
 
-  // Build radar data
-  const radarData = [
-    { subject: 'Technical', score: session.overallScore },
-    { subject: 'Communication', score: session.evaluations[0]?.communication?.clarityScore || 0 },
-    { subject: 'Problem Solving', score: session.evaluations.reduce((a, e) => a + e.technicalDepthScore, 0) / Math.max(1, session.evaluations.length) },
-    { subject: 'Code Quality', score: session.evaluations.find(e => e.codeSubmission)?.rubricScores.find(r => r.criterion === 'Code Quality')?.score || 0 },
-    { subject: 'Behavioral', score: session.evaluations.find(e => e.starAnalysis)?.starAnalysis?.overallSTARScore || 0 },
-  ].filter(d => d.score > 0);
-
-  // Communication averages
+  // Communication averages — declared first so barData can reference it
   const commEvals = session.evaluations.filter(e => e.communication);
   const avgWPM = commEvals.length ? Math.round(commEvals.reduce((a, e) => a + (e.communication?.speechSpeedWPM || 0), 0) / commEvals.length) : 0;
   const totalFillers = commEvals.reduce((a, e) => a + (e.communication?.fillerWordCount || 0), 0);
@@ -38,6 +29,17 @@ export function SessionReport({ session, onRestart, isSaving = false }: Props) {
   const fillerCounts = allFillerWords.reduce((acc, w) => { acc[w] = (acc[w] || 0) + 1; return acc; }, {} as Record<string, number>);
   const avgConf = commEvals.length ? (commEvals.reduce((a, e) => a + (e.communication?.confidenceScore || 0), 0) / commEvals.length).toFixed(1) : '—';
   const avgClarity = commEvals.length ? (commEvals.reduce((a, e) => a + (e.communication?.clarityScore || 0), 0) / commEvals.length).toFixed(1) : '—';
+
+  // Build bar chart data from evaluations
+  const barData = [
+    { name: 'Technical', score: parseFloat((session.evaluations.reduce((a, e) => a + e.technicalDepthScore, 0) / Math.max(1, session.evaluations.length)).toFixed(1)) },
+    { name: 'Communication', score: parseFloat((commEvals.length ? commEvals.reduce((a, e) => a + (e.communication?.clarityScore || 0), 0) / commEvals.length : 0).toFixed(1)) },
+    { name: 'STAR', score: parseFloat((session.evaluations.find(e => e.starAnalysis)?.starAnalysis?.overallSTARScore || 0).toFixed(1)) },
+    { name: 'Code', score: parseFloat((session.evaluations.find(e => e.codeSubmission)?.rubricScores.find(r => r.criterion === 'Code Quality')?.score || 0).toFixed(1)) },
+    { name: 'Overall', score: session.overallScore },
+  ].filter(d => d.score > 0);
+
+  const scoreBarColor = (s: number) => s >= 7 ? '#22c55e' : s >= 5 ? '#f59e0b' : '#ef4444';
 
   return (
     <div className="space-y-6 pb-12">
@@ -53,20 +55,37 @@ export function SessionReport({ session, onRestart, isSaving = false }: Props) {
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
-            <Trophy className="w-7 h-7 text-amber-600" />
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+              <Trophy className="w-5 h-5 text-amber-600" />
+            </div>
             <div>
               <h1 className="text-xl font-bold text-slate-800">Interview Complete</h1>
               <p className="text-xs text-slate-500">{durationMin} min · {session.questions.length} questions · {session.rounds.map(r => r.label).join(', ')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className={`text-3xl font-bold font-mono ${scoreColor(session.overallScore)}`}>
-              {session.overallScore.toFixed(1)}<span className="text-base text-slate-500">/10</span>
-            </span>
+            <div className="text-right">
+              <div className={`text-4xl font-black font-mono tabular-nums ${scoreColor(session.overallScore)}`}>
+                {session.overallScore.toFixed(1)}
+                <span className="text-lg text-slate-400 font-bold">/10</span>
+              </div>
+            </div>
             <span className={`text-xs font-bold px-3 py-1 rounded-full border ${HIRE_BADGE[session.hireRecommendation] || HIRE_BADGE.lean_yes}`}>
               {getHireLabel(session.overallScore)}
             </span>
           </div>
+        </div>
+        {/* Score progress band */}
+        <div className="mt-4 h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-1000"
+            style={{
+              width: `${session.overallScore * 10}%`,
+              background: session.overallScore >= 7 ? 'linear-gradient(90deg, #22c55e, #16a34a)' :
+                           session.overallScore >= 5 ? 'linear-gradient(90deg, #f59e0b, #d97706)' :
+                                                       'linear-gradient(90deg, #ef4444, #dc2626)',
+            }}
+          />
         </div>
         {session.aiInterviewerNotes && (
           <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
@@ -75,17 +94,24 @@ export function SessionReport({ session, onRestart, isSaving = false }: Props) {
         )}
       </div>
 
-      {/* Radar chart */}
-      {radarData.length >= 3 && (
+      {/* Score breakdown bar chart */}
+      {barData.length > 0 && (
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-          <p className="text-xs text-slate-500 uppercase tracking-widest mb-4">Performance Radar</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <RadarChart data={radarData}>
-              <PolarGrid stroke="#e2e8f0" />
-              <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 11 }} />
-              <Radar name="Score" dataKey="score" stroke="#4f8ef7" fill="#4f8ef7" fillOpacity={0.2} />
-              <Tooltip contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 8 }} />
-            </RadarChart>
+          <p className="text-xs text-slate-500 uppercase tracking-widest mb-4">Performance Breakdown</p>
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={barData} barSize={32} margin={{ top: 5, bottom: 5 }}>
+              <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 10]} tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 11 }}
+                formatter={(v: any) => [`${v}/10`, 'Score']}
+              />
+              <Bar dataKey="score" radius={[4, 4, 0, 0]}>
+                {barData.map((entry, i) => (
+                  <Cell key={i} fill={scoreBarColor(entry.score)} />
+                ))}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </div>
       )}
@@ -136,15 +162,15 @@ export function SessionReport({ session, onRestart, isSaving = false }: Props) {
       <div className="flex gap-3">
         <button
           onClick={onRestart}
-          className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-primary text-white font-bold text-sm rounded-xl hover:bg-primary/90 transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-primary text-white font-bold text-sm rounded-xl hover:bg-primary/90 transition-colors shadow-sm"
         >
           <RefreshCw className="w-4 h-4" /> Start New Interview
         </button>
         <button
           onClick={() => window.print()}
-          className="px-5 py-3.5 bg-slate-50 border border-slate-200 text-slate-500 font-bold text-sm rounded-xl hover:text-slate-800 transition-colors"
+          className="flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-50 border border-slate-200 text-slate-500 font-bold text-sm rounded-xl hover:text-slate-800 hover:border-slate-300 transition-colors"
         >
-          Print Report
+          <Download className="w-4 h-4" /> Print
         </button>
       </div>
     </div>

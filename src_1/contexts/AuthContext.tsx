@@ -36,8 +36,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isAuthenticated = !!user;
     const isAdmin = isAdminUser(user);
 
-    // ── Auto sign-out after 2 minutes of inactivity ───────────────────────────
-    const IDLE_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+    // ── Auto sign-out after 30 minutes of inactivity ───────────────────────────
+    const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes (improved from 2 min for better UX)
     useEffect(() => {
         if (!user) return; // only track when logged in
 

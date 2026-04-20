@@ -1,21 +1,25 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Dependencies
+node_modules/
+server/node_modules/
 
-node_modules
-dist
-dist-ssr
-*.local
+# Build output
+dist/
+dist-ssr/
 
-# Editor directories and files
+# Environment variables — NEVER commit these
+.env
+.env.local
+.env.*.local
+.env.server
+gcp-key.json
+
+# Firebase cache
+.firebase/
+
+# Editor
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
@@ -23,30 +27,54 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment variables
-.env
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Firebase cache
-.firebase/
+# Python
+ai-engine/venv/
+ai-engine/__pycache__/
+ai-engine/*.pyc
+ai-engine/*.pyo
 
-# Documentation and temporary files (exclude from Git)
-*.md
-!README.md
-*.docx
+# Misc build artifacts
+*.local
+dist-ssr/
+
+# Temp/extracted folders
+admin_updates_extracted/
+src_1/CP_ALL_SEM_EXTRACTED/
+src_1/CP_ALL_SEM.zip
+
+# Binary/document files that don't belong in source control
 *.pdf
+*.docx
+*.xlsx
+*.xls
 *.zip
 *.csv
-*.xlsx
-*.html
-!index.html
-*.txt
-!package.json
-!package-lock.json
+*.pptx
 
-# Extracted/temporary folders
-admin_updates_extracted/
-# Note: ai-engine/ is now included in git for deployment
-# ai-engine/
+# Test scripts
+test-piston.py
 
-# Firebase hosting cache
-.firebase/
+# Kiro internal / repowiki (auto-generated)
+.qoder/
+
+# Markdown docs (generated summaries — not source code)
+ACTION_REQUIRED.md
+CODE_EXECUTION_FIXED.md
+CODE_EXECUTION_IMPROVEMENTS.md
+FIX_RLS_RECURSION_GUIDE.md
+PRODUCTION_DEPLOYMENT_GUIDE.md
+PRODUCTION_FIXES_COMPLETE.md
+PRODUCTION_READINESS_SUMMARY.md
+PROJECT_ANALYSIS_REPORT.md
+PROJECT_INFO.md
+REVIEW3_DOCUMENT.md
+SYSTEM_DESIGN_AND_DEPLOYMENT.md
+URGENT_FIX_REQUIRED.md

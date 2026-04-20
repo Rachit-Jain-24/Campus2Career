@@ -593,6 +593,191 @@ Return ONLY valid JSON:
 import type { QuestionMetadata, QuestionEvaluation, InterviewMode, Difficulty, STARAnalysis } from '../types/interview';
 import { RUBRICS } from './interviewEngine';
 
+// ── Topic pools for randomized DSA question selection ────────────────────────
+const DSA_TOPIC_POOLS: Record<Difficulty, string[][]> = {
+  junior: [
+    ['Arrays', 'Two Pointers', 'Sliding Window'],
+    ['Strings', 'HashMap', 'Frequency Count'],
+    ['Linked Lists', 'Fast & Slow Pointers'],
+    ['Stack', 'Queue', 'Monotonic Stack'],
+    ['Binary Search', 'Sorted Arrays'],
+    ['Recursion', 'Basic Tree Traversal'],
+  ],
+  mid: [
+    ['Dynamic Programming', 'Memoization', '1D DP'],
+    ['Trees', 'BST', 'DFS/BFS'],
+    ['Graphs', 'BFS', 'Topological Sort'],
+    ['Heaps', 'Priority Queue', 'Top-K'],
+    ['Backtracking', 'Permutations', 'Subsets'],
+    ['Intervals', 'Greedy', 'Merge Intervals'],
+    ['Tries', 'Prefix Trees'],
+    ['Matrix', '2D DP', 'Grid BFS'],
+  ],
+  senior: [
+    ['Advanced DP', '2D DP', 'Bitmask DP'],
+    ['Segment Trees', 'Fenwick Trees', 'Range Queries'],
+    ['Advanced Graphs', 'Dijkstra', 'Bellman-Ford', 'Floyd-Warshall'],
+    ['String Algorithms', 'KMP', 'Rabin-Karp', 'Z-Algorithm'],
+    ['Divide & Conquer', 'Merge Sort Variants'],
+    ['Hard Backtracking', 'N-Queens', 'Sudoku Solver'],
+    ['Monotonic Deque', 'Sliding Window Maximum'],
+  ],
+  staff: [
+    ['Competitive DP', 'Convex Hull Trick', 'Divide & Conquer DP'],
+    ['Advanced Graph Theory', 'Min-Cut', 'Max-Flow', 'Bipartite Matching'],
+    ['Suffix Arrays', 'Suffix Automata'],
+    ['Persistent Data Structures', 'Treap', 'Skip List'],
+    ['Randomized Algorithms', 'Reservoir Sampling'],
+    ['Geometry Algorithms', 'Convex Hull', 'Line Sweep'],
+  ],
+};
+
+const SYSTEM_DESIGN_TOPICS: Record<Difficulty, string[]> = {
+  junior: ['URL shortener', 'pastebin', 'simple chat app', 'rate limiter', 'key-value store'],
+  mid: ['Twitter feed', 'Instagram', 'Uber ride matching', 'distributed cache', 'notification service', 'search autocomplete', 'web crawler'],
+  senior: ['YouTube', 'Google Drive', 'distributed message queue', 'global CDN', 'real-time collaborative editor', 'payment processing system'],
+  staff: ['Google Search', 'distributed database', 'global load balancer', 'multi-region consensus system', 'ML feature store at scale'],
+};
+
+const COMPANY_DSA_FOCUS: Record<string, string[]> = {
+  Google: ['Arrays', 'Graphs', 'Dynamic Programming', 'Trees', 'String Algorithms'],
+  Amazon: ['Arrays', 'Trees', 'Graphs', 'OOP Design', 'Greedy'],
+  Microsoft: ['Trees', 'Linked Lists', 'Dynamic Programming', 'Graphs', 'Strings'],
+  Meta: ['Arrays', 'Graphs', 'Dynamic Programming', 'Trees', 'Recursion'],
+  Apple: ['Arrays', 'Strings', 'Trees', 'OOP Design', 'Algorithms'],
+  'Startup (General)': ['Arrays', 'Strings', 'HashMap', 'Trees', 'System Design'],
+  'MNC (General)': ['Arrays', 'Strings', 'OOP', 'Database', 'Basic Algorithms'],
+  'Service-based (TCS/Infosys/Wipro)': ['Arrays', 'Strings', 'Basic OOP', 'SQL', 'Sorting'],
+};
+
+// ── Role-specific question profiles ─────────────────────────────────────────
+interface RoleProfile {
+  dsaTopicBias: string[];          // extra topics to weight toward
+  systemDesignFocus: string[];     // preferred SD systems for this role
+  behavioralCompetencies: string[]; // competencies to probe in behavioral
+  hrThemes: string[];              // HR themes specific to this role
+  technicalContext: string;        // injected into prompt as role context
+}
+
+const ROLE_PROFILES: Record<string, RoleProfile> = {
+  'Software Engineer': {
+    dsaTopicBias: ['Arrays', 'Trees', 'Dynamic Programming', 'Graphs'],
+    systemDesignFocus: ['URL shortener', 'notification service', 'distributed cache', 'rate limiter'],
+    behavioralCompetencies: ['code quality', 'debugging under pressure', 'cross-team collaboration', 'technical trade-offs'],
+    hrThemes: ['engineering culture fit', 'growth mindset', 'ownership', 'code review philosophy'],
+    technicalContext: 'Focus on clean code, system reliability, and engineering best practices.',
+  },
+  'Frontend Engineer': {
+    dsaTopicBias: ['Trees', 'Strings', 'HashMap', 'Recursion'],
+    systemDesignFocus: ['design a component library', 'design a real-time dashboard', 'design a news feed UI', 'design an autocomplete system'],
+    behavioralCompetencies: ['UI performance optimization', 'cross-browser compatibility', 'design-engineering collaboration', 'accessibility'],
+    hrThemes: ['user empathy', 'design sensibility', 'performance obsession', 'framework opinions'],
+    technicalContext: 'Emphasize browser rendering, React/Vue patterns, state management, and web performance.',
+  },
+  'Backend Engineer': {
+    dsaTopicBias: ['Graphs', 'Dynamic Programming', 'Heaps', 'Tries'],
+    systemDesignFocus: ['API gateway', 'distributed job queue', 'database sharding', 'microservices architecture'],
+    behavioralCompetencies: ['API design decisions', 'database optimization', 'incident response', 'service reliability'],
+    hrThemes: ['scalability mindset', 'on-call culture', 'API design philosophy', 'data consistency'],
+    technicalContext: 'Focus on API design, database optimization, distributed systems, and service reliability.',
+  },
+  'Full Stack Engineer': {
+    dsaTopicBias: ['Arrays', 'Trees', 'HashMap', 'Graphs'],
+    systemDesignFocus: ['design a SaaS product', 'design a real-time chat app', 'design an e-commerce platform'],
+    behavioralCompetencies: ['context switching', 'end-to-end ownership', 'product thinking', 'technical debt management'],
+    hrThemes: ['breadth vs depth', 'product ownership', 'startup mindset', 'shipping velocity'],
+    technicalContext: 'Cover both frontend and backend concerns — API contracts, state management, and deployment.',
+  },
+  'Data Scientist': {
+    dsaTopicBias: ['Arrays', 'HashMap', 'Sorting', 'Matrix', 'Probability'],
+    systemDesignFocus: ['design an ML feature store', 'design an A/B testing platform', 'design a recommendation engine', 'design a data pipeline'],
+    behavioralCompetencies: ['experiment design', 'communicating results to non-technical stakeholders', 'model failure analysis', 'data quality issues'],
+    hrThemes: ['data-driven decision making', 'business impact of models', 'research vs production trade-offs'],
+    technicalContext: 'Emphasize statistical thinking, ML model evaluation, data pipelines (Pandas/NumPy/Spark), and experiment design.',
+  },
+  'Data Engineer': {
+    dsaTopicBias: ['Graphs', 'Sorting', 'HashMap', 'Sliding Window'],
+    systemDesignFocus: ['design a data warehouse', 'design an ETL pipeline', 'design a real-time streaming system', 'design a data lake'],
+    behavioralCompetencies: ['pipeline reliability', 'data quality ownership', 'cross-functional data contracts', 'schema evolution'],
+    hrThemes: ['data ownership culture', 'SLA mindset', 'collaboration with analysts and scientists'],
+    technicalContext: 'Focus on ETL/ELT pipelines, SQL optimization, Spark/Kafka, data modeling, and pipeline observability.',
+  },
+  'ML Engineer': {
+    dsaTopicBias: ['Arrays', 'Matrix', 'Dynamic Programming', 'Graphs', 'Probability'],
+    systemDesignFocus: ['design an ML training pipeline', 'design a model serving system', 'design an online feature store', 'design a model monitoring system'],
+    behavioralCompetencies: ['model deployment challenges', 'training vs inference trade-offs', 'debugging model degradation', 'cross-team ML collaboration'],
+    hrThemes: ['research-to-production mindset', 'model reliability', 'ML system ownership'],
+    technicalContext: 'Cover model training pipelines, serving infrastructure, feature engineering, and ML system reliability.',
+  },
+  'DevOps Engineer': {
+    dsaTopicBias: ['Graphs', 'Trees', 'Strings', 'HashMap'],
+    systemDesignFocus: ['design a CI/CD pipeline', 'design a container orchestration system', 'design an observability platform', 'design a secrets management system'],
+    behavioralCompetencies: ['incident response', 'automation mindset', 'developer experience improvement', 'reliability engineering'],
+    hrThemes: ['SRE culture', 'blameless post-mortems', 'infrastructure as code philosophy', 'on-call balance'],
+    technicalContext: 'Focus on CI/CD, Kubernetes, infrastructure as code (Terraform), observability, and SRE practices.',
+  },
+  'Cloud Engineer': {
+    dsaTopicBias: ['Graphs', 'Trees', 'Dynamic Programming', 'Greedy'],
+    systemDesignFocus: ['design a multi-region deployment', 'design a cloud cost optimization system', 'design a serverless architecture', 'design a disaster recovery system'],
+    behavioralCompetencies: ['cloud cost optimization', 'multi-cloud strategy', 'security posture', 'migration planning'],
+    hrThemes: ['cloud-first mindset', 'cost vs reliability trade-offs', 'vendor lock-in philosophy'],
+    technicalContext: 'Emphasize AWS/GCP/Azure services, serverless, IaC, networking, and cloud security.',
+  },
+  'Security Engineer': {
+    dsaTopicBias: ['Strings', 'HashMap', 'Graphs', 'Trees'],
+    systemDesignFocus: ['design an authentication system', 'design a secrets vault', 'design a threat detection system', 'design a zero-trust network'],
+    behavioralCompetencies: ['threat modeling', 'security incident response', 'developer security education', 'risk vs velocity trade-offs'],
+    hrThemes: ['security culture', 'shift-left security', 'responsible disclosure', 'paranoia vs pragmatism'],
+    technicalContext: 'Focus on authentication/authorization, cryptography, threat modeling, OWASP, and secure SDLC.',
+  },
+  'Mobile Engineer': {
+    dsaTopicBias: ['Trees', 'Arrays', 'Strings', 'HashMap'],
+    systemDesignFocus: ['design an offline-first mobile app', 'design a push notification system', 'design a mobile analytics SDK', 'design a real-time sync system'],
+    behavioralCompetencies: ['app performance optimization', 'crash debugging', 'OS version fragmentation', 'battery/memory constraints'],
+    hrThemes: ['user experience obsession', 'app store dynamics', 'platform-specific vs cross-platform philosophy'],
+    technicalContext: 'Cover iOS/Android architecture patterns, offline sync, performance profiling, and app lifecycle.',
+  },
+  'Product Manager': {
+    dsaTopicBias: ['Arrays', 'Strings', 'HashMap'],
+    systemDesignFocus: ['design a product metrics dashboard', 'design an A/B testing system', 'design a feature flag system'],
+    behavioralCompetencies: ['prioritization under constraints', 'stakeholder alignment', 'data-driven product decisions', 'handling conflicting feedback'],
+    hrThemes: ['product vision', 'customer empathy', 'roadmap trade-offs', 'working with engineering'],
+    technicalContext: 'Focus on product thinking, metrics, user research, and technical feasibility assessment.',
+  },
+  'QA Engineer': {
+    dsaTopicBias: ['Arrays', 'Strings', 'HashMap', 'Trees'],
+    systemDesignFocus: ['design a test automation framework', 'design a load testing system', 'design a bug tracking system'],
+    behavioralCompetencies: ['test strategy design', 'finding edge cases', 'advocating for quality', 'automation vs manual trade-offs'],
+    hrThemes: ['quality culture', 'shift-left testing', 'test coverage philosophy', 'working with developers'],
+    technicalContext: 'Emphasize test pyramid, automation frameworks, performance testing, and quality metrics.',
+  },
+};
+
+/** Normalize a role string to match ROLE_PROFILES keys */
+function getRoleProfile(targetRole: string): RoleProfile | null {
+  const normalized = targetRole.trim();
+  // Exact match first
+  if (ROLE_PROFILES[normalized]) return ROLE_PROFILES[normalized];
+  // Fuzzy match — find the closest key
+  const lower = normalized.toLowerCase();
+  const match = Object.keys(ROLE_PROFILES).find(k => lower.includes(k.toLowerCase()) || k.toLowerCase().includes(lower));
+  return match ? ROLE_PROFILES[match] : null;
+}
+
+/** Pick N random items from an array, seeded by a string for reproducibility within a session */
+function seededSample<T>(arr: T[], n: number, seed: string): T[] {
+  // Simple deterministic shuffle using seed hash
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    h = (Math.imul(h, 1664525) + 1013904223) | 0;
+    const j = Math.abs(h) % (i + 1);
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.slice(0, n);
+}
+
 export async function generateInterviewQuestionsStructured(params: {
   mode: InterviewMode;
   difficulty: Difficulty;
@@ -600,17 +785,41 @@ export async function generateInterviewQuestionsStructured(params: {
   targetCompany: string;
   resumeText: string;
   count: number;
+  codeLanguage?: string;
 }): Promise<QuestionMetadata[]> {
-  const { mode, difficulty, targetRole, targetCompany, resumeText, count } = params;
+  const { mode, difficulty, targetRole, targetCompany, resumeText, count, codeLanguage = 'python' } = params;
   const rubric = RUBRICS[mode];
   const modeLabel = { dsa: 'DSA/Coding', system_design: 'System Design', behavioral: 'Behavioral', project: 'Project Deep-Dive', hr: 'HR' }[mode];
   const answerMethod = mode === 'dsa' ? 'voice_and_code' : mode === 'system_design' ? 'text' : 'voice';
 
+  // Randomization seed: changes every session so same profile gets different questions
+  const sessionSeed = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  // Role profile — biases topics, SD systems, behavioral competencies toward the target role
+  const roleProfile = getRoleProfile(targetRole);
+
+  // Pick random topics for this session — merge role bias into the pool
+  const topicPool = DSA_TOPIC_POOLS[difficulty] ?? DSA_TOPIC_POOLS.mid;
+  // Inject role-biased topics as extra entries so they're more likely to be picked
+  const biasedPool = roleProfile?.dsaTopicBias.length
+    ? [...topicPool, ...roleProfile.dsaTopicBias.map(t => [t])]
+    : topicPool;
+  const selectedTopicGroups = seededSample(biasedPool, Math.min(count, biasedPool.length), sessionSeed);
+  const dsaTopics = selectedTopicGroups.map(g => g[0]).join(', ');
+
+  // Pick SD topic — prefer role-specific ones if available
+  const sdPool = roleProfile?.systemDesignFocus.length
+    ? roleProfile.systemDesignFocus
+    : (SYSTEM_DESIGN_TOPICS[difficulty] ?? SYSTEM_DESIGN_TOPICS.mid);
+  const sdTopic = seededSample(sdPool, 1, sessionSeed)[0];
+
+  const companyFocus = COMPANY_DSA_FOCUS[targetCompany] ?? [];
+
   const fallbackQuestions: QuestionMetadata[] = Array.from({ length: count }, (_, i) => ({
     id: `${mode}-${i}`,
-    text: getFallbackQuestion(mode, difficulty, i),
+    text: getFallbackQuestion(mode, difficulty, i, sessionSeed),
     mode, difficulty,
-    topicTags: [mode],
+    topicTags: mode === 'dsa' ? selectedTopicGroups[i % selectedTopicGroups.length] : [mode],
     companyTags: targetCompany ? [targetCompany] : [],
     expectedDurationSec: mode === 'dsa' ? 1200 : mode === 'system_design' ? 1500 : 180,
     rubric,
@@ -622,99 +831,281 @@ export async function generateInterviewQuestionsStructured(params: {
 
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    const resumeSection = resumeText?.trim()
-      ? `CANDIDATE RESUME / PROFILE (read every word carefully):
+
+    // ── Build rich profile context ──────────────────────────────────────────
+    const profileSection = resumeText?.trim()
+      ? `CANDIDATE PROFILE (study every detail before generating):
 \`\`\`
 ${resumeText.slice(0, 6000)}
 \`\`\`
+Extract and use:
+- Project names, tech stacks, and what each project does
+- Internship companies, roles, and responsibilities
+- Listed skills, frameworks, libraries, tools
+- Certifications, achievements, LeetCode stats`
+      : `No resume provided. Generate role-specific questions for a ${targetRole} at ${difficulty} level.`;
 
-Before generating questions, mentally extract:
-- Every project name and what it does
-- Every technology/framework mentioned
-- Every company/internship and the role
-- Every certification or achievement
+    // ── Role context ────────────────────────────────────────────────────────
+    const roleContext = roleProfile
+      ? `ROLE CONTEXT for ${targetRole}:
+- Technical focus: ${roleProfile.technicalContext}
+- Key competencies to probe: ${roleProfile.behavioralCompetencies.slice(0, 3).join(', ')}
+- This role cares about: ${roleProfile.hrThemes.slice(0, 3).join(', ')}`
+      : `Role: ${targetRole}. Tailor all questions to what a ${targetRole} actually does day-to-day.`;
 
-Your questions MUST reference these specific items by name.`
-      : 'No resume provided. Generate role-specific questions based on the target role.';
+  // Detect coding domain from role — determines question style
+  const roleL = targetRole.toLowerCase();
+  const isDataRole = roleL.includes('data') || roleL.includes('ml') || roleL.includes('machine learning') || roleL.includes('analyst');
+  const isFullStack = roleL.includes('full stack') || roleL.includes('fullstack');
+  const isFrontend = roleL.includes('frontend') || roleL.includes('front-end') || roleL.includes('react') || roleL.includes('ui');
+  const isBackend = roleL.includes('backend') || roleL.includes('back-end') || roleL.includes('api') || roleL.includes('server');
+  const isDevOps = roleL.includes('devops') || roleL.includes('sre') || roleL.includes('cloud') || roleL.includes('infra');
 
-    const prompt = `You are a ${difficulty}-level interviewer at ${targetCompany || 'a top tech company'} conducting a ${modeLabel} interview for a ${targetRole} role.
+  // Company-specific LeetCode-style question patterns
+  const COMPANY_LEETCODE_PATTERNS: Record<string, string> = {
+    Google: 'Google favors graph traversal, string manipulation, and DP. Known problems: Word Ladder, Trapping Rain Water, Serialize/Deserialize Binary Tree.',
+    Amazon: 'Amazon favors arrays, trees, and OOP design. Known problems: LRU Cache, Meeting Rooms, Number of Islands, Top K Frequent Elements.',
+    Microsoft: 'Microsoft favors trees, linked lists, and DP. Known problems: Reverse Linked List, Validate BST, Coin Change, Merge K Sorted Lists.',
+    Meta: 'Meta favors arrays, graphs, and recursion. Known problems: Clone Graph, Merge Intervals, Valid Parentheses, Subarray Sum Equals K.',
+    Apple: 'Apple favors clean OOP design, strings, and trees. Known problems: Design HashMap, Longest Palindromic Substring, Binary Tree Level Order.',
+    'Startup (General)': 'Startups favor practical problems: API design, data processing, and real-world scenarios.',
+    'MNC (General)': 'MNCs favor standard LeetCode Easy-Medium: Two Sum, FizzBuzz variants, basic sorting, SQL queries.',
+    'Service-based (TCS/Infosys/Wipro)': 'Service companies favor basic arrays, strings, pattern printing, and SQL. Focus on correctness over optimization.',
+  };
+  const companyPattern = COMPANY_LEETCODE_PATTERNS[targetCompany] || '';
 
-${resumeSection}
+  // ── Mode-specific generation instructions ───────────────────────────────
+  const modeInstructions: Record<InterviewMode, string> = {
+    dsa: isDataRole
+      ? `Generate ${count} DATA SCIENCE / ML coding problem(s) in ${codeLanguage}.
+- These are NOT LeetCode-style problems. They are practical data science tasks.
+- Use libraries: pandas, numpy, scikit-learn, scipy as appropriate
+- Topics to pick from (vary per question): data cleaning, feature engineering, statistical analysis, model evaluation, data aggregation, time series, NLP preprocessing, matrix operations
+- Each question MUST include: task description, sample input data (as dict/DataFrame), expected output, and constraints
+- Difficulty: ${difficulty} — ${difficulty === 'junior' ? 'basic pandas/numpy operations' : difficulty === 'mid' ? 'feature engineering + model evaluation' : 'advanced ML pipelines + optimization'}
+- Frame questions around real datasets (crop yield, sales data, customer churn, sentiment analysis, etc.)
+- Randomization token: ${sessionSeed.slice(0, 8)}`
+      : isFullStack
+      ? `Generate ${count} FULL STACK coding task(s) in ${codeLanguage}.
+- These are mini feature implementation tasks, not algorithm puzzles
+- Topics: REST API design, database queries, authentication logic, data validation, caching, state management
+- Each question MUST include: feature requirement, input/output spec, and what to implement
+- Difficulty: ${difficulty} — ${difficulty === 'junior' ? 'simple CRUD endpoint' : difficulty === 'mid' ? 'feature with auth + validation' : 'complex feature with caching + error handling'}
+- Randomization token: ${sessionSeed.slice(0, 8)}`
+      : `Generate ${count} LEETCODE-STYLE DSA coding problem(s) in ${codeLanguage}.
+- This session's topic focus: ${dsaTopics}
+${companyFocus.length ? `- ${targetCompany} typically asks: ${companyFocus.slice(0, 3).join(', ')}` : ''}
+${companyPattern ? `- Company pattern: ${companyPattern}` : ''}
+- Difficulty: ${difficulty} (${difficulty === 'junior' ? 'LeetCode Easy — Two Sum, Valid Parentheses, Reverse String level' : difficulty === 'mid' ? 'LeetCode Medium — LRU Cache, Number of Islands, Coin Change level' : difficulty === 'senior' ? 'LeetCode Hard — Trapping Rain Water, Word Ladder, Serialize Tree level' : 'LeetCode Hard+ — competitive programming variants'})
+- Each question MUST include: problem statement, function signature in ${codeLanguage}, input/output format, constraints, and 2 examples with expected output
+- Write problems similar to real LeetCode problems but NOT verbatim copies — create variants
+- If count > 1: Q1 = warmup (easier), Q2 = main challenge (harder)
+- Randomization token: ${sessionSeed.slice(0, 8)}`,
 
-Generate exactly ${count} interview question(s) for a ${difficulty} ${modeLabel} interview.
+    system_design: `Generate ${count} system design question(s).
+- This session's system: ${sdTopic}
+- Scale: specify concrete numbers (users, QPS, storage) appropriate for ${difficulty} level
+- Frame the design challenge from a ${targetRole}'s perspective${roleProfile ? ` — ${roleProfile.technicalContext}` : ''}
+- If candidate has relevant project experience, ask them to extend or compare their design to the system
+- ${difficulty === 'junior' ? 'Focus on basic components: API, DB, caching' : difficulty === 'mid' ? 'Include scalability, load balancing, DB sharding' : 'Include distributed systems, consistency models, failure modes'}
+- Randomization token: ${sessionSeed.slice(0, 8)}`,
 
-Rules:
-- Questions must match ${difficulty} difficulty precisely
-- ${resumeText?.trim()
-  ? `CRITICAL: You MUST read the resume/profile above carefully. Every question must reference something SPECIFIC from it — a project name, a technology they listed, a company they interned at, or a skill they mentioned. Do NOT ask generic questions that could apply to any candidate. If they listed a project called "X", ask about X specifically. If they used React, ask about their React experience specifically.`
-  : 'Use industry-standard questions for this role and difficulty level.'}
-- For DSA: include the actual problem statement with constraints and examples
-- For System Design: specify scale requirements (e.g., "design for 10M users")
-- For Behavioral: use STAR-eliciting phrasing ("Tell me about a time when...")
-- Questions must be progressively harder if count > 1
+    behavioral: `Generate ${count} behavioral question(s) using STAR format.
+- ${resumeText?.trim() ? 'CRITICAL: Each question MUST reference a specific project, internship, or experience from the profile above. Ask about challenges, decisions, or outcomes from those specific experiences.' : 'Use role-relevant behavioral scenarios for a ' + targetRole + '.'}
+- Competencies to probe for this role: ${roleProfile ? roleProfile.behavioralCompetencies.join(', ') : 'leadership, conflict resolution, technical decision-making, failure/learning, collaboration'}
+- Use phrasing like "Tell me about a time when..." or "Describe a situation where..."
+- Randomization token: ${sessionSeed.slice(0, 8)}`,
 
-Return ONLY valid JSON array:
+    project: `Generate ${count} project deep-dive question(s).
+- ${resumeText?.trim() ? 'Pick the most technically interesting project from the profile and ask deep technical questions about it — architecture decisions, trade-offs, scaling challenges, debugging stories.' : 'Ask about a hypothetical project relevant to ' + targetRole + '.'}
+- Probe specifically for ${targetRole} concerns: ${roleProfile ? roleProfile.technicalContext : 'architecture, trade-offs, and scalability'}
+- Go beyond surface level: ask WHY they made specific choices, what they would do differently, how they would scale it
+- Randomization token: ${sessionSeed.slice(0, 8)}`,
+
+    hr: `Generate ${count} HR/culture-fit question(s).
+- Tailor to ${targetCompany || 'a tech company'} culture and the ${targetRole} role specifically
+- Themes relevant to this role: ${roleProfile ? roleProfile.hrThemes.join(', ') : 'motivation, career goals, strengths/weaknesses, team fit, work style'}
+- ${resumeText?.trim() ? 'Reference their background (degree, internships, projects) to make questions specific to them.' : ''}
+- Avoid generic questions — make each one feel like it was written for a ${targetRole} at this company
+- Randomization token: ${sessionSeed.slice(0, 8)}`,
+  };
+
+  const prompt = `You are a ${difficulty}-level technical interviewer at ${targetCompany || 'a top tech company'} interviewing a ${targetRole} candidate.
+
+${profileSection}
+
+${roleContext}
+
+TASK: ${modeInstructions[mode]}
+
+STRICT RULES:
+1. Questions must be UNIQUE and SPECIFIC — not generic templates
+2. ${resumeText?.trim() ? 'Reference the candidate\'s actual projects/skills/experience by name in at least half the questions' : 'Make questions role-specific and difficulty-appropriate'}
+3. Each question should feel like it was written specifically for THIS candidate, THIS role, and THIS company
+4. For coding questions: write the COMPLETE problem statement with function signature in ${codeLanguage}
+5. If count > 1, questions MUST go from easier to harder — question 1 is the warmup, last is hardest
+6. For coding questions: include a CORRECT working model solution in ${codeLanguage} and 3 test cases
+
+Return ONLY a valid JSON array, no markdown, no explanation:
 [{
   "id": "unique-id",
-  "text": "full question text",
-  "topicTags": ["tag1", "tag2"],
+  "text": "complete question text with full problem statement, function signature, constraints, and 2+ examples",
+  "topicTags": ["specific topic", "subtopic"],
   "companyTags": ["${targetCompany || 'General'}"],
-  "expectedDurationSec": 180,
-  "followUpSeeds": ["follow-up seed 1", "follow-up seed 2"]
+  "expectedDurationSec": ${mode === 'dsa' ? 1200 : mode === 'system_design' ? 1500 : 180},
+  "followUpSeeds": ["specific follow-up 1", "specific follow-up 2"],
+  "progressionLevel": 1,
+  "modelSolution": "CORRECT working solution in ${codeLanguage} — must pass all test cases",
+  "testCases": "Input 1: ... → Expected: ...\\nInput 2: ... → Expected: ...\\nInput 3: ... → Expected: ..."
 }]`;
 
     const result = await model.generateContent(prompt);
-    const text = (await result.response).text().replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(text);
-    if (!Array.isArray(parsed)) throw new Error('Not array');
+    let text = (await result.response).text().replace(/```json|```/g, '').trim();
+
+    // Robust JSON extraction
+    text = text.replace(/[\x00-\x1F\x7F]/g, ' ');
+    const jsonStart = text.indexOf('[');
+    const jsonEnd = text.lastIndexOf(']');
+    if (jsonStart === -1 || jsonEnd === -1) throw new Error('No JSON array in response');
+
+    const parsed = JSON.parse(text.substring(jsonStart, jsonEnd + 1));
+    if (!Array.isArray(parsed)) throw new Error('Not an array');
 
     return parsed.map((q: any, i: number) => ({
       id: q.id || `${mode}-${Date.now()}-${i}`,
       text: q.text,
       mode, difficulty,
-      topicTags: q.topicTags || [mode],
-      companyTags: q.companyTags || [],
-      expectedDurationSec: q.expectedDurationSec || 180,
+      topicTags: q.topicTags || (mode === 'dsa' ? selectedTopicGroups[i % selectedTopicGroups.length] : [mode]),
+      companyTags: q.companyTags || (targetCompany ? [targetCompany] : []),
+      expectedDurationSec: q.expectedDurationSec || (mode === 'dsa' ? 1200 : mode === 'system_design' ? 1500 : 180),
       rubric,
       followUpSeeds: q.followUpSeeds || [],
       answerMethod: answerMethod as any,
+      progressionLevel: q.progressionLevel ?? (i + 1),
+      modelSolution: q.modelSolution || undefined,
+      testCases: q.testCases || undefined,
     }));
+
   } catch (err) {
-    console.error('generateInterviewQuestionsStructured failed:', err);
+    const error = err as Error;
+    console.error('[gemini.ts] generateInterviewQuestionsStructured failed:', error.message);
+    if (error.message?.includes('429')) console.warn('[gemini.ts] Rate limited — using fallback questions');
     return fallbackQuestions;
   }
 }
 
-function getFallbackQuestion(mode: InterviewMode, difficulty: Difficulty, index: number): string {
-  const banks: Record<InterviewMode, string[]> = {
-    dsa: [
-      'Given an array of integers, find two numbers that sum to a target value. Return their indices. Optimize for O(n) time.',
-      'Design an LRU Cache with O(1) get and put operations. Implement using a doubly linked list and hash map.',
-      'Given a binary tree, find the maximum path sum. The path may start and end at any node.',
-    ],
-    system_design: [
-      'Design a URL shortener like bit.ly. Handle 100M URLs, 10B redirects/day. Focus on scalability and low latency.',
-      'Design Twitter\'s news feed. 300M users, 500M tweets/day. Discuss fan-out strategies and caching.',
-      'Design a distributed rate limiter for an API gateway handling 1M requests/second.',
-    ],
-    behavioral: [
-      'Tell me about a time you had to deliver a project under a very tight deadline. What trade-offs did you make?',
-      'Describe a situation where you disagreed with your tech lead\'s architectural decision. How did you handle it?',
-      'Tell me about the most technically complex problem you\'ve solved. Walk me through your approach.',
-    ],
-    project: [
-      'Walk me through the architecture of your most complex project. Why did you choose that tech stack?',
-      'What was the hardest technical challenge in your main project? How did you debug and resolve it?',
-      'If you had to scale your project to 10x the current load, what would you change first?',
-    ],
-    hr: [
-      'Why are you interested in this role, and how does it align with your 3-year career goal?',
-      'What\'s your biggest technical weakness, and what are you actively doing to improve it?',
-      'Describe your ideal engineering team culture. What makes you thrive?',
-    ],
+// ── Fallback question banks (randomized per session) ─────────────────────────
+function getFallbackQuestion(mode: InterviewMode, difficulty: Difficulty, index: number, seed: string): string {
+  const banks: Record<InterviewMode, Record<Difficulty, string[]>> = {
+    dsa: {
+      junior: [
+        'Given an array of integers, find two numbers that sum to a target value. Return their indices. Optimize for O(n) time using a hash map.\nExample: nums = [2,7,11,15], target = 9 → [0,1]',
+        'Given a string, find the length of the longest substring without repeating characters.\nExample: "abcabcbb" → 3 ("abc")',
+        'Given a sorted array, remove duplicates in-place and return the new length.\nExample: [1,1,2] → 2, array becomes [1,2,_]',
+      ],
+      mid: [
+        'Design an LRU Cache with O(1) get and put operations. Implement using a doubly linked list and hash map. Support capacity-based eviction.',
+        'Given a list of intervals, merge all overlapping intervals and return the result.\nExample: [[1,3],[2,6],[8,10],[15,18]] → [[1,6],[8,10],[15,18]]',
+        'Given a binary tree, find the lowest common ancestor of two given nodes.',
+      ],
+      senior: [
+        'Given a binary tree, find the maximum path sum. The path may start and end at any node in the tree.\nExample: [-10,9,20,null,null,15,7] → 42',
+        'Implement a data structure that supports: insert(val), delete(val), getRandom() — all in O(1) average time.',
+        'Given n non-negative integers representing an elevation map, compute how much water it can trap after raining.',
+      ],
+      staff: [
+        'Design a data structure for a text editor that supports insert, delete, and undo/redo in O(log n) time.',
+        'Given a stream of integers, design a data structure that supports: add(num), findMedian() in O(log n) and O(1) respectively.',
+        'Implement a distributed consistent hash ring with virtual nodes. Support add/remove nodes with minimal key remapping.',
+      ],
+    },
+    system_design: {
+      junior: [
+        'Design a URL shortener like bit.ly. Handle 100M URLs, 10B redirects/day. Discuss: hashing strategy, DB schema, caching layer, and redirect latency.',
+        'Design a simple key-value store. Support get(key), put(key, value), delete(key). Discuss persistence, in-memory vs disk, and basic replication.',
+      ],
+      mid: [
+        'Design Twitter\'s news feed. 300M users, 500M tweets/day. Discuss: fan-out on write vs read, timeline generation, caching strategy, and eventual consistency.',
+        'Design a notification service that sends push, email, and SMS notifications. Handle 10M notifications/day with delivery guarantees.',
+      ],
+      senior: [
+        'Design YouTube\'s video upload and streaming pipeline. Handle 500 hours of video uploaded per minute. Discuss: transcoding, CDN, adaptive bitrate, and storage.',
+        'Design a real-time collaborative document editor (like Google Docs). Handle concurrent edits, conflict resolution (OT or CRDT), and offline sync.',
+      ],
+      staff: [
+        'Design a globally distributed database with multi-region writes. Discuss: consensus protocols, conflict resolution, CAP theorem trade-offs, and latency targets.',
+        'Design Google Search\'s indexing pipeline. Handle crawling, indexing, ranking, and serving 8.5B searches/day with <200ms p99 latency.',
+      ],
+    },
+    behavioral: {
+      junior: [
+        'Tell me about a time you had to learn a new technology quickly for a project. How did you approach it and what was the outcome?',
+        'Describe a situation where you received critical feedback on your code or work. How did you respond and what did you change?',
+        'Tell me about a project you\'re most proud of. What was your specific contribution and what impact did it have?',
+      ],
+      mid: [
+        'Tell me about a time you had to deliver a project under a very tight deadline. What trade-offs did you make and would you make them again?',
+        'Describe a situation where you disagreed with a technical decision made by your team or lead. How did you handle it?',
+        'Tell me about the most technically complex problem you\'ve solved. Walk me through your debugging process and solution.',
+      ],
+      senior: [
+        'Tell me about a time you had to make a significant architectural decision with incomplete information. What was your process and outcome?',
+        'Describe a situation where you had to influence a technical direction without direct authority. How did you build consensus?',
+        'Tell me about a time a system you owned failed in production. Walk me through your incident response and what you changed afterward.',
+      ],
+      staff: [
+        'Tell me about a time you drove a major technical initiative that spanned multiple teams. How did you align stakeholders and measure success?',
+        'Describe a situation where you had to deprecate or migrate a critical system with zero downtime. What was your strategy?',
+        'Tell me about a time you identified a systemic engineering problem in your organization and drove the solution.',
+      ],
+    },
+    project: {
+      junior: [
+        'Walk me through the architecture of your most complex project. Why did you choose that tech stack over alternatives?',
+        'What was the hardest bug you encountered in your main project? How did you debug and resolve it?',
+      ],
+      mid: [
+        'Walk me through the architecture of your most complex project. What were the key design decisions and trade-offs you made?',
+        'If you had to scale your main project to 10x the current load, what would you change first and why?',
+      ],
+      senior: [
+        'Walk me through the most architecturally complex system you\'ve built. What were the hardest distributed systems challenges you faced?',
+        'Tell me about a time you had to refactor a large codebase or migrate a critical system. What was your strategy and how did you minimize risk?',
+      ],
+      staff: [
+        'Describe the most impactful technical system you\'ve designed. How did you balance short-term delivery with long-term maintainability?',
+        'Walk me through a platform or infrastructure decision you made that affected multiple teams. How did you evaluate the trade-offs?',
+      ],
+    },
+    hr: {
+      junior: [
+        'Why are you interested in this role, and how does it connect to your career goals for the next 2-3 years?',
+        'What\'s a technical skill you\'re actively working to improve right now? What\'s your learning approach?',
+        'How do you prefer to receive feedback, and can you give an example of feedback that changed how you work?',
+      ],
+      mid: [
+        'Where do you see yourself in 3-5 years, and how does this role fit into that path?',
+        'What\'s your biggest technical weakness, and what concrete steps are you taking to address it?',
+        'Describe your ideal engineering team culture. What environment helps you do your best work?',
+      ],
+      senior: [
+        'How do you balance technical excellence with shipping velocity? Give a specific example of a trade-off you navigated.',
+        'What\'s your philosophy on technical debt? How do you decide when to pay it down vs. ship new features?',
+        'How do you approach mentoring junior engineers? What\'s the most impactful thing you\'ve done to grow someone on your team?',
+      ],
+      staff: [
+        'How do you define engineering excellence at the staff level? How do you raise the bar across an organization?',
+        'Describe your approach to building technical strategy. How do you align engineering direction with business goals?',
+        'What\'s the most important lesson you\'ve learned about leading large-scale technical change?',
+      ],
+    },
   };
-  const list = banks[mode];
-  return list[index % list.length];
+
+  const modeBank = banks[mode];
+  const diffBank = modeBank[difficulty] ?? modeBank.mid;
+  // Use seed to pick a random starting offset so same difficulty doesn't always give Q1
+  const offset = Math.abs(seed.charCodeAt(0) + seed.charCodeAt(1)) % diffBank.length;
+  return diffBank[(index + offset) % diffBank.length];
 }
 
 export async function evaluateAnswerWithRubric(params: {
@@ -729,27 +1120,38 @@ export async function evaluateAnswerWithRubric(params: {
   const { question, answer, codeSubmission, codeOutput, mode, difficulty, resumeContext } = params;
 
   const wordCount = answer?.trim().split(/\s+/).filter(Boolean).length || 0;
-  const hasCode = !!codeSubmission?.trim();
-  const isEmpty = wordCount === 0 && !hasCode;
-  const isTooShort = wordCount < 10 && !hasCode;
+  const hasCode = !!(codeSubmission?.trim());
+  const hasVoice = wordCount >= 5;
 
-  // Honest fallback — empty = 0, too short = 1-2, no API key = honest low score
+  // For DSA: code IS the primary answer — only fall back if both are missing
+  const isDSA = mode === 'dsa';
+  const isEmpty = isDSA ? (!hasCode && !hasVoice) : (wordCount === 0);
+  // Too short: for DSA only if no code at all; for others if < 10 words
+  const isTooShort = isDSA ? false : (wordCount < 10);
+
   const emptyFallback: QuestionEvaluation = {
     questionId: question.id,
     answer,
     answerMethod: question.answerMethod,
     codeSubmission,
     durationSec: 0,
-    rubricScores: question.rubric.map(r => ({ criterion: r.criterion, score: isEmpty ? 0 : 1, rationale: isEmpty ? 'No answer provided.' : 'Answer too brief to evaluate meaningfully.', quote: undefined })),
+    rubricScores: question.rubric.map(r => ({
+      criterion: r.criterion,
+      score: isEmpty ? 0 : 1,
+      rationale: isEmpty ? 'No answer provided.' : 'Answer too brief to evaluate meaningfully.',
+      quote: undefined,
+    })),
     overallScore: isEmpty ? 0 : 1,
     technicalDepthScore: 0,
     strengths: isEmpty ? ['Attempted to start the interview.'] : ['Provided a very brief response.'],
     improvements: [
-      'Provide a complete, structured answer.',
+      isDSA ? 'Write actual code — even a brute-force solution is better than nothing.' : 'Provide a complete, structured answer.',
       'Explain your reasoning step by step.',
       'Include concrete examples from your experience.',
     ],
-    modelAnswer: 'A strong answer would directly address the question with technical depth, concrete examples, and clear reasoning.',
+    modelAnswer: question.modelSolution
+      ? `Reference solution:\n${question.modelSolution}`
+      : 'A strong answer would directly address the question with technical depth, concrete examples, and clear reasoning.',
     hireSignal: 'strong_no',
   };
 
@@ -760,50 +1162,95 @@ export async function evaluateAnswerWithRubric(params: {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const rubricText = question.rubric.map(r => `- ${r.criterion} (${Math.round(r.weight * 100)}%): ${r.description}`).join('\n');
 
-    const prompt = `You are a strict senior ${difficulty} engineer conducting a real interview. Your job is to evaluate this answer HONESTLY — not to encourage the candidate.
+    // Build code section — include output and model solution for comparison
+    let codeSection = '';
+    if (hasCode) {
+      codeSection = `
+CANDIDATE CODE (${codeSubmission!.split('\n').length} lines):
+\`\`\`
+${codeSubmission!.slice(0, 3000)}
+\`\`\`
+CODE EXECUTION OUTPUT: ${codeOutput?.trim() || 'Not executed / no output'}`;
 
-QUESTION: ${question.text}
+      if (question.modelSolution) {
+        codeSection += `
 
-RUBRIC (score each criterion 0–10):
+REFERENCE SOLUTION (for correctness comparison only — do not reveal to candidate):
+\`\`\`
+${question.modelSolution.slice(0, 2000)}
+\`\`\``;
+      }
+      if (question.testCases) {
+        codeSection += `
+
+TEST CASES:
+${question.testCases}`;
+      }
+    }
+
+    const prompt = `You are a strict ${difficulty}-level technical interviewer. Evaluate this answer HONESTLY and ACCURATELY.
+
+QUESTION:
+${question.text}
+
+RUBRIC (score each 0–10):
 ${rubricText}
 
-CANDIDATE ANSWER (${wordCount} words):
-"${answer.slice(0, 2000)}"
-${codeSubmission ? `\nCANDIDATE CODE:\n${codeSubmission}\n\nCODE OUTPUT:\n${codeOutput || 'Not executed'}` : ''}
-${resumeContext ? `\nRESUME CONTEXT: ${resumeContext.slice(0, 400)}` : ''}
+${wordCount > 0 ? `CANDIDATE VERBAL ANSWER (${wordCount} words):\n"${answer.slice(0, 2000)}"` : 'No verbal answer provided.'}
+${codeSection}
+${resumeContext ? `\nCANDIDATE BACKGROUND: ${resumeContext.slice(0, 300)}` : ''}
 
-STRICT SCORING RULES:
-- A one-liner or name mention = 1–2 out of 10. Do NOT give 5 for minimal effort.
-- Mentioning a project name without explaining it = 2–3 out of 10.
-- A partial answer missing key concepts = 3–5 out of 10.
-- A complete answer with examples but missing depth = 6–7 out of 10.
-- A thorough answer with trade-offs and examples = 8–9 out of 10.
-- An exceptional answer covering edge cases and alternatives = 10 out of 10.
-- If the answer is off-topic or irrelevant = 0–1 out of 10.
-- NEVER give 5 as a default. Score based on actual content quality.
+EVALUATION RULES:
+${isDSA ? `
+DSA-SPECIFIC RULES:
+- The CODE is the primary answer. Evaluate correctness by comparing logic to the reference solution and test cases.
+- If code output matches expected output → Correctness score 8–10
+- If code has the right approach but minor bugs → Correctness score 5–7
+- If code is completely wrong approach → Correctness score 0–3
+- If no code submitted → Correctness score 0, Code Quality score 0
+- "Hello" or placeholder text as verbal answer is fine if the code is correct — do NOT penalize verbal for DSA
+- Score Algorithm Choice based on time/space complexity of their approach vs optimal
+- Score Complexity Analysis based on whether they explained Big-O (in code comments or verbal)
+` : `
+GENERAL RULES:
+- A one-liner or name mention = 1–2. Do NOT give 5 for minimal effort.
+- A partial answer missing key concepts = 3–5.
+- A complete answer with examples but missing depth = 6–7.
+- A thorough answer with trade-offs and examples = 8–9.
+- An exceptional answer = 10.
+- Off-topic or irrelevant = 0–1.
+`}
+- NEVER give 5 as a default. Score based on actual content.
+- Strengths and improvements must reference SPECIFIC things from their answer/code, not generic phrases.
 
-Return ONLY valid JSON (no markdown, no preamble):
+Return ONLY valid JSON (no markdown):
 {
   "rubricScores": [
-    { "criterion": "exact criterion name", "score": 0-10, "rationale": "1 specific sentence referencing what they said", "quote": "exact quote from answer or null" }
+    { "criterion": "exact criterion name", "score": 0-10, "rationale": "1 specific sentence about what they did or missed", "quote": "exact quote from answer/code or null" }
   ],
   "overallScore": 0-10,
   "technicalDepthScore": 0-10,
-  "strengths": ["specific strength referencing actual content — not generic praise"],
-  "improvements": ["specific actionable improvement — what exactly was missing"],
-  "modelAnswer": "What a strong ${difficulty} answer looks like — 100-150 words, concrete and specific",
-  "followUpQuestion": "One follow-up question probing the weakest part of their answer, or null if score >= 8",
+  "strengths": ["specific strength with evidence from their answer"],
+  "improvements": ["specific actionable improvement — what exactly was missing or wrong"],
+  "modelAnswer": "What a strong ${difficulty} answer looks like — 100-150 words, concrete and specific${isDSA ? ', include the optimal approach and complexity' : ''}",
+  "codeCorrectness": ${isDSA ? '"correct|partial|incorrect|not_submitted"' : 'null'},
+  "followUpQuestion": "One follow-up probing the weakest part, or null if score >= 8",
   "hireSignal": "strong_yes|yes|lean_yes|no|strong_no"
 }`;
 
     const result = await model.generateContent(prompt);
-    const text = (await result.response).text().replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(text);
+    const raw = (await result.response).text().replace(/```json|```/g, '').trim();
 
-    // Sanity check: if Gemini returns 5 for a one-liner, override it
+    // Robust JSON parse
+    const jsonStart = raw.indexOf('{');
+    const jsonEnd = raw.lastIndexOf('}');
+    if (jsonStart === -1 || jsonEnd === -1) throw new Error('No JSON in response');
+    const parsed = JSON.parse(raw.substring(jsonStart, jsonEnd + 1));
+
+    // Score sanity: don't let AI give high scores for trivially short verbal answers on non-DSA
     let overallScore = parsed.overallScore ?? 3;
-    if (wordCount < 20 && overallScore > 3) overallScore = Math.min(overallScore, 3);
-    if (wordCount < 5 && overallScore > 1) overallScore = 1;
+    if (!isDSA && wordCount < 20 && overallScore > 3) overallScore = Math.min(overallScore, 3);
+    if (!isDSA && wordCount < 5 && overallScore > 1) overallScore = 1;
 
     return {
       questionId: question.id,
@@ -814,8 +1261,8 @@ Return ONLY valid JSON (no markdown, no preamble):
       rubricScores: parsed.rubricScores || emptyFallback.rubricScores,
       overallScore,
       technicalDepthScore: parsed.technicalDepthScore ?? Math.min(overallScore, 5),
-      strengths: parsed.strengths || emptyFallback.strengths,
-      improvements: parsed.improvements || emptyFallback.improvements,
+      strengths: parsed.strengths?.length ? parsed.strengths : emptyFallback.strengths,
+      improvements: parsed.improvements?.length ? parsed.improvements : emptyFallback.improvements,
       modelAnswer: parsed.modelAnswer || emptyFallback.modelAnswer,
       followUpQuestion: parsed.followUpQuestion || undefined,
       hireSignal: parsed.hireSignal || 'no',
