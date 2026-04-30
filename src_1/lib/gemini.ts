@@ -963,7 +963,13 @@ Return ONLY a valid JSON array, no markdown, no explanation:
     let text = (await result.response).text().replace(/```json|```/g, '').trim();
 
     // Robust JSON extraction
-    text = text.replace(/[\x00-\x1F\x7F]/g, ' ');
+    text = text
+      .split('')
+      .map((char) => {
+        const code = char.charCodeAt(0);
+        return code < 32 || code === 127 ? ' ' : char;
+      })
+      .join('');
     const jsonStart = text.indexOf('[');
     const jsonEnd = text.lastIndexOf(']');
     if (jsonStart === -1 || jsonEnd === -1) throw new Error('No JSON array in response');

@@ -103,13 +103,26 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
+@app.get("/")
+def read_root():
+    return {
+        "status": "online",
+        "message": "Campus2Career AI Engine is live! Deployment successful.",
+        "endpoints": ["/health", "/ping", "/api/ai", "/api/generate-roadmap", "/api/run-code", "/api/analyze-resume"]
+    }
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.get("/ping")
+def ping():
+    """Heartbeat endpoint to keep the service awake on free tier"""
+    return {"status": "alive", "timestamp": time.time()}
 
 # ── AI Proxy endpoint — keeps API key server-side ─────────────────────────────
 class AIProxyRequest(BaseModel):
@@ -379,6 +392,53 @@ async def evaluate_interview_answer(req: InterviewEvaluationRequest):
             "improvements": ["Analysis failed partially"],
             "suggestedAnswer": "Please review the fundamentals of the topic."
         }
+
+
+# ── OneCompiler proxy — keeps API key server-side, avoids browser CORS ────────
+ONECOMPILER_API_KEY = os.getenv("ONECOMPILER_API_KEY", "")
+ONECOMPILER_URL = "https://api.onecompiler.com/v1/run"
+
+class CodeFile(BaseModel):
+    name: str
+    content: str
+
+class CodeRunRequest(BaseModel):
+    language: str
+    stdin: str = ""
+    files: List[CodeFile]
+
+@app.post("/api/run-code")
+async def run_code(req: CodeRunRequest, request: Request):
+    client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
+    check_rate_limit(client_ip.split(",")[0].strip())
+
+    if not ONECOMPILER_API_KEY:
+        raise HTTPException(status_code=503, detail="Code execution service not configured")
+
+    try:
+        response = requests.post(
+            ONECOMPILER_URL,
+            headers={
+                "Content-Type": "application/json",
+                "X-API-Key": ONECOMPILER_API_KEY,
+            },
+            json={
+                "language": req.language,
+                "stdin": req.stdin,
+                "files": [{"name": f.name, "content": f.content} for f in req.files],
+            },
+            timeout=30,
+        )
+
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=f"OneCompiler error: {response.text}")
+
+        return response.json()
+
+    except requests.Timeout:
+        raise HTTPException(status_code=504, detail="Code execution timed out")
+    except requests.RequestException as e:
+        raise HTTPException(status_code=502, detail=f"Code execution service unavailable: {str(e)}")
 
 
 class ResumeAnalysisRequest(BaseModel):

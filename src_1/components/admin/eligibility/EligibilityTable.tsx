@@ -25,7 +25,7 @@ export const EligibilityTable: React.FC<EligibilityTableProps> = ({
 }) => {
 
     const { user } = useAuth();
-    const canManageRules = hasPermission(user, 'manage_drives');
+    const canManageRules = hasPermission(user, 'approve_eligibility');
 
     const handleSort = (field: EligibilitySortField) => onSort(field);
 
@@ -150,11 +150,7 @@ export const EligibilityTable: React.FC<EligibilityTableProps> = ({
                                         <div className="flex items-center justify-start gap-4 text-xs font-medium">
                                             <div className="flex items-center gap-1">
                                                 <span className="w-2 h-2 rounded-full bg-slate-500"></span>
-                                                <span className="text-foreground">Active Bt.: {rule.maxActiveBacklogs}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <span className="w-2 h-2 rounded-full bg-slate-500"></span>
-                                                <span className="text-foreground">Active Bt.: {rule.maxActiveBacklogs ?? 0}</span>
+                                                <span className="text-foreground">Active Bk.: {rule.maxActiveBacklogs ?? 0}</span>
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <span className="w-2 h-2 rounded-full bg-slate-600"></span>

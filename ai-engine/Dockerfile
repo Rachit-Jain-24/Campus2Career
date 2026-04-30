@@ -15,4 +15,7 @@ USER appuser
 
 EXPOSE 8080
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "2"]
+# Use shell form of CMD to allow environment variable expansion
+# Hugging Face Spaces defaults to 7860
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-7860} --workers 2
+

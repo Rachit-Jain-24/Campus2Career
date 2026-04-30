@@ -1,8 +1,92 @@
 /**
- * Longitudinal 4-Year Semester-Wise Roadmap Generator
- * Creates a comprehensive journey from Semester 1 to Semester 8
- * with role-specific milestones and academic alignment
+ * Determines the current academic semester based on the real calendar date.
+ *
+ * NMIMS semester schedule:
+ *   Odd  semesters (1,3,5,7): July – December
+ *   Even semesters (2,4,6,8): January – May
+ *
+ * @param enrollmentYear  The calendar year the student joined (e.g. 2022 for batch 2022-26)
+ * @param currentYear     The student's academic year (1-4)
  */
+export function getCurrentSemesterFromDate(enrollmentYear: number, currentYear: number): {
+    semester: number;
+    phase: 'mid-semester' | 'exam-period' | 'break' | 'start';
+    monthsRemaining: number;
+    semesterLabel: string;
+    semesterStart: Date;
+    semesterEnd: Date;
+} {
+    const now = new Date();
+    const month = now.getMonth() + 1; // 1-12
+    const year  = now.getFullYear();
+
+    // Determine which academic year we're in based on enrollment
+    const academicYearOffset = year - enrollmentYear;
+
+    // Odd semester: July(7) – December(12)
+    // Even semester: January(1) – May(5)
+    // June is break between even end and odd start
+    // December 15 – January 15 is exam/break period
+
+    let semesterNumber: number;
+    let semesterStart: Date;
+    let semesterEnd: Date;
+    let phase: 'mid-semester' | 'exam-period' | 'break' | 'start';
+
+    if (month >= 7 && month <= 12) {
+        // Odd semester of current academic year
+        const oddYear = academicYearOffset + 1; // academic year 1-4
+        semesterNumber = (Math.min(oddYear, 4) - 1) * 2 + 1;
+        semesterStart  = new Date(year, 6, 1);   // July 1
+        semesterEnd    = new Date(year, 11, 31);  // Dec 31
+
+        if (month >= 7 && month <= 7)       phase = 'start';
+        else if (month >= 11 && month <= 12) phase = 'exam-period';
+        else                                 phase = 'mid-semester';
+    } else if (month >= 1 && month <= 5) {
+        // Even semester of previous academic year's odd semester
+        const evenYear = academicYearOffset; // academic year 1-4
+        semesterNumber = (Math.min(Math.max(evenYear, 1), 4) - 1) * 2 + 2;
+        semesterStart  = new Date(year, 0, 1);  // Jan 1
+        semesterEnd    = new Date(year, 4, 31); // May 31
+
+        if (month === 1)                     phase = 'start';
+        else if (month >= 4 && month <= 5)   phase = 'exam-period';
+        else                                 phase = 'mid-semester';
+    } else {
+        // June — summer break
+        const nextOddYear = academicYearOffset + 1;
+        semesterNumber = (Math.min(nextOddYear, 4) - 1) * 2 + 1;
+        semesterStart  = new Date(year, 6, 1);
+        semesterEnd    = new Date(year, 11, 31);
+        phase          = 'break';
+    }
+
+    // Clamp to valid range
+    semesterNumber = Math.min(Math.max(semesterNumber, 1), 8);
+
+    // Months remaining in current semester
+    const endMs = semesterEnd.getTime() - now.getTime();
+    const monthsRemaining = Math.max(0, Math.round(endMs / (1000 * 60 * 60 * 24 * 30)));
+
+    const semesterLabel = `Semester ${semesterNumber} · ${
+        month >= 7 ? `Jul ${year} – Dec ${year}` : `Jan ${year} – May ${year}`
+    }`;
+
+    return { semester: semesterNumber, phase, monthsRemaining, semesterLabel, semesterStart, semesterEnd };
+}
+
+/**
+ * Returns a human-readable phase description for display in the UI.
+ */
+export function getSemesterPhaseLabel(phase: 'mid-semester' | 'exam-period' | 'break' | 'start'): string {
+    switch (phase) {
+        case 'start':        return 'Semester just started — set your goals now';
+        case 'mid-semester': return 'Mid-semester — stay on track';
+        case 'exam-period':  return 'Exam period — focus on academics';
+        case 'break':        return 'Summer break — great time to build projects';
+    }
+}
 
 export interface SemesterPlan {
     semester: number;

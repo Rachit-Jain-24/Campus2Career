@@ -10,7 +10,7 @@ import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { generateIntelligentRoadmap, type IntelligentRoadmap } from '../../lib/roadmapGenerator';
-import { generateLongitudinalRoadmap, type LongitudinalRoadmap, type SemesterPlan } from '../../lib/longitudinalRoadmap';
+import { generateLongitudinalRoadmap, getCurrentSemesterFromDate, getSemesterPhaseLabel, type LongitudinalRoadmap, type SemesterPlan } from '../../lib/longitudinalRoadmap';
 import { generateSyllabusRoadmap } from '../../lib/gemini';
 import { uploadSyllabusPDF, getSyllabusRecord, type SyllabusRecord } from '../../services/student/syllabus.service';
 import { extractTextFromLocalPDF } from '../../lib/pdfParser';

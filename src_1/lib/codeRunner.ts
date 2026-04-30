@@ -3,9 +3,8 @@
  *
  * Execution strategy:
  * 1. JavaScript/TypeScript → browser sandbox (instant, no API)
- * 2. Python → Pyodide (Python via WebAssembly, runs in browser, no API)
- * 3. Java/C++/Go/etc. → Judge0 CE via RapidAPI (if key configured)
- * 4. Fallback → smart mock with code analysis
+ * 2. All other languages → OneCompiler API (Python, Java, C++, Go, etc.)
+ * 3. Fallback → smart mock with code analysis
  */
 
 export interface CodeRunResult {
@@ -14,163 +13,72 @@ export interface CodeRunResult {
   status: 'Accepted' | 'Error' | 'Timeout' | 'Mock';
   timeMs: number;
   isMock: boolean;
+  executionTime?: number; // OneCompiler execution time in ms
+  memoryUsed?: number;    // Memory used in KB
 }
 
-// ─── Pyodide (Python in browser via WASM) ────────────────────────────────────
-declare global {
-  interface Window {
-    loadPyodide?: (opts: { indexURL: string }) => Promise<PyodideInstance>;
-    _pyodideInstance?: PyodideInstance;
-    _pyodideLoading?: Promise<PyodideInstance>;
-  }
-}
-
-interface PyodideInstance {
-  runPythonAsync: (code: string) => Promise<unknown>;
-  globals: { get: (key: string) => unknown };
-  loadPackagesFromImports: (code: string) => Promise<void>;
-}
-
-const PYODIDE_CDN = 'https://cdn.jsdelivr.net/pyodide/v0.27.5/full/';
-
-async function getPyodide(): Promise<PyodideInstance> {
-  if (window._pyodideInstance) return window._pyodideInstance;
-
-  // Deduplicate concurrent load requests
-  if (window._pyodideLoading) return window._pyodideLoading;
-
-  window._pyodideLoading = (async () => {
-    // Inject the Pyodide loader script if not already present
-    if (!window.loadPyodide) {
-      await new Promise<void>((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = `${PYODIDE_CDN}pyodide.js`;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Failed to load Pyodide script'));
-        document.head.appendChild(script);
-      });
-    }
-
-    const pyodide = await window.loadPyodide!({ indexURL: PYODIDE_CDN });
-    window._pyodideInstance = pyodide;
-    return pyodide;
-  })();
-
-  return window._pyodideLoading;
-}
-
-// Packages bundled natively in Pyodide — no micropip needed
-const PYODIDE_BUILTIN_PACKAGES = new Set([
-  'numpy', 'pandas', 'matplotlib', 'scipy', 'scikit-learn', 'sklearn',
-  'pillow', 'pil', 'cryptography', 'lxml', 'regex', 'pytz', 'dateutil',
-  'attrs', 'six', 'packaging', 'pyparsing', 'cycler', 'kiwisolver',
-  'networkx', 'sympy', 'mpmath', 'statsmodels', 'patsy',
-]);
-
-// Map import names → pyodide/micropip package names
-const PACKAGE_NAME_MAP: Record<string, string> = {
-  sklearn: 'scikit-learn',
-  cv2: 'opencv-python',
-  PIL: 'pillow',
-  bs4: 'beautifulsoup4',
-  dateutil: 'python-dateutil',
+// Judge0 Language IDs
+const JUDGE0_LANGUAGES: Record<string, number> = {
+  python: 71,
+  python3: 71,
+  java: 62,
+  cpp: 54,
+  c: 50,
+  go: 60,
+  rust: 73,
+  ruby: 72,
+  php: 68,
+  csharp: 51,
+  swift: 83,
+  bash: 46,
+  sql: 82,
 };
 
-/** Extract top-level import names from Python source */
-function extractImports(code: string): string[] {
-  const names = new Set<string>();
-  const importRe = /^\s*import\s+([\w,\s]+)/gm;
-  const fromRe = /^\s*from\s+(\w+)/gm;
-  let m;
-  while ((m = importRe.exec(code)) !== null)
-    m[1].split(',').forEach(s => names.add(s.trim().split(' ')[0]));
-  while ((m = fromRe.exec(code)) !== null)
-    names.add(m[1].trim());
-  return [...names].filter(n => n && !['sys', 'os', 'io', 're', 'math', 'json',
-    'time', 'datetime', 'collections', 'itertools', 'functools', 'typing',
-    'abc', 'copy', 'random', 'string', 'pathlib', 'enum', 'dataclasses'].includes(n));
-}
+async function executeWithJudge0(
+  code: string,
+  language: string,
+  stdin: string,
+  startTime: number,
+): Promise<CodeRunResult> {
+  const languageId = JUDGE0_LANGUAGES[language];
+  if (!languageId) return createSmartMock(code, language, startTime);
 
-async function executePython(code: string, startTime: number): Promise<CodeRunResult> {
   try {
-    const pyodide = await getPyodide();
+    const response = await fetch('https://ce.judge0.com/submissions?base64_encoded=false&wait=true', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        language_id: languageId,
+        source_code: code,
+        stdin: stdin || '',
+      }),
+    });
 
-    // Auto-install any imported packages not already available
-    const imports = extractImports(code);
-    if (imports.length > 0) {
-      const toInstall = imports
-        .map(name => PACKAGE_NAME_MAP[name] ?? name)
-        .filter(pkg => PYODIDE_BUILTIN_PACKAGES.has(pkg.toLowerCase()) || PYODIDE_BUILTIN_PACKAGES.has(pkg));
-
-      // Try loadPackage for known Pyodide packages first (faster, no network)
-      if (toInstall.length > 0) {
-        try {
-          await (pyodide as any).loadPackagesFromImports(code);
-        } catch { /* ignore — micropip will handle it */ }
-      }
-
-      // micropip for anything else
-      const unknown = imports
-        .map(name => PACKAGE_NAME_MAP[name] ?? name)
-        .filter(pkg => !PYODIDE_BUILTIN_PACKAGES.has(pkg.toLowerCase()));
-      if (unknown.length > 0) {
-        try {
-          await pyodide.runPythonAsync(`
-import micropip
-import asyncio
-async def _install():
-    for pkg in ${JSON.stringify(unknown)}:
-        try:
-            await micropip.install(pkg)
-        except Exception:
-            pass
-await _install()
-`);
-        } catch { /* best-effort */ }
-      }
+    if (!response.ok) {
+      // API might be down or rate limited, fallback to mock
+      return createSmartMock(code, language, startTime);
     }
 
-    // Capture stdout/stderr
-    const wrappedCode = `
-import sys, io
-_out = io.StringIO()
-_err = io.StringIO()
-sys.stdout = _out
-sys.stderr = _err
-_exec_error = None
-try:
-${code.split('\n').map(l => '    ' + l).join('\n')}
-except Exception as _e:
-    _exec_error = str(_e)
-finally:
-    sys.stdout = sys.__stdout__
-    sys.stderr = sys.__stderr__
-_captured_out = _out.getvalue()
-_captured_err = _err.getvalue()
-if _exec_error:
-    _captured_err = (_captured_err + '\\n' + _exec_error).strip()
-`;
+    const result = await response.json();
 
-    await pyodide.runPythonAsync(wrappedCode);
-
-    const stdout = String(pyodide.globals.get('_captured_out') ?? '');
-    const stderr = String(pyodide.globals.get('_captured_err') ?? '');
+    // Judge0 status ids: 3 is Accepted
+    const isError = result.status?.id !== 3;
+    const stderr = result.stderr || result.compile_output || (isError ? result.status?.description : '');
 
     return {
-      stdout,
-      stderr,
-      status: stderr ? 'Error' : 'Accepted',
+      stdout: result.stdout || '',
+      stderr: stderr || '',
+      status: isError ? 'Error' : 'Accepted',
       timeMs: Date.now() - startTime,
       isMock: false,
+      executionTime: result.time ? parseFloat(result.time) * 1000 : undefined,
+      memoryUsed: result.memory, // in KB
     };
   } catch (err) {
-    return {
-      stdout: '',
-      stderr: err instanceof Error ? err.message : String(err),
-      status: 'Error',
-      timeMs: Date.now() - startTime,
-      isMock: false,
-    };
+    // Network error
+    return createSmartMock(code, language, startTime);
   }
 }
 
@@ -224,69 +132,7 @@ function executeInBrowser(code: string, startTime: number): CodeRunResult {
   }
 }
 
-// ─── Judge0 CE (compiled languages) ──────────────────────────────────────────
-// Language IDs: https://ce.judge0.com/languages/
-const JUDGE0_LANGUAGE_IDS: Record<string, number> = {
-  java: 62,
-  cpp: 54,
-  c: 50,
-  go: 60,
-  rust: 73,
-  ruby: 72,
-  php: 68,
-  csharp: 51,
-};
 
-async function executeWithJudge0(
-  code: string,
-  language: string,
-  stdin: string,
-  startTime: number,
-): Promise<CodeRunResult> {
-  const langId = JUDGE0_LANGUAGE_IDS[language];
-  if (!langId) return createSmartMock(code, language, startTime);
-
-  const apiKey = import.meta.env.VITE_JUDGE0_API_KEY as string | undefined;
-  const baseUrl = (import.meta.env.VITE_JUDGE0_BASE_URL as string | undefined)
-    || 'https://judge0-ce.p.rapidapi.com';
-  const host = (import.meta.env.VITE_JUDGE0_HOST as string | undefined)
-    || 'judge0-ce.p.rapidapi.com';
-
-  if (!apiKey) return createSmartMock(code, language, startTime);
-
-  try {
-    // Submit
-    const submitRes = await fetch(`${baseUrl}/submissions?base64_encoded=false&wait=true`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-RapidAPI-Key': apiKey,
-        'X-RapidAPI-Host': host,
-      },
-      body: JSON.stringify({
-        source_code: code,
-        language_id: langId,
-        stdin,
-      }),
-    });
-
-    if (!submitRes.ok) return createSmartMock(code, language, startTime);
-
-    const result = await submitRes.json();
-    const stdout = result.stdout ?? '';
-    const stderr = (result.stderr ?? '') + (result.compile_output ?? '');
-
-    return {
-      stdout,
-      stderr,
-      status: result.status?.id === 3 ? 'Accepted' : stderr ? 'Error' : 'Accepted',
-      timeMs: Date.now() - startTime,
-      isMock: false,
-    };
-  } catch {
-    return createSmartMock(code, language, startTime);
-  }
-}
 
 // ─── Smart mock fallback ──────────────────────────────────────────────────────
 function createSmartMock(code: string, language: string, startTime: number): CodeRunResult {
@@ -318,7 +164,7 @@ function createSmartMock(code: string, language: string, startTime: number): Cod
   }
 
   return {
-    stdout: `[Mock - ${language}]\n\nCode Analysis:\n- ${lines.length} lines of code\n- Syntax appears valid\n\nTo run ${language} code, a Judge0 API key is needed.\nAdd VITE_JUDGE0_API_KEY to your .env file.`,
+    stdout: `[Mock - ${language}]\n\nCode Analysis:\n- ${lines.length} lines of code\n- Syntax appears valid\n\nNote: The live code execution service is currently unavailable.\nThis is a mock response analyzing your code structure.`,
     stderr: '',
     status: 'Mock',
     timeMs: Date.now() - startTime,
@@ -331,17 +177,35 @@ export async function runCode(code: string, language: string, stdin = ''): Promi
   const startTime = Date.now();
   const lang = language.toLowerCase();
 
+  // JavaScript/TypeScript run in browser sandbox (instant, no API needed)
   if (lang === 'javascript' || lang === 'typescript') {
     return executeInBrowser(code, startTime);
   }
 
-  if (lang === 'python') {
-    return executePython(code, startTime);
-  }
-
+  // All other languages use Judge0 API
   return executeWithJudge0(code, lang, stdin, startTime);
 }
 
 export function getSupportedLanguages(): string[] {
-  return ['python', 'javascript', 'typescript', 'java', 'cpp', 'c', 'go', 'rust', 'ruby', 'php', 'csharp'];
+  return [
+    'python',
+    'javascript',
+    'typescript',
+    'java',
+    'cpp',
+    'c',
+    'go',
+    'rust',
+    'ruby',
+    'php',
+    'csharp',
+    'kotlin',
+    'swift',
+    'scala',
+    'perl',
+    'r',
+    'lua',
+    'haskell',
+    'bash',
+  ];
 }

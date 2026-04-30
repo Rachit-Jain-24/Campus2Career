@@ -1,0 +1,125 @@
+# Campus2Career — Presentation Slides Content
+
+## Slide 1: Title Slide
+**Title:** Campus2Career (Virtual Placement Assistant)
+**Subtitle:** An AI-Powered Career Guidance & Placement Management Platform
+**Presented by:** Rachit Jain, Prasad Kannawar, Venkatesh Mahindra
+**Program:** B.Tech CSE (Data Science), Semester 8, NMIMS Hyderabad
+**Date:** April 2026
+
+---
+
+## Slide 2: The Problem Statement
+**Heading:** Bridging the Gap: The Placement Challenge
+**Points:**
+- **Lack of Personalization:** Students lack tailored guidance for their specific career tracks.
+- **Progress Tracking:** No systematic way to measure placement readiness over 4 years.
+- **Skill Mismatch:** Difficulty in identifying gaps between student skills and industry benchmarks.
+- **Inefficient Management:** Manual tracking of placement drives, companies, and offers by administrators.
+- **Limited Practice:** Students struggle with structured interview preparation and resume optimization.
+
+---
+
+## Slide 3: The Solution Overview
+**Heading:** Campus2Career — Your Career Co-Pilot
+**Points:**
+- **Dual-Portal Ecosystem:**
+    - **Student Portal:** Personalized career journey, AI-driven assessments, and preparation tools.
+    - **Admin Portal:** Comprehensive placement management with 6 distinct role-based dashboards.
+- **Key Philosophy:** Data-driven decisions, longitudinal tracking, and AI-first interactions.
+
+---
+
+## Slide 4: Student Portal: Personalizing Success
+**Heading:** Empowering the Student Journey
+**Key Features:**
+- **AI Career Advisor:** Real-time guidance using Gemini 2.0 Flash (OpenRouter).
+- **Skill Gap Analysis:** Readiness scores against 6 industry roles (Full-Stack, AI/ML, DevOps, etc.).
+- **Personalized Roadmaps:** Prioritized 4-year action plans mapped to academic milestones.
+- **Study Kit Generation:** AI-generated notes with academic references and mathematical foundations.
+- **Syllabus Integration:** Generating learning paths from uploaded syllabus PDFs.
+
+---
+
+## Slide 5: Student Portal: AI Preparation Tools
+**Heading:** Smarter Interview & Resume Prep
+**Key Features:**
+- **AI Interview Simulator:** 
+    - Voice-enabled practice with 3 modes (Technical, Project-Deep Dive, Behavioral).
+    - Real-time evaluation of communication and technical accuracy.
+- **Resume Analyzer:**
+    - Python NLP-based ATS scoring and optimization.
+    - Keyword matching and content enhancement suggestions.
+- **LeetCode Integration:** Real-time sync of problem-solving stats.
+
+---
+
+## Slide 6: Admin Portal: Role-Based Management
+**Heading:** Granular Control & Oversight
+**6 Distinct Portals:**
+1. **System Admin:** Platform maintenance, user management, and data tools.
+2. **Dean:** High-level institutional analytics and strategic oversight.
+3. **Director:** Departmental performance and placement success tracking.
+4. **Program Chair:** Batch-specific readiness and curriculum alignment.
+5. **Faculty:** Mentorship tools and student progress monitoring.
+6. **Placement Officer:** Managing companies, drives, interviews, and offers.
+
+---
+
+## Slide 7: Technical Architecture
+**Heading:** Modern, Scalable & Secure
+**The Stack:**
+- **Frontend:** React 19 + Vite 6 + Tailwind CSS 4.
+- **Backend:** Node.js (Express 5) & Python (FastAPI for NLP/AI).
+- **Database:** Supabase PostgreSQL (Primary) + Prisma (ORM).
+- **Authentication:** Supabase Auth with Role-Based Access Control (RBAC).
+- **AI Engine:** OpenRouter (Gemini, Claude, Llama) + Federated RAG.
+- **Deployment:** Firebase Hosting (Frontend) + Cloud Microservices (Backend).
+
+---
+
+## Slide 8: AI & Algorithms
+**Heading:** The Brain Behind Campus2Career
+- **Readiness Score Algorithm:** Real-time calculation based on CGPA, Skills, Projects, and LeetCode.
+- **Skill Gap Mapping:** Weighted comparison against industry benchmarks.
+- **Federated RAG:** Retrieving relevant career knowledge with transparent citations.
+- **NLP Engine:** Resume parsing and communication analysis using Python's Spacy/Transformers.
+
+---
+
+## Slide 10: Security & Reliability
+**Heading:** Built for Production
+- **Row Level Security (RLS):** Ensuring data privacy (Students only see their own data).
+- **Audit Logs:** Tracking every administrative action for transparency.
+- **Graceful Degradation:** Local fallback engines when AI services are offline.
+- **Multi-Environment Setup:** Development, Staging, and Production workflows.
+
+---
+
+## Slide 11: Future Scope & Conclusion
+**Heading:** The Road Ahead
+- **Mobile Application:** Native experience for on-the-go tracking.
+- **Real-Time Notifications:** Push alerts for drive updates and interview schedules.
+- **Predictive Analytics:** Using historical data to predict placement success probabilities.
+- **Conclusion:** Campus2Career is more than a portal; it's a lifelong career companion for students and a powerful engine for university growth.
+
+---
+
+## Slide 12: Visual Mockups
+**Heading:** Platform Visuals
+![Student Dashboard Mockup](C:\Users\rachi\.gemini\antigravity\brain\87d4abee-0873-4426-8606-3f2ef91b04b8\student_dashboard_mockup_1777548459618.png)
+*Student Dashboard Preview*
+
+![AI Interview Simulator Mockup](C:\Users\rachi\.gemini\antigravity\brain\87d4abee-0873-4426-8606-3f2ef91b04b8\ai_interview_mockup_1777548493107.png)
+*AI Interview Simulator*
+
+![System Architecture](C:\Users\rachi\.gemini\antigravity\brain\87d4abee-0873-4426-8606-3f2ef91b04b8\system_architecture_diagram_1777548476285.png)
+*Technical Architecture Overview*
+
+---
+
+## Presentation Tips:
+1. **The "Wow" Factor:** During the demo, show the **AI Interview Simulator** and the **Personalized Roadmap**. They are the most visual and impressive features.
+2. **Talk about RBAC:** Emphasize that having 6 specific admin roles makes the platform enterprise-ready.
+3. **Architecture:** Highlight the use of **React 19 and Tailwind 4** as "cutting edge" choices.
+4. **Data:** Mention the 30+ realistic student profiles you seeded for the analytics demo.

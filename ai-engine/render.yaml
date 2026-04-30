@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: campus2career-ai
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: singapore   # closest free region to India
+    healthCheckPath: /health
+    envVars:
+      - key: OPENROUTER_API_KEY
+        sync: false       # you set this manually in Render dashboard
+      - key: ALLOWED_ORIGIN
+        value: https://campus2career-assistant.web.app

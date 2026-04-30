@@ -20,38 +20,43 @@ ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 -- ==========================================
 
 -- Students can read their own profile
+DROP POLICY IF EXISTS "students_read_own" ON students;
 CREATE POLICY "students_read_own"
 ON students FOR SELECT
-USING (auth.uid()::text = id);
+USING (auth.uid() = id);
 
 -- Students can update their own profile
+DROP POLICY IF EXISTS "students_update_own" ON students;
 CREATE POLICY "students_update_own"
 ON students FOR UPDATE
-USING (auth.uid()::text = id)
-WITH CHECK (auth.uid()::text = id);
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
 
 -- Students can insert their own profile (during signup)
+DROP POLICY IF EXISTS "students_insert_own" ON students;
 CREATE POLICY "students_insert_own"
 ON students FOR INSERT
-WITH CHECK (auth.uid()::text = id);
+WITH CHECK (auth.uid() = id);
 
 -- Admins can read all students (for management)
+DROP POLICY IF EXISTS "admins_read_all_students" ON students;
 CREATE POLICY "admins_read_all_students"
 ON students FOR SELECT
 USING (
   EXISTS (
     SELECT 1 FROM admins 
-    WHERE admins.id = auth.uid()::text
+    WHERE admins.id = auth.uid()
   )
 );
 
 -- Admins can update students (for management)
+DROP POLICY IF EXISTS "admins_update_students" ON students;
 CREATE POLICY "admins_update_students"
 ON students FOR UPDATE
 USING (
   EXISTS (
     SELECT 1 FROM admins 
-    WHERE admins.id = auth.uid()::text
+    WHERE admins.id = auth.uid()
   )
 );
 
@@ -60,17 +65,19 @@ USING (
 -- ==========================================
 
 -- Admins can read their own profile
+DROP POLICY IF EXISTS "admins_read_own" ON admins;
 CREATE POLICY "admins_read_own"
 ON admins FOR SELECT
-USING (auth.uid()::text = id);
+USING (auth.uid() = id);
 
 -- Only system_admin can read all admins
+DROP POLICY IF EXISTS "system_admin_read_all" ON admins;
 CREATE POLICY "system_admin_read_all"
 ON admins FOR SELECT
 USING (
   EXISTS (
     SELECT 1 FROM admins 
-    WHERE admins.id = auth.uid()::text 
+    WHERE admins.id = auth.uid() 
     AND admins.role = 'system_admin'
   )
 );
@@ -80,17 +87,19 @@ USING (
 -- ==========================================
 
 -- All authenticated users can read companies
+DROP POLICY IF EXISTS "authenticated_read_companies" ON companies;
 CREATE POLICY "authenticated_read_companies"
 ON companies FOR SELECT
 USING (auth.role() = 'authenticated');
 
 -- Only admins can modify companies
+DROP POLICY IF EXISTS "admins_manage_companies" ON companies;
 CREATE POLICY "admins_manage_companies"
 ON companies FOR ALL
 USING (
   EXISTS (
     SELECT 1 FROM admins 
-    WHERE admins.id = auth.uid()::text
+    WHERE admins.id = auth.uid()
   )
 );
 
@@ -99,6 +108,7 @@ USING (
 -- ==========================================
 
 -- Students can read active drives
+DROP POLICY IF EXISTS "students_read_active_drives" ON drives;
 CREATE POLICY "students_read_active_drives"
 ON drives FOR SELECT
 USING (
@@ -107,22 +117,24 @@ USING (
 );
 
 -- Admins can read all drives
+DROP POLICY IF EXISTS "admins_read_all_drives" ON drives;
 CREATE POLICY "admins_read_all_drives"
 ON drives FOR SELECT
 USING (
   EXISTS (
     SELECT 1 FROM admins 
-    WHERE admins.id = auth.uid()::text
+    WHERE admins.id = auth.uid()
   )
 );
 
 -- Only placement_officer and system_admin can manage drives
+DROP POLICY IF EXISTS "placement_officer_manage_drives" ON drives;
 CREATE POLICY "placement_officer_manage_drives"
 ON drives FOR ALL
 USING (
   EXISTS (
     SELECT 1 FROM admins 
-    WHERE admins.id = auth.uid()::text 
+    WHERE admins.id = auth.uid() 
     AND admins.role IN ('placement_officer', 'system_admin')
   )
 );
@@ -132,27 +144,30 @@ USING (
 -- ==========================================
 
 -- Students can read their own interviews
+DROP POLICY IF EXISTS "students_read_own_interviews" ON interviews;
 CREATE POLICY "students_read_own_interviews"
 ON interviews FOR SELECT
-USING (student_id = auth.uid()::text);
+USING (student_id = auth.uid());
 
 -- Admins can read interviews for their role scope
+DROP POLICY IF EXISTS "admins_read_interviews" ON interviews;
 CREATE POLICY "admins_read_interviews"
 ON interviews FOR SELECT
 USING (
   EXISTS (
     SELECT 1 FROM admins 
-    WHERE admins.id = auth.uid()::text
+    WHERE admins.id = auth.uid()
   )
 );
 
 -- Faculty and placement_officer can manage interviews
+DROP POLICY IF EXISTS "faculty_manage_interviews" ON interviews;
 CREATE POLICY "faculty_manage_interviews"
 ON interviews FOR ALL
 USING (
   EXISTS (
     SELECT 1 FROM admins 
-    WHERE admins.id = auth.uid()::text 
+    WHERE admins.id = auth.uid() 
     AND admins.role IN ('faculty', 'placement_officer', 'system_admin')
   )
 );
@@ -162,27 +177,30 @@ USING (
 -- ==========================================
 
 -- Students can read their own offers
+DROP POLICY IF EXISTS "students_read_own_offers" ON offers;
 CREATE POLICY "students_read_own_offers"
 ON offers FOR SELECT
-USING (student_id = auth.uid()::text);
+USING (student_id = auth.uid());
 
 -- Admins can read all offers
+DROP POLICY IF EXISTS "admins_read_all_offers" ON offers;
 CREATE POLICY "admins_read_all_offers"
 ON offers FOR SELECT
 USING (
   EXISTS (
     SELECT 1 FROM admins 
-    WHERE admins.id = auth.uid()::text
+    WHERE admins.id = auth.uid()
   )
 );
 
 -- Only placement_officer and system_admin can manage offers
+DROP POLICY IF EXISTS "placement_officer_manage_offers" ON offers;
 CREATE POLICY "placement_officer_manage_offers"
 ON offers FOR ALL
 USING (
   EXISTS (
     SELECT 1 FROM admins 
-    WHERE admins.id = auth.uid()::text 
+    WHERE admins.id = auth.uid() 
     AND admins.role IN ('placement_officer', 'system_admin')
   )
 );
@@ -192,17 +210,19 @@ USING (
 -- ==========================================
 
 -- Only system_admin and dean can read audit logs
+DROP POLICY IF EXISTS "admin_read_audit_logs" ON audit_logs;
 CREATE POLICY "admin_read_audit_logs"
 ON audit_logs FOR SELECT
 USING (
   EXISTS (
     SELECT 1 FROM admins 
-    WHERE admins.id = auth.uid()::text 
+    WHERE admins.id = auth.uid() 
     AND admins.role IN ('system_admin', 'dean')
   )
 );
 
 -- System can insert audit logs (via service role)
+DROP POLICY IF EXISTS "system_insert_audit_logs" ON audit_logs;
 CREATE POLICY "system_insert_audit_logs"
 ON audit_logs FOR INSERT
 WITH CHECK (true);

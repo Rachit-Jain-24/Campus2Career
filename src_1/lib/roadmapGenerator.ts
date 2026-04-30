@@ -1,4 +1,5 @@
 import { industryBenchmarks } from '../data/industryBenchmarks';
+import type { CurriculumSubjectEntry } from '../services/db/types';
 
 export interface RoadmapStep {
     title: string;
@@ -109,7 +110,8 @@ export function generateIntelligentRoadmap(
     leetcodeSolved: number,
     projectCount: number,
     internshipCount: number,
-    cgpa: number
+    cgpa: number,
+    liveCurriculum?: Record<number, CurriculumSubjectEntry[]>
 ): IntelligentRoadmap {
     
     // Get industry benchmark for target role
@@ -321,19 +323,82 @@ export function generateIntelligentRoadmap(
     // Next milestone
     const nextMilestone = roadmapSteps[0]?.title || "Continue building your profile";
 
+    // Build curriculum mapping — prefer live knowledge base, fall back to hardcoded
+    let activeCurriculumMapping: CurriculumMapping[] = curriculumData[currentYear] || curriculumData[1];
+    let subjectIndustryMap: SubjectIndustryEntry[] | undefined;
+
+    if (liveCurriculum) {
+        // Map current year's semesters (year 1 = sem 1-2, year 2 = sem 3-4, etc.)
+        const sem1 = (currentYear - 1) * 2 + 1;
+        const sem2 = sem1 + 1;
+        const liveSubjects = [
+            ...(liveCurriculum[sem1] || []),
+            ...(liveCurriculum[sem2] || []),
+        ];
+
+        if (liveSubjects.length > 0) {
+            activeCurriculumMapping = liveSubjects.map(s => ({
+                year: currentYear,
+                focus: s.industryRelevance === 'high' ? 'Core Technical' : s.industryRelevance === 'medium' ? 'Foundation' : 'General',
+                subject: s.subjectName,
+                reason: s.description || `Builds ${s.industrySkills.slice(0, 2).join(' and ')} skills`,
+            }));
+
+            subjectIndustryMap = liveSubjects.map(s => ({
+                subject: s.subjectName,
+                industryRelevance: s.industryRelevance,
+                supplementarySkills: s.industrySkills,
+            }));
+        }
+    }
+
     return {
         targetRole,
         currentYear,
         overallProgress,
-        roadmapSteps: roadmapSteps.slice(0, 6), // Top 6 priorities
+        roadmapSteps: roadmapSteps.slice(0, 6),
         skillsToMaster: missingSkills.slice(0, 8),
         certifications: roleCertifications[targetRole] || roleCertifications["Full-Stack Developer"],
         projectsToBuild: projectIdeas[targetRole] || projectIdeas["Full-Stack Developer"],
         milestones,
         academicFocus,
         internshipGoals,
-        curriculumMapping: curriculumData[currentYear] || curriculumData[1],
+        curriculumMapping: activeCurriculumMapping,
         nextMilestone,
-        estimatedTimeToReady
+        estimatedTimeToReady,
+        subjectIndustryMap,
     };
+}
+
+/**
+ * Fetches the active curriculum knowledge base for a branch/batch
+ * and generates a roadmap aligned to the live syllabus.
+ * Falls back to hardcoded curriculum if the knowledge base is empty.
+ */
+export async function generateCurriculumAlignedRoadmap(
+    currentYear: number,
+    targetRole: string,
+    userSkills: string[],
+    leetcodeSolved: number,
+    projectCount: number,
+    internshipCount: number,
+    cgpa: number,
+    branch = 'B.Tech CSE (DS)',
+    batch = '2022-2026'
+): Promise<IntelligentRoadmap> {
+    let liveCurriculum: Record<number, CurriculumSubjectEntry[]> | undefined;
+
+    try {
+        const { curriculumDb } = await import('../services/db/database.service');
+        liveCurriculum = await curriculumDb.getActiveSubjectsForRoadmap(branch, batch);
+        if (Object.keys(liveCurriculum).length === 0) liveCurriculum = undefined;
+    } catch {
+        // Silently fall back to hardcoded data
+    }
+
+    return generateIntelligentRoadmap(
+        currentYear, targetRole, userSkills,
+        leetcodeSolved, projectCount, internshipCount, cgpa,
+        liveCurriculum
+    );
 }

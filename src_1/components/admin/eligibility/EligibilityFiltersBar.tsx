@@ -25,9 +25,7 @@ export const EligibilityFiltersBar: React.FC<EligibilityFiltersBarProps> = ({
 }) => {
 
     const { user } = useAuth();
-    // Reusing the manage_drives permission to manage rules, or define custom logic if specified later. 
-    // They are so tightly coupled that this is standard.
-    const canManageRules = hasPermission(user, 'manage_drives');
+    const canManageRules = hasPermission(user, 'approve_eligibility');
 
     return (
         <div className="bg-secondary/50 border border-border/50 rounded-xl p-4 sm:p-5 space-y-4 shadow-sm shadow-black/10">

@@ -55,20 +55,20 @@ function validateSupabaseConfig(errors: string[], warnings: string[]): void {
 }
 
 /**
- * Validates AI provider configuration
+ * Validates AI backend configuration.
+ * OpenRouter keys must stay server-side in the FastAPI backend.
  */
-function validateAIConfig(warnings: string[]): void {
-  const openRouterKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-
-  if (!openRouterKey) {
-    warnings.push('VITE_OPENROUTER_API_KEY not set - AI features will use fallback mode');
-  } else if (openRouterKey === 'your_openrouter_api_key_here') {
-    warnings.push('VITE_OPENROUTER_API_KEY still has placeholder value');
-  }
-
+function validateAIConfig(errors: string[], warnings: string[]): void {
   const aiBackendUrl = import.meta.env.VITE_AI_BACKEND_URL;
   if (!aiBackendUrl) {
-    warnings.push('VITE_AI_BACKEND_URL not set - Resume analysis will use local fallback');
+    const message = 'VITE_AI_BACKEND_URL not set - AI features and resume analysis will use local fallback';
+    if (import.meta.env.PROD) {
+      errors.push('VITE_AI_BACKEND_URL is required in production');
+    } else {
+      warnings.push(message);
+    }
+  } else if (!isValidUrl(aiBackendUrl)) {
+    errors.push('VITE_AI_BACKEND_URL is not a valid URL');
   }
 }
 
@@ -88,13 +88,20 @@ function validateOptionalServices(warnings: string[]): void {
 /**
  * Validates security settings
  */
-function validateSecurity(errors: string[], warnings: string[]): void {
+function validateSecurity(errors: string[]): void {
   const serviceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (serviceRoleKey && serviceRoleKey !== 'your_supabase_service_role_key_here') {
-    warnings.push(
-      '⚠️ SECURITY WARNING: SUPABASE_SERVICE_ROLE_KEY detected in frontend environment. ' +
+    errors.push(
+      'SECURITY WARNING: SUPABASE_SERVICE_ROLE_KEY detected in frontend environment. ' +
       'This key should ONLY be used in server-side scripts, never in frontend code.'
+    );
+  }
+
+  if (import.meta.env.VITE_OPENROUTER_API_KEY) {
+    errors.push(
+      'SECURITY WARNING: VITE_OPENROUTER_API_KEY would be exposed in the browser. ' +
+      'Use OPENROUTER_API_KEY only in the FastAPI backend environment.'
     );
   }
 }
@@ -108,9 +115,9 @@ export function validateEnvironment(): EnvValidationResult {
 
   // Validate all configurations
   validateSupabaseConfig(errors, warnings);
-  validateAIConfig(warnings);
+  validateAIConfig(errors, warnings);
   validateOptionalServices(warnings);
-  validateSecurity(errors, warnings);
+  validateSecurity(errors);
 
   // Log results
   if (errors.length > 0) {

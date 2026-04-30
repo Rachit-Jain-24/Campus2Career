@@ -15,23 +15,12 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fetchAllStudents } from '../../services/admin/students.service';
-import * as firestore from 'firebase/firestore';
+import { studentsDb } from '../../services/db/database.service';
 
-// Mock Firebase Firestore
-vi.mock('firebase/firestore', async () => {
-  const actual = await vi.importActual('firebase/firestore');
-  return {
-    ...actual,
-    collection: vi.fn(),
-    getDocs: vi.fn(),
-    query: vi.fn(),
-    orderBy: vi.fn()
-  };
-});
-
-// Mock Firebase config
-vi.mock('../../lib/firebase', () => ({
-  db: {}
+vi.mock('../../services/db/database.service', () => ({
+  studentsDb: {
+    fetchAllStudents: vi.fn(),
+  },
 }));
 
 describe('Bug Condition: Poor Error Messages', () => {
@@ -46,7 +35,7 @@ describe('Bug Condition: Poor Error Messages', () => {
   it('should NOT display technical error message "Failed to fetch student directory data" without user-friendly translation', async () => {
     // Simulate a Firestore error (e.g., permission denied, network error)
     const firestoreError = new Error('PERMISSION_DENIED: Missing or insufficient permissions');
-    vi.mocked(firestore.getDocs).mockRejectedValue(firestoreError);
+    vi.mocked(studentsDb.fetchAllStudents).mockRejectedValue(firestoreError);
 
     let caughtError: Error | null = null;
 
@@ -96,7 +85,7 @@ describe('Bug Condition: Poor Error Messages', () => {
   it('should provide actionable recovery options in error messages', async () => {
     // Simulate a network error
     const networkError = new Error('Failed to fetch');
-    vi.mocked(firestore.getDocs).mockRejectedValue(networkError);
+    vi.mocked(studentsDb.fetchAllStudents).mockRejectedValue(networkError);
 
     let caughtError: Error | null = null;
 
@@ -140,7 +129,7 @@ describe('Bug Condition: Poor Error Messages', () => {
 
     // Simulate a Firestore error
     const technicalError = new Error('Firestore internal error: index out of bounds');
-    vi.mocked(firestore.getDocs).mockRejectedValue(technicalError);
+    vi.mocked(studentsDb.fetchAllStudents).mockRejectedValue(technicalError);
 
     let caughtError: Error | null = null;
 
@@ -159,6 +148,8 @@ describe('Bug Condition: Poor Error Messages', () => {
       const technicalMessage = technicalError.message;
 
       // User message should be different from technical message
+      expect(userMessage).not.toBe(technicalMessage);
+
       const isUserFriendly = 
         !userMessage.includes('internal error') &&
         !userMessage.includes('index out of bounds') &&

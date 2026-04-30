@@ -4,6 +4,7 @@
  * Provides centralized error handling, user-friendly messages,
  * and proper error logging for the Campus2Career application.
  */
+import { captureException } from './sentry';
 
 // ── Error Types ──────────────────────────────────────────────────────────────
 
@@ -190,8 +191,7 @@ export function logError(appError: AppError, context?: Record<string, any>): voi
 
   // In production, send to error tracking service (e.g., Sentry)
   if (import.meta.env.PROD) {
-    // TODO: Integrate with Sentry/LogRocket
-    // Sentry.captureException(appError, { contexts: { appError } });
+    captureException(appError.technicalMessage, { context, category: appError.category });
   }
 }
 

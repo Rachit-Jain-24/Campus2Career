@@ -5,8 +5,15 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { validateEnvironment, getEnvironment } from './lib/envConfig'
+import { warmupBackend } from './lib/openRouter'
 import './index.css'
 import App from './App.tsx'
+import { initSentry } from './lib/sentry'
+import { initPostHog } from './lib/posthog'
+
+// ── Initialize Observability ──────────────────────────────────────────────────
+initSentry();
+initPostHog();
 
 // ── Environment Validation ──────────────────────────────────────────────────
 // Validate all required environment variables before app initialization
@@ -37,6 +44,10 @@ if (!envValidation.isValid) {
 }
 
 console.log(`🚀 Campus2Career starting in ${getEnvironment()} mode`);
+
+// ── Pre-warm AI backend (handles Render free tier cold start) ────────────────
+// Fire-and-forget ping so the backend is ready by the time user clicks AI features
+warmupBackend().catch(() => {/* silently ignore — callOpenRouter retries anyway */});
 
 // ── Clear stale local cache on every app start ───────────────────────────────
 // Only wipe the local profile cache — let Supabase re-hydrate fresh from DB.

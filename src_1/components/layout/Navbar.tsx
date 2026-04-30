@@ -4,6 +4,7 @@ import { Bell, Search, GraduationCap, LogOut, ChevronDown, Menu } from "lucide-r
 import type { UserRole } from "./Sidebar";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useNotifications } from "../../hooks/useNotifications";
 
 interface NavbarProps {
     userName?: string;
@@ -56,11 +57,7 @@ export function Navbar({ userName: propUserName, role: propRole, userYear: propY
         return () => document.removeEventListener("mousedown", handleClick);
     }, []);
 
-    const notifications = [
-        { id: 1, msg: "AI Mentor has a new tip for you!", time: "2m ago", type: "info" },
-        { id: 2, msg: "Your LeetCode streak is at 7 days 🔥", time: "1h ago", type: "success" },
-        { id: 3, msg: "Skill gap detected: Docker", time: "3h ago", type: "warning" },
-    ];
+    const { notifications, unreadCount, markAllRead, clearAll } = useNotifications();
 
     return (
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/90 backdrop-blur-md px-4 md:px-6">
@@ -102,11 +99,17 @@ export function Navbar({ userName: propUserName, role: propRole, userYear: propY
             {/* Notifications */}
             <div className="relative">
                 <button
-                    onClick={() => { setNotifOpen(!notifOpen); setUserMenuOpen(false); }}
+                    onClick={() => { 
+                        setNotifOpen(!notifOpen); 
+                        setUserMenuOpen(false); 
+                        if (!notifOpen && unreadCount > 0) markAllRead();
+                    }}
                     className="relative rounded-full p-2 hover:bg-secondary transition-colors"
                 >
                     <Bell className="h-5 w-5" />
-                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary animate-pulse-glow" />
+                    {unreadCount > 0 && (
+                        <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary animate-pulse-glow" />
+                    )}
                 </button>
 
                 {notifOpen && (
@@ -114,19 +117,24 @@ export function Navbar({ userName: propUserName, role: propRole, userYear: propY
                         <div className="border-b px-4 py-3">
                             <h4 className="font-semibold text-sm">Notifications</h4>
                         </div>
-                        <div className="divide-y">
-                            {notifications.map((n) => (
-                                <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors cursor-pointer">
+                        <div className="divide-y max-h-64 overflow-y-auto">
+                            {notifications.length > 0 ? notifications.map((n) => (
+                                <div key={n.id} className={`flex items-start gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors cursor-pointer ${!n.read ? 'bg-secondary/20' : ''}`}>
                                     <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${n.type === "info" ? "bg-blue-500" : n.type === "success" ? "bg-green-500" : "bg-yellow-500"}`} />
                                     <div>
                                         <p className="text-sm">{n.msg}</p>
                                         <p className="text-xs text-muted-foreground">{n.time}</p>
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                                    No new notifications
+                                </div>
+                            )}
                         </div>
-                        <div className="border-t px-4 py-2">
-                            <button className="text-xs text-primary hover:underline">View all notifications</button>
+                        <div className="border-t px-4 py-2 flex justify-between">
+                            <button onClick={clearAll} className="text-xs text-muted-foreground hover:text-foreground">Clear all</button>
+                            <button className="text-xs text-primary hover:underline">View all</button>
                         </div>
                     </div>
                 )}

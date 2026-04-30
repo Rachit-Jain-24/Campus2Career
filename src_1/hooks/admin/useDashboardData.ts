@@ -89,7 +89,7 @@ function computeStats(
     ).length;
     const companiesOnboarded = companies.length;
     const activeDrives = drives.filter((d: any) =>
-        d.status === 'active' || d.status === 'open' || d.status === 'ongoing'
+        d.status === 'active' || d.status === 'open' || d.status === 'ongoing' || d.status === 'upcoming'
     ).length;
     const offersReleased = offers.length;
     const placedStudents = students.filter((s: any) =>

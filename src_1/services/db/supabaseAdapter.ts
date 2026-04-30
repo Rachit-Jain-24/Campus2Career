@@ -148,6 +148,7 @@ export const supabaseStudents: StudentAdapter = {
       .upsert({
         sap_id: data.sapId,
         uid: data.id,
+        id: data.id,
         roll_no: data.rollNo,
         name: data.name,
         email: data.email,
@@ -310,6 +311,8 @@ export const supabaseDrives: DriveAdapter = {
       },
       registrationStart: d.registration_start ? new Date(d.registration_start) : new Date(),
       registrationEnd: d.registration_end ? new Date(d.registration_end) : new Date(),
+      applicantCount: d.applicant_count || 0,
+      shortlistedCount: d.shortlisted_count || 0,
       createdAt: new Date(d.created_at),
       updatedAt: new Date(d.updated_at),
       stages: d.drive_stages?.map((s: any) => ({
@@ -385,23 +388,27 @@ export const supabaseDrives: DriveAdapter = {
   },
 
   async updateDrive(id: string, formData: Partial<DriveFormData>): Promise<void> {
+    const row: Record<string, any> = { updated_at: new Date().toISOString() };
+    if (formData.companyId !== undefined) row.company_id = formData.companyId || null;
+    if (formData.companyName !== undefined) row.company_name = formData.companyName;
+    if (formData.title !== undefined) row.title = formData.title;
+    if (formData.jobRole !== undefined) row.job_role = formData.jobRole;
+    if (formData.packageRange !== undefined) row.package_range = formData.packageRange;
+    if (formData.location !== undefined) row.location = formData.location;
+    if (formData.mode !== undefined) row.mode = formData.mode;
+    if (formData.description !== undefined) row.description = formData.description;
+    if (formData.status !== undefined) row.status = formData.status;
+    if (formData.registrationStart !== undefined) {
+      row.registration_start = formData.registrationStart instanceof Date ? formData.registrationStart.toISOString() : formData.registrationStart;
+    }
+    if (formData.registrationEnd !== undefined) {
+      row.registration_end = formData.registrationEnd instanceof Date ? formData.registrationEnd.toISOString() : formData.registrationEnd;
+    }
+    if (formData.eligibilityRules !== undefined) row.eligibility_rules = formData.eligibilityRules;
+
     const { error } = await supabase
       .from('drives')
-      .update({
-        company_id: formData.companyId || null,
-        company_name: formData.companyName,
-        title: formData.title,
-        job_role: formData.jobRole,
-        package_range: formData.packageRange,
-        location: formData.location,
-        mode: formData.mode,
-        description: formData.description,
-        status: formData.status,
-        registration_start: formData.registrationStart instanceof Date ? formData.registrationStart.toISOString() : formData.registrationStart,
-        registration_end: formData.registrationEnd instanceof Date ? formData.registrationEnd.toISOString() : formData.registrationEnd,
-        eligibility_rules: formData.eligibilityRules,
-        updated_at: new Date().toISOString()
-      })
+      .update(row)
       .eq('id', id);
     
     if (error) throw error;
@@ -958,7 +965,10 @@ export const supabaseUser: UserAdapter = {
         sap_id: id,  // always set — required for upsert onConflict: 'sap_id'
       };
       if (data.sapId !== undefined)                   mapped.sap_id = data.sapId;
-      if (data.uid !== undefined)                     mapped.uid = data.uid;
+      if (data.uid !== undefined) {
+        mapped.uid = data.uid;
+        mapped.id = data.uid;
+      }
       if (data.name !== undefined)                    mapped.name = data.name;
       if (data.email !== undefined)                   mapped.email = data.email;
       if (data.phone !== undefined)                   mapped.phone = data.phone;
@@ -1184,10 +1194,13 @@ export const supabaseEligibility: EligibilityAdapter = {
       id: r.id,
       ruleName: r.rule_name || r.ruleName || 'Unnamed Rule',
       description: r.description || '',
-      minCgpa: r.min_cgpa ?? r.minCgpa ?? 6.0,
+      minCGPA: r.min_cgpa ?? r.minCGPA ?? r.minCgpa ?? 6.0,
       active: r.active ?? true,
-      maxBacklogs: r.max_active_backlogs ?? r.maxBacklogs ?? 0,
+      maxActiveBacklogs: r.max_active_backlogs ?? r.maxActiveBacklogs ?? r.maxBacklogs ?? 0,
       maxHistoryBacklogs: r.max_history_backlogs ?? r.maxHistoryBacklogs ?? 0,
+      requiresResumeApproval: r.requires_resume_approval ?? r.requiresResumeApproval ?? false,
+      mandatoryInternship: r.mandatory_internship ?? r.mandatoryInternship ?? false,
+      requiredSkills: r.required_skills || r.requiredSkills || [],
       linkedDriveIds: r.linked_drive_ids || r.linkedDriveIds || [],
       allowedYears: r.eligibility_rule_years?.map((y: any) => y.year) || [],
       allowedDepartments: r.eligibility_rule_departments?.map((d: any) => d.department) || [],
@@ -1200,10 +1213,14 @@ export const supabaseEligibility: EligibilityAdapter = {
     const row: any = {
       rule_name: data.ruleName || data.rule_name || 'New Rule',
       description: data.description || '',
-      min_cgpa: data.minCgpa ?? data.min_cgpa ?? 6.0,
+      min_cgpa: data.minCGPA ?? data.minCgpa ?? data.min_cgpa ?? 6.0,
       active: data.isActive ?? data.active ?? true,
-      max_active_backlogs: data.maxBacklogs ?? data.max_active_backlogs ?? 0,
+      max_active_backlogs: data.maxActiveBacklogs ?? data.maxBacklogs ?? data.max_active_backlogs ?? 0,
       max_history_backlogs: data.maxHistoryBacklogs ?? data.max_history_backlogs ?? 0,
+      requires_resume_approval: data.requiresResumeApproval ?? data.requires_resume_approval ?? false,
+      mandatory_internship: data.mandatoryInternship ?? data.mandatory_internship ?? false,
+      required_skills: data.requiredSkills ?? data.required_skills ?? [],
+      linked_drive_ids: data.linkedDriveIds ?? data.linked_drive_ids ?? [],
     };
     const { data: rule, error } = await supabase
       .from('eligibility_rules')
@@ -1212,19 +1229,60 @@ export const supabaseEligibility: EligibilityAdapter = {
       .single();
 
     if (error) throw error;
-    return rule;
+
+    if (Array.isArray(data.allowedYears) && data.allowedYears.length > 0) {
+      const { error: yearsError } = await supabase
+        .from('eligibility_rule_years')
+        .insert(data.allowedYears.map((year: string) => ({ rule_id: rule.id, year })));
+      if (yearsError) throw yearsError;
+    }
+
+    if (Array.isArray(data.allowedDepartments) && data.allowedDepartments.length > 0) {
+      const { error: departmentsError } = await supabase
+        .from('eligibility_rule_departments')
+        .insert(data.allowedDepartments.map((department: string) => ({ rule_id: rule.id, department })));
+      if (departmentsError) throw departmentsError;
+    }
+
+    return {
+      ...rule,
+      ruleName: rule.rule_name,
+      minCGPA: rule.min_cgpa,
+      maxActiveBacklogs: rule.max_active_backlogs,
+      maxHistoryBacklogs: rule.max_history_backlogs,
+      requiresResumeApproval: rule.requires_resume_approval,
+      mandatoryInternship: rule.mandatory_internship,
+      requiredSkills: rule.required_skills || [],
+      linkedDriveIds: rule.linked_drive_ids || [],
+      allowedYears: data.allowedYears || [],
+      allowedDepartments: data.allowedDepartments || [],
+      createdAt: rule.created_at,
+      updatedAt: rule.updated_at,
+    };
   },
   async updateRule(id: string, data: any): Promise<void> {
     const row: any = {};
     if (data.ruleName !== undefined)          row.rule_name = data.ruleName;
     if (data.rule_name !== undefined)         row.rule_name = data.rule_name;
     if (data.description !== undefined)       row.description = data.description;
+    if (data.minCGPA !== undefined)           row.min_cgpa = data.minCGPA;
     if (data.minCgpa !== undefined)           row.min_cgpa = data.minCgpa;
     if (data.min_cgpa !== undefined)          row.min_cgpa = data.min_cgpa;
     if (data.isActive !== undefined)          row.active = data.isActive;
     if (data.active !== undefined)            row.active = data.active;
+    if (data.maxActiveBacklogs !== undefined) row.max_active_backlogs = data.maxActiveBacklogs;
     if (data.maxBacklogs !== undefined)       row.max_active_backlogs = data.maxBacklogs;
     if (data.max_active_backlogs !== undefined) row.max_active_backlogs = data.max_active_backlogs;
+    if (data.maxHistoryBacklogs !== undefined) row.max_history_backlogs = data.maxHistoryBacklogs;
+    if (data.max_history_backlogs !== undefined) row.max_history_backlogs = data.max_history_backlogs;
+    if (data.requiresResumeApproval !== undefined) row.requires_resume_approval = data.requiresResumeApproval;
+    if (data.requires_resume_approval !== undefined) row.requires_resume_approval = data.requires_resume_approval;
+    if (data.mandatoryInternship !== undefined) row.mandatory_internship = data.mandatoryInternship;
+    if (data.mandatory_internship !== undefined) row.mandatory_internship = data.mandatory_internship;
+    if (data.requiredSkills !== undefined) row.required_skills = data.requiredSkills;
+    if (data.required_skills !== undefined) row.required_skills = data.required_skills;
+    if (data.linkedDriveIds !== undefined) row.linked_drive_ids = data.linkedDriveIds;
+    if (data.linked_drive_ids !== undefined) row.linked_drive_ids = data.linked_drive_ids;
     row.updated_at = new Date().toISOString();
 
     const { error } = await supabase
@@ -1233,6 +1291,36 @@ export const supabaseEligibility: EligibilityAdapter = {
       .eq('id', id);
 
     if (error) throw error;
+
+    if (Array.isArray(data.allowedYears)) {
+      const { error: deleteYearsError } = await supabase
+        .from('eligibility_rule_years')
+        .delete()
+        .eq('rule_id', id);
+      if (deleteYearsError) throw deleteYearsError;
+
+      if (data.allowedYears.length > 0) {
+        const { error: insertYearsError } = await supabase
+          .from('eligibility_rule_years')
+          .insert(data.allowedYears.map((year: string) => ({ rule_id: id, year })));
+        if (insertYearsError) throw insertYearsError;
+      }
+    }
+
+    if (Array.isArray(data.allowedDepartments)) {
+      const { error: deleteDepartmentsError } = await supabase
+        .from('eligibility_rule_departments')
+        .delete()
+        .eq('rule_id', id);
+      if (deleteDepartmentsError) throw deleteDepartmentsError;
+
+      if (data.allowedDepartments.length > 0) {
+        const { error: insertDepartmentsError } = await supabase
+          .from('eligibility_rule_departments')
+          .insert(data.allowedDepartments.map((department: string) => ({ rule_id: id, department })));
+        if (insertDepartmentsError) throw insertDepartmentsError;
+      }
+    }
   },
   async deleteRule(id: string): Promise<void> {
     const { error } = await supabase
@@ -1383,7 +1471,132 @@ export const supabaseCurriculum: CurriculumAdapter = {
       }, { onConflict: 'branch,batch' });
       
     if (error) throw error;
-  }
+  },
+
+  async getSubjects(branch: string, batch: string, semester?: number): Promise<any[]> {
+    let query = supabase
+      .from('curriculum_subjects')
+      .select('*')
+      .eq('branch', branch)
+      .eq('batch', batch)
+      .order('semester', { ascending: true })
+      .order('subject_name', { ascending: true });
+
+    if (semester !== undefined) query = query.eq('semester', semester);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    return (data || []).map(r => ({
+      id: r.id,
+      branch: r.branch,
+      batch: r.batch,
+      semester: r.semester,
+      subjectCode: r.subject_code || '',
+      subjectName: r.subject_name,
+      description: r.description || '',
+      topics: r.topics || [],
+      industrySkills: r.industry_skills || [],
+      industryRelevance: r.industry_relevance || 'medium',
+      isActive: r.is_active ?? true,
+      pdfUrl: r.pdf_url || null,
+      uploadedBy: r.uploaded_by || '',
+      updatedAt: r.updated_at,
+    }));
+  },
+
+  async saveSubject(subject: any): Promise<any> {
+    const row = {
+      branch: subject.branch,
+      batch: subject.batch,
+      semester: subject.semester,
+      subject_code: subject.subjectCode || '',
+      subject_name: subject.subjectName,
+      description: subject.description || '',
+      topics: subject.topics || [],
+      industry_skills: subject.industrySkills || [],
+      industry_relevance: subject.industryRelevance || 'medium',
+      is_active: subject.isActive ?? true,
+      pdf_url: subject.pdfUrl || null,
+      uploaded_by: subject.uploadedBy || 'Program Chair',
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('curriculum_subjects')
+      .insert(row)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { ...subject, id: data.id, updatedAt: data.updated_at };
+  },
+
+  async updateSubject(id: string, updates: any): Promise<void> {
+    const row: any = { updated_at: new Date().toISOString() };
+    if (updates.subjectName !== undefined)      row.subject_name = updates.subjectName;
+    if (updates.subjectCode !== undefined)      row.subject_code = updates.subjectCode;
+    if (updates.description !== undefined)      row.description = updates.description;
+    if (updates.topics !== undefined)           row.topics = updates.topics;
+    if (updates.industrySkills !== undefined)   row.industry_skills = updates.industrySkills;
+    if (updates.industryRelevance !== undefined) row.industry_relevance = updates.industryRelevance;
+    if (updates.isActive !== undefined)         row.is_active = updates.isActive;
+    if (updates.pdfUrl !== undefined)           row.pdf_url = updates.pdfUrl;
+
+    const { error } = await supabase
+      .from('curriculum_subjects')
+      .update(row)
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  async toggleSubject(id: string, isActive: boolean): Promise<void> {
+    const { error } = await supabase
+      .from('curriculum_subjects')
+      .update({ is_active: isActive, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  async deleteSubject(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('curriculum_subjects')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  async getActiveSubjectsForRoadmap(branch: string, batch: string): Promise<Record<number, any[]>> {
+    const { data, error } = await supabase
+      .from('curriculum_subjects')
+      .select('*')
+      .eq('branch', branch)
+      .eq('batch', batch)
+      .eq('is_active', true)
+      .order('semester', { ascending: true });
+
+    if (error) throw error;
+
+    const grouped: Record<number, any[]> = {};
+    for (const r of data || []) {
+      const sem = r.semester;
+      if (!grouped[sem]) grouped[sem] = [];
+      grouped[sem].push({
+        id: r.id,
+        subjectName: r.subject_name,
+        subjectCode: r.subject_code || '',
+        description: r.description || '',
+        topics: r.topics || [],
+        industrySkills: r.industry_skills || [],
+        industryRelevance: r.industry_relevance || 'medium',
+        isActive: true,
+      });
+    }
+    return grouped;
+  },
 };
 
 // --- Syllabus Adapter ---

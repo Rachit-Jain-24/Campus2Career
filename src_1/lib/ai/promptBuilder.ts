@@ -1,4 +1,9 @@
 import type { PromptInput } from './types';
+import { RECOMMENDED_PROBLEMS } from '../../data/leetcodeProblems';
+
+export const TONE_STRESSED = 'Use a warm, reassuring tone. Acknowledge the pressure, reduce overwhelm, and suggest one clear next step.';
+export const TONE_CONFIDENT = 'Use a direct, high-agency tone. Validate momentum, then challenge the student with sharper next actions.';
+export const TONE_NEUTRAL = 'Use a balanced, practical tone. Be concise, specific, and helpful without over-explaining.';
 
 /** Estimate token count: 1 token ≈ 4 characters */
 export function estimateTokens(text: string): number {
@@ -28,7 +33,20 @@ export function build(input: PromptInput): string {
   const topChunks = ragResult.chunks.slice(0, 5);
   const ragContext = topChunks
     .map((chunk, i) => `[Chunk ${i + 1}: ${chunk.title}]\n${chunk.content}`)
-    .join('\n\n');
+    .join('\n\n') || 'No retrieved context available.';
+
+  const toneInstruction = sentiment.label === 'stressed'
+    ? TONE_STRESSED
+    : sentiment.label === 'confident'
+      ? TONE_CONFIDENT
+      : TONE_NEUTRAL;
+
+  const leetcodeBlock = intent.intent === 'leetcode_guidance'
+    ? `\n\n[LEETCODE PROBLEMS - YEAR ${student.currentYear}]\n${RECOMMENDED_PROBLEMS
+      .filter((problem) => problem.level <= student.currentYear)
+      .map((problem) => `- ${problem.title} (${problem.difficulty}, ${problem.category}, Year ${problem.level})`)
+      .join('\n')}`
+    : '';
 
   let turns = [...context.turns];
 
@@ -40,21 +58,34 @@ export function build(input: PromptInput): string {
   }
 
   function assemblePrompt(historyTurns: typeof turns): string {
-    return `You are an AI Career Mentor — friendly, concise, and conversational like ChatGPT.
+    return `[PART 1 — SYSTEM PERSONA]
+You are an AI Career Mentor for Campus2Career. Be friendly, concise, and conversational like ChatGPT, while staying grounded in the student's actual profile and the retrieved knowledge.
 
+[PART 2 — TONE INSTRUCTION]
+Sentiment: ${sentiment.label}
+${toneInstruction}
+
+[PART 3 — STUDENT PROFILE SUMMARY]
 Student Profile (use as background context, don't dump it all at once):
 ${studentProfileJson}
 
-Intent: ${intent.intent} (${(intent.confidence * 100).toFixed(0)}% confidence)
-Sentiment: ${sentiment.label}
-Readiness Score: ${personalization.readinessScore}/100
+[PART 4 — RETRIEVED CONTEXT]
+Knowledge Context (use only if relevant to the question):
+${ragContext}${leetcodeBlock}
 
+[PART 5 — CLASSIFIED INTENT]
+Intent: ${intent.intent} (${(intent.confidence * 100).toFixed(0)}% confidence)
+Matched keywords: ${intent.matchedKeywords?.join(', ') || 'none'}
+
+[PART 6 — PERSONALIZATION RATIONALE]
+Readiness Score: ${personalization.readinessScore}/100
+Suggested prompts: ${personalization.suggestedPrompts?.filter(Boolean).join(' | ') || 'none'}
+
+[PART 7 — CONVERSATION HISTORY]
 Conversation History:
 ${buildHistorySection(historyTurns)}
 
-Knowledge Context (use only if relevant to the question):
-${ragContext}
-
+[PART 8 — CURRENT QUESTION]
 Current User Message:
 Student: ${userMessage}
 

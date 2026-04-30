@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { 
     User, Lock, Eye, EyeOff, Mail, Hash, Building2, Calendar, 
     CheckCircle, Shield, GraduationCap, Users, AlertCircle, 
-    CheckCircle2, UserCircle, ChevronDown, Briefcase
+    CheckCircle2, UserCircle, ChevronDown, Briefcase, Loader2, ArrowRight
 } from 'lucide-react';
 import { getDefaultAdminRoute } from '../../config/admin/roleRoutes';
 
@@ -70,6 +70,12 @@ function validateField(field: keyof SignupFormData, value: string): string {
             if (!value.trim()) return 'Email is required.';
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()))
                 return 'Enter a valid email address.';
+            
+            // Only allow NMIMS domains for student registration
+            const lowerEmail = value.trim().toLowerCase();
+            if (!lowerEmail.endsWith('@nmims.edu.in') && !lowerEmail.endsWith('@nmims.edu')) {
+                return 'Only NMIMS email addresses (@nmims.edu.in or @nmims.edu) are allowed.';
+            }
             return '';
         }
         case 'branch':
@@ -100,7 +106,7 @@ function validateAll(data: SignupFormData): FieldErrors {
 export default function AuthPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { login, adminLogin, signup, isLoading: authLoading } = useAuth();
+    const { login, adminLogin, mockLogin, signup, resetPassword, isLoading: authLoading } = useAuth();
     
     // Mode: 'login-student' | 'signup-student' | 'login-admin'
     const [mode, setMode] = useState<'login-student' | 'signup-student' | 'login-admin'>('login-student');
@@ -132,12 +138,11 @@ export default function AuthPage() {
         
         try {
             if (mode === 'login-admin') {
-                // Admin login with role
                 await adminLogin(loginIdentifier, loginPassword);
                 const stored = localStorage.getItem('c2c_user');
                 if (stored) {
                     const u = JSON.parse(stored);
-                    navigate(getDefaultAdminRoute(u.role));
+                    navigate(getDefaultAdminRoute(u.role), { replace: true });
                 }
             } else {
                 // Student login
@@ -158,6 +163,23 @@ export default function AuthPage() {
             }
         } catch (err: any) {
             setLoginError(err.message || 'Login failed. Please check your credentials.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleForgotPassword = async () => {
+        if (!loginIdentifier || !loginIdentifier.includes('@')) {
+            setLoginError('Please enter your registered email address first to reset your password.');
+            return;
+        }
+        setIsLoading(true);
+        setLoginError('');
+        try {
+            await resetPassword(loginIdentifier);
+            alert('Password reset link sent to your email. Please check your inbox.');
+        } catch (err: any) {
+            setLoginError(err.message || 'Failed to send reset link. Please contact system admin.');
         } finally {
             setIsLoading(false);
         }
@@ -241,51 +263,12 @@ export default function AuthPage() {
         </div>
     );
 
-    // Render login form (shared for student and admin)
+    // Render login form (student only — admin uses direct role selection)
     const renderLoginForm = () => (
         <form onSubmit={handleLogin} className="space-y-5">
-            {mode === 'login-admin' && (
-                <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
-                        Select Role
-                    </label>
-                    <div className="relative">
-                        <button
-                            type="button"
-                            onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-                            className="w-full flex items-center justify-between px-4 py-3 text-sm border border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 transition-all"
-                        >
-                            <div className="flex items-center gap-2">
-                                <selectedRole.icon className="h-4 w-4" style={{ color: selectedRole.color }} />
-                                <span className="text-slate-900">{selectedRole.label}</span>
-                            </div>
-                            <ChevronDown className="h-4 w-4 text-slate-400" />
-                        </button>
-                        {showRoleDropdown && (
-                            <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg">
-                                {ADMIN_ROLES.map(role => (
-                                    <button
-                                        key={role.id}
-                                        type="button"
-                                        onClick={() => {
-                                            setSelectedRole(role);
-                                            setShowRoleDropdown(false);
-                                        }}
-                                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors first:rounded-t-xl last:rounded-b-xl"
-                                    >
-                                        <role.icon className="h-4 w-4" style={{ color: role.color }} />
-                                        <span className="text-slate-700">{role.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
             <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
-                    {mode === 'login-admin' ? 'Email Address' : 'Email or SAP ID'}
+                    Email or SAP ID
                 </label>
                 <div className="relative">
                     <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
@@ -293,7 +276,7 @@ export default function AuthPage() {
                     </div>
                     <input
                         type="text"
-                        placeholder={mode === 'login-admin' ? 'admin@nmims.edu.in' : 'email@nmims.edu.in or SAP ID'}
+                        placeholder="email@nmims.edu.in or SAP ID"
                         value={loginIdentifier}
                         onChange={e => setLoginIdentifier(e.target.value)}
                         required
@@ -303,7 +286,10 @@ export default function AuthPage() {
             </div>
 
             <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">Password</label>
+                <div className="flex justify-between items-center">
+                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">Password</label>
+                    <button type="button" onClick={handleForgotPassword} className="text-xs font-bold text-blue-600 hover:underline">Forgot Password?</button>
+                </div>
                 <div className="relative">
                     <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
                         <Lock className="h-[18px] w-[18px]" />
@@ -353,6 +339,100 @@ export default function AuthPage() {
                     </span>
                 ) : 'Sign In'}
             </button>
+        </form>
+    );
+
+    // Redesigned Admin login form (Premium Theme)
+    const renderAdminLoginForm = () => (
+        <form onSubmit={handleLogin} className="space-y-6 animate-fade-in">
+            <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-4 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-600/20">
+                    <Shield className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                    <p className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Administrative Access</p>
+                    <p className="text-xs text-blue-900/60 font-medium leading-tight">Restricted to authorized NMIMS personnel only.</p>
+                </div>
+            </div>
+
+            <div className="space-y-4">
+                <div className="space-y-1.5">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] ml-1">Staff Identifier</label>
+                    <div className="relative group">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                            <Mail className="h-4 w-4" />
+                        </div>
+                        <input
+                            type="email"
+                            placeholder="staff.name@nmims.edu"
+                            value={loginIdentifier}
+                            onChange={e => setLoginIdentifier(e.target.value)}
+                            required
+                            className="w-full pl-11 pr-4 py-3.5 text-sm border border-slate-200 rounded-2xl bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 transition-all text-slate-900 placeholder:text-slate-300"
+                        />
+                    </div>
+                </div>
+
+                <div className="space-y-1.5">
+                    <div className="flex justify-between items-center px-1">
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">Security Key</label>
+                        <button type="button" onClick={handleForgotPassword} className="text-[10px] font-bold text-blue-600 hover:underline">Forgot Key?</button>
+                    </div>
+                    <div className="relative group">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                            <Lock className="h-4 w-4" />
+                        </div>
+                        <input
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="••••••••"
+                            value={loginPassword}
+                            onChange={e => setLoginPassword(e.target.value)}
+                            required
+                            className="w-full pl-11 pr-12 py-3.5 text-sm border border-slate-200 rounded-2xl bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 transition-all text-slate-900 placeholder:text-slate-300"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
+                        >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {loginError && (
+                <div className="flex items-center gap-3 p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-700 text-xs font-semibold animate-shake">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span>{loginError}</span>
+                </div>
+            )}
+
+            <button
+                type="submit"
+                disabled={isLoading}
+                className="group relative w-full py-4 bg-slate-900 hover:bg-black active:scale-[0.98] text-white font-bold rounded-2xl text-sm tracking-widest uppercase transition-all shadow-xl shadow-slate-900/20 disabled:opacity-50 overflow-hidden"
+            >
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-10 transition-opacity" />
+                <span className="relative flex items-center justify-center gap-3">
+                    {isLoading ? (
+                        <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Authenticating...
+                        </>
+                    ) : (
+                        <>
+                            Enter Command Center
+                            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                        </>
+                    )}
+                </span>
+            </button>
+
+            <div className="flex items-center gap-2 justify-center py-2 opacity-50">
+                <Shield className="h-3 w-3 text-slate-400" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Encrypted SSL Connection</span>
+            </div>
         </form>
     );
 
@@ -597,7 +677,12 @@ export default function AuthPage() {
                     {renderModeSelector()}
 
                     {/* Form */}
-                    {mode === 'signup-student' ? renderSignupForm() : renderLoginForm()}
+                    {mode === 'signup-student'
+                        ? renderSignupForm()
+                        : mode === 'login-admin'
+                            ? renderAdminLoginForm()
+                            : renderLoginForm()
+                    }
 
                     {/* Footer */}
                     <p className="mt-8 text-center text-[11px] text-slate-400 font-medium">

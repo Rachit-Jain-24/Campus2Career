@@ -102,9 +102,33 @@ export interface AdminUserAdapter {
   updateAdmin(email: string, data: any): Promise<void>;
 }
 
+export interface CurriculumSubjectEntry {
+  id?: string;
+  branch: string;
+  batch: string;
+  semester: number;
+  subjectCode: string;
+  subjectName: string;
+  description: string;
+  topics: string[];           // extracted from PDF
+  industrySkills: string[];   // AI-mapped industry skills
+  industryRelevance: 'high' | 'medium' | 'low';
+  isActive: boolean;
+  pdfUrl?: string;
+  uploadedBy?: string;
+  updatedAt?: string;
+}
+
 export interface CurriculumAdapter {
   getCurriculum(branch: string, batch: string): Promise<any | null>;
   saveCurriculum(data: any): Promise<void>;
+  // Knowledge base methods
+  getSubjects(branch: string, batch: string, semester?: number): Promise<CurriculumSubjectEntry[]>;
+  saveSubject(subject: CurriculumSubjectEntry): Promise<CurriculumSubjectEntry>;
+  updateSubject(id: string, data: Partial<CurriculumSubjectEntry>): Promise<void>;
+  toggleSubject(id: string, isActive: boolean): Promise<void>;
+  deleteSubject(id: string): Promise<void>;
+  getActiveSubjectsForRoadmap(branch: string, batch: string): Promise<Record<number, CurriculumSubjectEntry[]>>;
 }
 
 export interface SyllabusAdapter {

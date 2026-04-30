@@ -239,8 +239,8 @@ export function ChatPanel({ student, onClose, onUnreadChange }: ChatPanelProps) 
   };
 
   const panelSizeClass = isFullScreen
-    ? 'max-w-[800px] w-full h-full'
-    : 'w-[400px] h-[560px]';
+    ? 'fixed inset-4 sm:inset-auto sm:relative sm:max-w-[800px] w-[calc(100vw-2rem)] sm:w-full h-[calc(100vh-2rem)] sm:h-full z-50'
+    : 'w-[calc(100vw-2rem)] sm:w-[400px] h-[60vh] sm:h-[560px] max-h-[80vh]';
 
   return (
     <div

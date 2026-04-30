@@ -258,7 +258,7 @@ describe('ragEngine — Property 3: Retrieval Ordering', () => {
       fc.asyncProperty(
         fc.string(),
         async (query) => {
-          const result = retrieve(query);
+          const result = await retrieve(query);
           return result.chunks.length === 5;
         }
       )
@@ -291,7 +291,7 @@ describe('ragEngine — Property 3: Retrieval Ordering', () => {
       fc.asyncProperty(
         fc.string(),
         async (query) => {
-          const result = retrieve(query);
+          const result = await retrieve(query);
 
           // Compute the cosine score for each returned chunk using the query vector
           const scores = result.chunks.map((chunk) =>

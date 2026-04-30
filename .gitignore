@@ -40,6 +40,7 @@ ai-engine/venv/
 ai-engine/__pycache__/
 ai-engine/*.pyc
 ai-engine/*.pyo
+ai-engine/.env
 
 # Misc build artifacts
 *.local
@@ -47,34 +48,9 @@ dist-ssr/
 
 # Temp/extracted folders
 admin_updates_extracted/
-src_1/CP_ALL_SEM_EXTRACTED/
-src_1/CP_ALL_SEM.zip
-
-# Binary/document files that don't belong in source control
-*.pdf
-*.docx
-*.xlsx
-*.xls
-*.zip
-*.csv
-*.pptx
-
-# Test scripts
-test-piston.py
 
 # Kiro internal / repowiki (auto-generated)
 .qoder/
 
-# Markdown docs (generated summaries — not source code)
-ACTION_REQUIRED.md
-CODE_EXECUTION_FIXED.md
-CODE_EXECUTION_IMPROVEMENTS.md
-FIX_RLS_RECURSION_GUIDE.md
-PRODUCTION_DEPLOYMENT_GUIDE.md
-PRODUCTION_FIXES_COMPLETE.md
-PRODUCTION_READINESS_SUMMARY.md
-PROJECT_ANALYSIS_REPORT.md
-PROJECT_INFO.md
-REVIEW3_DOCUMENT.md
-SYSTEM_DESIGN_AND_DEPLOYMENT.md
-URGENT_FIX_REQUIRED.md
+# Curriculum reference files (PDFs/docs — tracked via public/curriculum/)
+public/curriculum/

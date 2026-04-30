@@ -2,10 +2,12 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getDefaultAdminRoute } from '../config/admin/roleRoutes';
+import { canAccessRoute } from '../utils/admin/rbac';
+import type { AdminRole } from '../types/auth';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
-    allowedRole?: 'admin' | 'student';
+    allowedRole?: 'admin' | 'student' | AdminRole | AdminRole[];
     requireCareerDiscovery?: boolean;
     requireProfileSetup?: boolean;
     requireAssessment?: boolean;
@@ -40,14 +42,24 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Role-based logic
     const isUserAdmin = user.role && user.role !== 'student';
 
-    if (allowedRole === 'admin' && !isUserAdmin) {
-        // Student trying to access admin pages
-        return <Navigate to="/student/dashboard" replace />;
-    }
+    // Helper to check role
+    const checkRoleMatch = (allowed: 'admin' | 'student' | AdminRole | AdminRole[] | undefined) => {
+        if (!allowed) return true;
+        if (allowed === 'admin') return isUserAdmin;
+        if (allowed === 'student') return !isUserAdmin;
+        
+        // Use the centralized RBAC utility for specific admin roles
+        const allowedRoles = Array.isArray(allowed) ? allowed : [allowed];
+        return canAccessRoute(user, allowedRoles);
+    };
 
-    if (allowedRole === 'student' && isUserAdmin) {
-        // Admin trying to access student pages — redirect to their role-specific dashboard
-        return <Navigate to={getDefaultAdminRoute(user.role)} replace />;
+    if (!checkRoleMatch(allowedRole)) {
+        if (isUserAdmin) {
+            // Admin on wrong page
+            return <Navigate to={getDefaultAdminRoute(user.role)} replace />;
+        }
+        // Student on admin page
+        return <Navigate to="/student/dashboard" replace />;
     }
 
     const isCareerDiscoveryDone = user.careerDiscoveryCompleted === true || !!(user as any).careerTrack;

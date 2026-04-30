@@ -122,7 +122,7 @@ export const PlacementOfficerDashboard: React.FC = () => {
     const todayStr = new Date().toDateString();
 
     const kpis = useMemo(() => {
-        const activeDrives = drives.filter(d => ['active', 'open', 'ongoing'].includes((d.status || '').toLowerCase())).length;
+        const activeDrives = drives.filter(d => ['active', 'open', 'ongoing', 'upcoming'].includes((d.status || '').toLowerCase())).length;
         const todayInterviews = interviews.filter(iv => {
             if (!iv.scheduledDate) return false;
             const d = typeof iv.scheduledDate === 'object' && 'seconds' in iv.scheduledDate

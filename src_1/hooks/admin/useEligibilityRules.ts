@@ -6,13 +6,17 @@ import type {
     EligibilityFormData
 } from '../../types/eligibilityAdmin';
 import { eligibilityService } from '../../services/admin/eligibility.service';
+import { drivesService } from '../../services/admin/drives.service';
 import { evaluateCohortEligibility } from '../../utils/admin/eligibilityEvaluator';
 import type { RuleEvaluationResult } from '../../utils/admin/eligibilityEvaluator';
 import type { AdminStudentProfile } from '../../types/studentAdmin';
+import type { AdminDriveProfile } from '../../types/driveAdmin';
 
 export const useEligibilityRules = () => {
     const [rules, setRules] = useState<AdminEligibilityRule[]>([]);
+    const [availableDrives, setAvailableDrives] = useState<AdminDriveProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingDrives, setIsLoadingDrives] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // Standard Filter States
@@ -212,11 +216,66 @@ export const useEligibilityRules = () => {
         setAttachModalState({ isOpen: false, ruleToAttach: null });
     }, []);
 
+    const fetchAttachableDrives = useCallback(async () => {
+        setIsLoadingDrives(true);
+        try {
+            const drives = await drivesService.fetchAllDrives();
+            setAvailableDrives(
+                drives.filter(drive => !['completed', 'cancelled'].includes(drive.status))
+            );
+        } catch (err: any) {
+            console.error('Error fetching drives for eligibility attachment:', err);
+            setError(err.message || 'Failed to load drives for rule attachment.');
+            setAvailableDrives([]);
+        } finally {
+            setIsLoadingDrives(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (attachModalState.isOpen) {
+            fetchAttachableDrives();
+        }
+    }, [attachModalState.isOpen, fetchAttachableDrives]);
+
+    const attachRuleToDrive = useCallback(async (rule: AdminEligibilityRule, driveId: string) => {
+        setIsSaving(true);
+        setError(null);
+        try {
+            await drivesService.updateDrive(driveId, {
+                eligibilityRules: {
+                    minCGPA: rule.minCGPA,
+                    allowedDepartments: rule.allowedDepartments,
+                    allowedYears: rule.allowedYears,
+                    maxActiveBacklogs: rule.maxActiveBacklogs,
+                    maxHistoryBacklogs: rule.maxHistoryBacklogs,
+                    requiresResumeApproval: rule.requiresResumeApproval,
+                    mandatoryInternship: rule.mandatoryInternship,
+                    requiredSkills: rule.requiredSkills,
+                }
+            });
+
+            const linkedDriveIds = Array.from(new Set([...(rule.linkedDriveIds || []), driveId]));
+            await eligibilityService.updateRule(rule.id, { linkedDriveIds });
+            setRules(prev => prev.map(r =>
+                r.id === rule.id ? { ...r, linkedDriveIds, updatedAt: new Date() } : r
+            ));
+            closeAttachModal();
+        } catch (err: any) {
+            console.error('Attach to drive failed:', err);
+            setError(err.message || 'Failed to attach eligibility rule to drive.');
+        } finally {
+            setIsSaving(false);
+        }
+    }, [closeAttachModal]);
+
     return {
         // Data & Processed State
         rules: paginatedRules,
         totalItems,
+        availableDrives,
         isLoading,
+        isLoadingDrives,
         error,
 
         filters,
@@ -248,6 +307,7 @@ export const useEligibilityRules = () => {
         attachModalState,
         openAttachModal,
         closeAttachModal,
+        attachRuleToDrive,
 
         // Preview State & Mutator
         previewState,

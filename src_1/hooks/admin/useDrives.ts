@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { AdminDriveProfile, DriveFilters, DriveSortConfig, DriveFormData } from '../../types/driveAdmin';
 import { drivesService } from '../../services/admin/drives.service';
@@ -147,7 +146,7 @@ export const useDrives = () => {
                 await drivesService.updateDrive(formState.initialData.id, formData);
 
                 // Optimistic Local Update
-                setDrives((prev: any) => prev.map(d =>
+                setDrives((prev: AdminDriveProfile[]) => prev.map((d: AdminDriveProfile) =>
                     d.id === formState.initialData!.id
                         ? { ...d, ...formData, updatedAt: new Date() }
                         : d
@@ -155,7 +154,7 @@ export const useDrives = () => {
 
                 // If currently viewing details, update the drawer data too
                 if (selectedDrive?.id === formState.initialData.id) {
-                    setSelectedDrive((prev: any) => prev ? { ...prev, ...formData, updatedAt: new Date() } : null);
+                    setSelectedDrive((prev: AdminDriveProfile | null) => prev ? { ...prev, ...formData, updatedAt: new Date() } : null);
                 }
 
             } else {

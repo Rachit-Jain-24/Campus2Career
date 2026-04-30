@@ -34,7 +34,7 @@ export const eligibilityService = {
         } as AdminEligibilityRule;
     },
 
-    async updateRule(id: string, data: Partial<EligibilityFormData>): Promise<void> {
+    async updateRule(id: string, data: Partial<EligibilityFormData> & { linkedDriveIds?: string[] }): Promise<void> {
         await eligibilityDb.updateRule(id, data);
     },
 

@@ -563,8 +563,9 @@ export function getKnowledgeBase(): KnowledgeChunk[] {
  * 2. If Firestore is enabled: Use local TF-IDF (keyword-based).
  */
 export async function retrieve(query: string, topK: number = 5): Promise<RAGResult> {
-  // Always use Supabase for semantic search
-  {
+  const useNativeSearch = import.meta.env.MODE !== 'test';
+
+  if (useNativeSearch) {
     try {
       const results = await searchKnowledge(query, topK);
       if (results.length > 0) {

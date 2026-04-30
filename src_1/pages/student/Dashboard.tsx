@@ -307,6 +307,14 @@ export default function StudentDashboard() {
         { label: "Mock Interviews", value: 30, done: false },
     ];
 
+    const getWelcomeMessage = () => {
+        if (currentYear === 1) return "Welcome to NMIMS! Let's start building your foundation for a great career.";
+        if (currentYear === 2) return "Welcome back! It's time to dive deeper into your core subjects and start exploring projects.";
+        if (currentYear === 3) return "Welcome to your pre-final year! Gear up for internships and intensive career preparation.";
+        if (currentYear >= 4) return "Welcome to your final year! Let's get you placed in your dream company.";
+        return "Welcome to your dashboard!";
+    };
+
     return (
         <DashboardLayout role="student" userName={user?.name || "Student"} userYear={yearLabel} userProgram={user?.branch || "B.Tech CSE"}>
             <div className="space-y-6">
@@ -367,7 +375,8 @@ export default function StudentDashboard() {
                         <h1 className="text-4xl md:text-5xl font-black mb-2 text-white">
                             {getGreeting()}, {user?.name?.split(' ')[0] || 'Student'}! 👋
                         </h1>
-                        <p className="text-white/90 font-medium text-lg mt-2 uppercase tracking-wide">Mode: <span className="font-bold text-white"> {modeLabel}</span></p>
+                        <p className="text-white/80 font-medium text-lg mb-4">{getWelcomeMessage()}</p>
+                        <p className="text-white/90 font-medium text-sm mt-2 uppercase tracking-wide">Mode: <span className="font-bold text-white"> {modeLabel}</span></p>
                         <div className="mt-6 flex flex-wrap gap-3">
                             {roadMapSteps.map((step, idx) => (
                                 <span key={idx} className="rounded-xl bg-white/10 border border-white/10 px-4 py-2 text-xs font-bold">✦ {step}</span>

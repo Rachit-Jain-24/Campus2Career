@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AuthPage from './pages/auth/AuthPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import CareerDiscoveryPage from './pages/onboarding/CareerDiscoveryPage';
 import ProfileSetupPage from './pages/student/ProfileSetupPage';
 import AssessmentPage from './pages/student/AssessmentPage';
@@ -107,13 +108,16 @@ function App() {
         {/* ── Portal selector (alternative admin access) ── */}
         <Route path="/portal" element={<PortalSelector />} />
 
+        {/* ── Password reset (Supabase email link lands here) ── */}
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+
         {/* ── Role-based portals ── */}
-        <Route path="/admin/*" element={<ProtectedRoute allowedRole="admin"><AdminPortalRoutes /></ProtectedRoute>} />
-        <Route path="/dean/*" element={<ProtectedRoute allowedRole="admin"><DeanPortalRoutes /></ProtectedRoute>} />
-        <Route path="/director/*" element={<ProtectedRoute allowedRole="admin"><DirectorPortalRoutes /></ProtectedRoute>} />
-        <Route path="/program-chair/*" element={<ProtectedRoute allowedRole="admin"><ProgramChairPortalRoutes /></ProtectedRoute>} />
-        <Route path="/faculty/*" element={<ProtectedRoute allowedRole="admin"><FacultyPortalRoutes /></ProtectedRoute>} />
-        <Route path="/placement/*" element={<ProtectedRoute allowedRole="admin"><PlacementPortalRoutes /></ProtectedRoute>} />
+        <Route path="/admin/*" element={<ProtectedRoute allowedRole="system_admin"><AdminPortalRoutes /></ProtectedRoute>} />
+        <Route path="/dean/*" element={<ProtectedRoute allowedRole="dean"><DeanPortalRoutes /></ProtectedRoute>} />
+        <Route path="/director/*" element={<ProtectedRoute allowedRole="director"><DirectorPortalRoutes /></ProtectedRoute>} />
+        <Route path="/program-chair/*" element={<ProtectedRoute allowedRole="program_chair"><ProgramChairPortalRoutes /></ProtectedRoute>} />
+        <Route path="/faculty/*" element={<ProtectedRoute allowedRole="faculty"><FacultyPortalRoutes /></ProtectedRoute>} />
+        <Route path="/placement/*" element={<ProtectedRoute allowedRole="placement_officer"><PlacementPortalRoutes /></ProtectedRoute>} />
 
         {/* Note: Seed tools removed - data managed through Supabase directly */}
 

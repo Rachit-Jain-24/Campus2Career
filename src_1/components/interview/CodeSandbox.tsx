@@ -37,9 +37,7 @@ export function CodeSandbox({ language, onChange, onOutputChange }: Props) {
   const handleRun = async () => {
     setRunning(true);
     setOutput(null);
-    if (language === 'python' && !window._pyodideInstance) {
-      setLoadingMsg('Loading Python runtime… (first run only, ~5s)');
-    }
+    setLoadingMsg('Running on OneCompiler…');
     const result = await runCode(code, language);
     setLoadingMsg('');
     setOutput(result);
@@ -99,14 +97,23 @@ export function CodeSandbox({ language, onChange, onOutputChange }: Props) {
             <span className={`text-[10px] font-bold uppercase tracking-widest ${statusColor}`}>
               {output.status === 'Accepted' ? '✓ Accepted' :
                output.status === 'Error' ? '✗ Error' :
+               output.status === 'Timeout' ? '⏱ Timeout' :
                output.status}
             </span>
-            {output.timeMs > 0 && (
-              <span className="text-[10px] text-[#8080a0] font-mono">{output.timeMs.toFixed(0)}ms</span>
-            )}
+            <div className="flex items-center gap-3">
+              {output.executionTime !== undefined && (
+                <span className="text-[10px] text-[#8080a0] font-mono">exec: {output.executionTime}ms</span>
+              )}
+              {output.memoryUsed !== undefined && (
+                <span className="text-[10px] text-[#8080a0] font-mono">mem: {output.memoryUsed}KB</span>
+              )}
+              {output.timeMs > 0 && !output.executionTime && (
+                <span className="text-[10px] text-[#8080a0] font-mono">{output.timeMs.toFixed(0)}ms</span>
+              )}
+            </div>
           </div>
           {output.isMock && (
-            <p className="text-[10px] text-amber-400">ℹ Mock mode — add VITE_JUDGE0_API_KEY to .env for real execution</p>
+            <p className="text-[10px] text-amber-400">ℹ Mock mode — add VITE_ONECOMPILER_API_KEY to .env for real execution</p>
           )}
           {output.stdout && (
             <div>

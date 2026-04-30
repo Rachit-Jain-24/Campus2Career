@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FileSignature, ChevronLeft, ChevronRight, Link2, X } from 'lucide-react';
 import { useEligibilityRules } from '../../hooks/admin/useEligibilityRules';
 import { EligibilityFiltersBar } from '../../components/admin/eligibility/EligibilityFiltersBar';
@@ -33,9 +33,20 @@ export const EligibilityRulesPage: React.FC = () => {
         previewState,
         triggerPreviewEvaluation,
         attachModalState,
+        availableDrives,
+        isLoadingDrives,
         openAttachModal,
-        closeAttachModal
+        closeAttachModal,
+        attachRuleToDrive
     } = useEligibilityRules();
+
+    const [selectedDriveId, setSelectedDriveId] = useState('');
+
+    useEffect(() => {
+        if (attachModalState.isOpen) {
+            setSelectedDriveId('');
+        }
+    }, [attachModalState.isOpen]);
 
     const handleViewRule = (rule: AdminEligibilityRule) => {
         setSelectedRule(rule);
@@ -160,7 +171,7 @@ export const EligibilityRulesPage: React.FC = () => {
                 isSaving={isSaving}
             />
 
-            {/* Simple Attach to Drive placeholder modal */}
+            {/* Attach to Drive modal */}
             {attachModalState.isOpen && attachModalState.ruleToAttach && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={closeAttachModal} />
@@ -177,13 +188,40 @@ export const EligibilityRulesPage: React.FC = () => {
                         <p className="text-foreground mb-6 text-sm">
                             Select an upcoming placement drive to directly apply the <span className="font-bold text-foreground">{attachModalState.ruleToAttach.ruleName}</span> criteria.
                         </p>
-                        <div className="text-center p-4 border border-border border-dashed rounded-lg bg-secondary/50 mb-6">
-                            <p className="text-muted-foreground text-sm italic">Drive selector integration placeholder...</p>
+                        <div className="space-y-2 mb-6">
+                            <label htmlFor="eligibility-drive-select" className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                                Placement Drive
+                            </label>
+                            <select
+                                id="eligibility-drive-select"
+                                value={selectedDriveId}
+                                onChange={(event) => setSelectedDriveId(event.target.value)}
+                                disabled={isLoadingDrives || isSaving}
+                                className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
+                            >
+                                <option value="">
+                                    {isLoadingDrives ? 'Loading drives...' : 'Select a drive'}
+                                </option>
+                                {availableDrives.map(drive => (
+                                    <option key={drive.id} value={drive.id}>
+                                        {drive.title} - {drive.companyName} ({drive.status.replace(/_/g, ' ')})
+                                    </option>
+                                ))}
+                            </select>
+                            {!isLoadingDrives && availableDrives.length === 0 && (
+                                <p className="text-xs text-muted-foreground">
+                                    No active or upcoming drives are available for linking.
+                                </p>
+                            )}
                         </div>
                         <div className="flex justify-end gap-3">
                             <button onClick={closeAttachModal} className="px-4 py-2 text-sm text-foreground hover:text-foreground">Cancel</button>
-                            <button onClick={closeAttachModal} className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 text-white font-medium rounded-lg shadow-md transition-colors">
-                                Confirm Link
+                            <button
+                                onClick={() => attachRuleToDrive(attachModalState.ruleToAttach!, selectedDriveId)}
+                                disabled={!selectedDriveId || isSaving}
+                                className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 text-white font-medium rounded-lg shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isSaving ? 'Linking...' : 'Confirm Link'}
                             </button>
                         </div>
                     </div>

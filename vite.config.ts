@@ -39,6 +39,9 @@ export default defineConfig({
           
           // PDF processing
           'pdf-vendor': ['pdfjs-dist'],
+          
+          // Observability
+          'observability-vendor': ['@sentry/react', 'posthog-js'],
         },
         // Better asset naming
         chunkFileNames: 'assets/js/[name]-[hash].js',

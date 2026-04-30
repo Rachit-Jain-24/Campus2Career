@@ -38,8 +38,8 @@ An AI-powered career guidance and placement management platform designed for stu
 |---|---|
 | **Frontend** | React 19, TypeScript, Vite 6, Tailwind CSS 4, Recharts, Lucide React |
 | **Backend** | Node.js, Express 5, SQLite via Prisma ORM 6 |
-| **AI / NLP** | OpenRouter API (Gemini 2.0 Flash, Claude 3.5 Haiku, Llama 3.1 70B), Python FastAPI |
-| **Database** | Supabase (PostgreSQL), Firebase Auth |
+| **AI / NLP** | OpenRouter API via FastAPI proxy (Gemini 2.0 Flash, Claude 3.5 Haiku, Llama 3.1 70B), Python FastAPI |
+| **Database / Auth** | Supabase Auth, Supabase PostgreSQL, Supabase Storage |
 | **Infrastructure** | Firebase Hosting, Supabase Cloud |
 
 ---
@@ -101,26 +101,16 @@ Create a `.env` file in the root with the following:
 
 ```env
 # Firebase Configuration (for auth compatibility)
-VITE_FIREBASE_API_KEY=your_key
-VITE_FIREBASE_AUTH_DOMAIN=your_domain
-VITE_FIREBASE_PROJECT_ID=your_id
-VITE_FIREBASE_STORAGE_BUCKET=your_bucket
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_id
-VITE_FIREBASE_APP_ID=your_app_id
-
-# Supabase Configuration (Primary Database)
+# Supabase Configuration (Auth + Primary Database)
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 VITE_DB_PROVIDER=supabase
-
-# OpenRouter API (AI Provider)
-VITE_OPENROUTER_API_KEY=your_openrouter_key
 
 # Judge0 Code Execution (Optional)
 VITE_JUDGE0_API_KEY=your_judge0_key
 VITE_JUDGE0_BASE_URL=https://judge0-ce.p.rapidapi.com
 
-# AI Backend URL
+# AI Backend URL (FastAPI proxy; keep OPENROUTER_API_KEY server-side)
 VITE_AI_BACKEND_URL=http://localhost:8000
 ```
 
@@ -134,7 +124,7 @@ VITE_AI_BACKEND_URL=http://localhost:8000
 - **Direct Admin Logins**: `/login/admin`, `/login/dean`, `/login/director`, `/login/program-chair`, `/login/faculty`, `/login/placement-officer`
 
 ### Demo Access
-Use the **"Preview"** button on any admin login page to bypass authentication for a live demo.
+Use the unified auth page or portal selector for demos. Admin preview/mock login is available only where enabled for local demonstration and should remain disabled for production.
 
 ---
 

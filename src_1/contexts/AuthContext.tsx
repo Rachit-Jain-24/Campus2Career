@@ -15,6 +15,7 @@ interface AuthContextType {
     adminLogin: (email: string, password: string) => Promise<void>;
     signup: (data: any) => Promise<void>;
     logout: () => Promise<void>;
+    resetPassword: (email: string) => Promise<void>;
     refreshUser: () => Promise<void>;
     updateUser: (newUser: AppUser) => Promise<void>;
     mockLogin: (role: string, name: string, email: string) => void;
@@ -248,6 +249,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             if (userData) {
+                // Ensure separation: Student login only for students
+                if (userData.role && userData.role !== 'student') {
+                    await supabase.auth.signOut();
+                    throw new Error('This account is registered as staff/admin. Please use the Staff/Admin login tab.');
+                }
+                
                 setUser(userData);
                 localStorage.setItem('c2c_user', JSON.stringify(userData));
             }
@@ -302,53 +309,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
             });
 
-            if (authError) throw authError;
+            if (authError) {
+                // Friendly email registered check
+                if (authError.message.includes('already registered')) {
+                    throw new Error('This email is already registered! Please sign in, or try resetting your password.');
+                }
+                throw authError;
+            }
             if (!authData.user) throw new Error('Signup failed: No user created');
 
-            // 2. Upsert student row — handles both fresh signup and re-signup
-            // (409 conflict on sap_id means the row already exists — update it instead)
-            await studentsDb.createStudent({
-                id: authData.user.id,
-                sapId: data.sapId,
-                name: data.fullName || data.name,
-                email: data.email,
-                phone: data.phone || '',
-                branch: data.program || data.branch || '',
-                rollNo: data.rollNo || '',
-                currentYear: parseInt(data.currentYear) || 1,
-                batch: '',
-                cgpa: '0',
-                careerDiscoveryCompleted: false,
-                profileCompleted: false,
-                assessmentCompleted: false,
-                placementStatus: 'unplaced',
-            });
+            // 2. Upsert student row
+            try {
+                await studentsDb.createStudent({
+                    id: authData.user.id,
+                    sapId: data.sapId,
+                    name: data.fullName || data.name,
+                    email: data.email,
+                    phone: data.phone || '',
+                    branch: data.program || data.branch || '',
+                    rollNo: data.rollNo || '',
+                    currentYear: parseInt(data.currentYear) || 1,
+                    batch: '',
+                    cgpa: '0',
+                    careerDiscoveryCompleted: false,
+                    profileCompleted: false,
+                    assessmentCompleted: false,
+                    placementStatus: 'unplaced',
+                });
+            } catch (dbError: any) {
+                // If it's an RLS violation on upsert, it means the SAP ID already exists and belongs to someone else
+                if (dbError.code === '42501' || dbError.message?.includes('row-level security')) {
+                    throw new Error(`The SAP ID ${data.sapId} is already registered to another account! Please contact administration if this is a mistake.`);
+                }
+                // If it's a unique constraint violation
+                if (dbError.code === '23505') {
+                    throw new Error(`The SAP ID ${data.sapId} is already in use.`);
+                }
+                throw dbError;
+            }
 
-            // 3. Build local user object and set session
-            const defaultUser: StudentUser = {
-                uid: authData.user.id,
-                sapId: data.sapId,
-                name: data.fullName || data.name,
-                email: data.email,
-                phone: data.phone || '',
-                role: 'student',
-                branch: data.program || data.branch || '',
-                rollNo: data.rollNo || '',
-                currentYear: parseInt(data.currentYear) || 1,
-                onboardingStep: 0,
-                program: data.program || data.branch || '',
-                cgpa: '',
-                careerDiscoveryCompleted: false,
-                profileCompleted: false,
-                assessmentCompleted: false,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            };
-
-            setUser(defaultUser);
-            localStorage.setItem('c2c_user', JSON.stringify(defaultUser));
+            // 3. DO NOT auto-login. Sign them out so they have to log in manually.
+            await supabase.auth.signOut();
         } catch (error: any) {
-            handleAuthError(error, 'Signup failed. Please try again.');
+            handleAuthError(error, error.message || 'Signup failed. Please try again.');
         } finally {
             isSigningUp.current = false; // re-enable auth listener
             setIsLoading(false);
@@ -372,6 +375,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.removeItem('c2c_user');
             setIsInitializing(false);
             navigate('/login');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const resetPassword = async (email: string) => {
+        setIsLoading(true);
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password`,
+            });
+            if (error) throw error;
+        } catch (error: any) {
+            handleAuthError(error, 'Failed to send reset email. Please try again.');
+            throw error;
         } finally {
             setIsLoading(false);
         }
@@ -424,7 +442,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const mockLogin = (role: string, name: string, email: string) => {
-        if (import.meta.env.PROD) return;
+        if (import.meta.env.PROD && import.meta.env.VITE_ENABLE_DEMO_LOGIN !== 'true') {
+            throw new Error('Demo login is disabled in production.');
+        }
+
         const mockUser: AppUser = {
             uid: `mock_${role}_${Date.now()}`,
             email,
@@ -437,28 +458,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const handleAuthError = (error: any, fallbackMessage: string) => {
-        if (error.message === 'auth/unauthorized-role') {
+        const message = error.message || '';
+        
+        // 1. Specific Role/Permission Errors
+        if (message === 'auth/unauthorized-role') {
             throw new Error('Access Denied: You do not have an administrative role.');
         }
-        if (error.status === 422 || error.message?.includes('Unprocessable') || error.message?.includes('unable to validate')) {
-            throw new Error('Login failed — could not resolve your account. Try logging in with your full email address instead of SAP ID.');
+
+        // 2. Registration Conflicts (Crucial for user request)
+        if (message.includes('already registered') || message.includes('User already registered')) {
+            throw new Error('This email is already registered. If you are a student, please sign in. If you are staff, please contact the system admin.');
         }
-        if (error.message?.includes('Invalid login credentials') || error.status === 400) {
+
+        // 3. SAP ID / Email resolution (422)
+        if (error.status === 422 || message.includes('Unprocessable') || message.includes('unable to validate')) {
+            throw new Error('Account resolution failed. If you just signed up, try signing in now. Otherwise, please use your full @nmims.edu.in email.');
+        }
+
+        // 4. Invalid Credentials
+        if (message.includes('Invalid login credentials') || message.includes('invalid_credentials') || error.status === 400) {
             throw new Error('Incorrect credentials. Please check your email/SAP ID and password.');
         }
-        if (error.message?.includes('Email not confirmed')) {
-            throw new Error('Your email is not confirmed yet. Please check your inbox or contact admin to enable your account.');
+
+        // 5. Email Confirmation
+        if (message.includes('Email not confirmed')) {
+            throw new Error('Your email is not confirmed. Please check your inbox or contact the support team.');
         }
-        if (error.message?.includes('Password should be') || error.message?.includes('password')) {
-            throw new Error('Password must be at least 8 characters and contain letters and numbers.');
+
+        // 6. Password Complexity
+        if (message.includes('Password should be') || message.includes('password')) {
+            throw new Error('Password must be at least 8 characters and contain both letters and numbers.');
         }
-        throw new Error(error.message || fallbackMessage);
+
+        throw new Error(message || fallbackMessage);
     };
 
     return (
         <AuthContext.Provider value={{
             user, isLoading, isInitializing, isAuthenticated, isAdmin,
-            login, adminLogin, signup, logout, refreshUser, updateUser, mockLogin
+            login, adminLogin, signup, logout, resetPassword, refreshUser, updateUser, mockLogin
         }}>
             {children}
         </AuthContext.Provider>

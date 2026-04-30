@@ -22,9 +22,21 @@ export interface LeetCodeData {
 export async function fetchLeetCodeStats(username: string): Promise<LeetCodeData | null> {
     if (!username) return null;
 
+    let cleanUsername = username.trim();
+    try {
+        const url = new URL(cleanUsername);
+        const parts = url.pathname.split('/').filter(Boolean);
+        // Usually leetcode paths are /username or /u/username
+        cleanUsername = parts[parts.length - 1] || cleanUsername;
+    } catch {
+        // Not a URL, which is fine
+        // Clean trailing slashes if any
+        cleanUsername = cleanUsername.replace(/\/$/, '');
+    }
+
     try {
         // Using a more consolidated API that returns more info in one request
-        const res = await fetch(`https://leetcode-api-faisalshohag.vercel.app/${username}`);
+        const res = await fetch(`https://leetcode-api-faisalshohag.vercel.app/${cleanUsername}`);
         if (res.ok) {
             const data = await res.json();
 
@@ -87,7 +99,7 @@ export async function fetchLeetCodeStats(username: string): Promise<LeetCodeData
 
     try {
         // Fallback: This API usually takes 3 calls, but let's try to get the basics safely
-        const proxyUrl = `https://corsproxy.io/?url=https://alfa-leetcode-api.onrender.com/${username}`;
+        const proxyUrl = `https://corsproxy.io/?url=https://alfa-leetcode-api.onrender.com/${cleanUsername}`;
         const response = await fetch(proxyUrl);
         if (response.ok) {
             const data = await response.json();
