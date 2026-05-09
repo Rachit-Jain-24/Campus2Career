@@ -138,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     }
 
                     if (freshProfile) {
-                        console.log('[AuthContext] Profile fetched successfully');
+                        console.log(`[AuthContext] Profile fetched successfully for ${email}. Role: ${freshProfile.role}`);
                         setUser(freshProfile);
                         localStorage.setItem('c2c_user', JSON.stringify(freshProfile));
                     } else {
@@ -168,9 +168,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log(`[Supabase Auth] Event: ${event} | Session: ${session ? 'Active' : 'None'}`);
 
-            // Skip hydration if signup is in progress — the signup function
-            // handles setting the user itself after createStudent completes
+            // Skip hydration if signup is in progress
             if (isSigningUp.current) {
+                clearTimeout(authTimeout);
+                setIsInitializing(false);
+                return;
+            }
+
+            // IMPORTANT: Skip profile hydration and automatic sign-out if we're in a password recovery flow
+            // This prevents the user from being signed out while they are on the reset-password page
+            const isPasswordRecovery = event === 'PASSWORD_RECOVERY' || window.location.pathname === '/reset-password';
+            
+            if (isPasswordRecovery) {
+                console.log('[AuthContext] Password recovery flow detected - skipping profile hydration');
                 clearTimeout(authTimeout);
                 setIsInitializing(false);
                 return;
@@ -296,6 +306,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(true);
         isSigningUp.current = true; // suppress auth listener during signup
         try {
+            // ── Step 0: Whitelist check ──────────────────────────────────────
+            // Only students pre-approved by an admin can register.
+            const { data: whitelistRow, error: wlError } = await supabase
+                .from('student_whitelist')
+                .select('id, email, sap_id, is_used')
+                .ilike('email', data.email.trim())
+                .maybeSingle();
+
+            if (wlError) {
+                // If the table doesn't exist yet, fail open with a clear message
+                if (wlError.code === '42P01') {
+                    throw new Error('Registration system is not configured yet. Please contact the administrator.');
+                }
+                throw new Error('Could not verify registration eligibility. Please try again.');
+            }
+
+            if (!whitelistRow) {
+                throw new Error(
+                    'Your email is not registered in our system. ' +
+                    'Only pre-approved NMIMS students can create an account. ' +
+                    'Please contact your placement officer or system administrator.'
+                );
+            }
+
+            if (whitelistRow.is_used) {
+                throw new Error(
+                    'An account already exists for this email. ' +
+                    'Please sign in instead, or contact admin if you believe this is an error.'
+                );
+            }
+
+            // Optional: cross-validate SAP ID if the whitelist entry has one
+            if (whitelistRow.sap_id && data.sapId &&
+                whitelistRow.sap_id.trim() !== data.sapId.trim()) {
+                throw new Error(
+                    'The SAP ID you entered does not match our records for this email. ' +
+                    'Please check your SAP ID or contact the administrator.'
+                );
+            }
+            // ── End whitelist check ──────────────────────────────────────────
             // 1. Create Auth Account in Supabase
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: data.email,
@@ -350,6 +400,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // 3. DO NOT auto-login. Sign them out so they have to log in manually.
             await supabase.auth.signOut();
+
+            // 4. Mark whitelist entry as used
+            await supabase
+                .from('student_whitelist')
+                .update({ is_used: true, used_at: new Date().toISOString() })
+                .ilike('email', data.email.trim());
         } catch (error: any) {
             handleAuthError(error, error.message || 'Signup failed. Please try again.');
         } finally {

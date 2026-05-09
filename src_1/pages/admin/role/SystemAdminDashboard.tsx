@@ -123,9 +123,10 @@ export const SystemAdminDashboard: React.FC = () => {
 
             <div>
                 <h3 className="text-base font-semibold mb-3 text-foreground">Quick Actions</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                     {[
                         { label: 'Users', icon: Users, path: '/admin/users', color: 'text-blue-700 bg-blue-100' },
+                        { label: 'Whitelist', icon: ShieldCheck, path: '/admin/student-whitelist', color: 'text-rose-700 bg-rose-100' },
                         { label: 'Settings', icon: Settings, path: '/admin/settings', color: 'text-violet-700 bg-violet-100' },
                         { label: 'Audit Logs', icon: ClipboardList, path: '/admin/audit-logs', color: 'text-emerald-700 bg-emerald-100' },
                         { label: 'Database Tools', icon: Database, path: '/admin/database-tools', color: 'text-amber-700 bg-amber-100' },
@@ -217,9 +218,10 @@ export const SystemAdminDashboard: React.FC = () => {
 
             <div className="card-nmims p-6">
                 <SectionHeader icon={Activity} title="Platform Controls" />
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     {[
                         { label: 'User Management', desc: 'Manage all platform users', icon: Users, path: '/admin/users', color: 'text-blue-700 bg-blue-100 border-blue-200' },
+                        { label: 'Student Whitelist', desc: 'Control who can register', icon: ShieldCheck, path: '/admin/student-whitelist', color: 'text-rose-700 bg-rose-100 border-rose-200' },
                         { label: 'System Settings', desc: 'Configure platform settings', icon: Settings, path: '/admin/settings', color: 'text-violet-700 bg-violet-100 border-violet-200' },
                         { label: 'Audit Logs', desc: 'View all system events', icon: ClipboardList, path: '/admin/audit-logs', color: 'text-emerald-700 bg-emerald-100 border-emerald-200' },
                         { label: 'Database Tools', desc: 'Manage data & backups', icon: Database, path: '/admin/database-tools', color: 'text-amber-700 bg-amber-100 border-amber-200' },

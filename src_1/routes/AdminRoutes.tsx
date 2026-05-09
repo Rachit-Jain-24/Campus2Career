@@ -19,6 +19,7 @@ import { SettingsPage } from '../pages/admin/SettingsPage';
 import { AuditLogsPage } from '../pages/admin/AuditLogsPage';
 import { UnauthorizedPage } from '../pages/admin/UnauthorizedPage';
 import { DatabaseTools } from '../pages/admin/DatabaseTools';
+import { StudentWhitelistPage } from '../pages/admin/StudentWhitelistPage';
 
 // Role-Specific Dashboard Pages
 import { DeanDashboard } from '../pages/admin/role/DeanDashboard';
@@ -64,6 +65,7 @@ export const AdminRoutes: React.FC = () => {
                 <Route path="settings" element={<RoleGuard allowedRoles={['system_admin']}><SettingsPage /></RoleGuard>} />
                 <Route path="audit-logs" element={<RoleGuard allowedRoles={['system_admin']}><AuditLogsPage /></RoleGuard>} />
                 <Route path="database-tools" element={<RoleGuard allowedRoles={['system_admin']}><DatabaseTools /></RoleGuard>} />
+                <Route path="student-whitelist" element={<RoleGuard allowedRoles={['system_admin', 'dean', 'director', 'program_chair']}><StudentWhitelistPage /></RoleGuard>} />
                 
                 {/* Note: Database fix tools removed - using Supabase native data management */}
             </Route>

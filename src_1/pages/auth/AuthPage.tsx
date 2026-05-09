@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import nmimsLogo from '../../assets/logo.png';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -8,6 +8,7 @@ import {
     CheckCircle2, UserCircle, ChevronDown, Briefcase, Loader2, ArrowRight
 } from 'lucide-react';
 import { getDefaultAdminRoute } from '../../config/admin/roleRoutes';
+import { supabase } from '../../lib/supabase';
 
 // Admin roles configuration
 const ADMIN_ROLES = [
@@ -128,6 +129,47 @@ export default function AuthPage() {
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
     const [signupError, setSignupError] = useState('');
     
+    // Real-time whitelist check state
+    type WhitelistStatus = 'idle' | 'checking' | 'found' | 'not_found' | 'already_used';
+    const [whitelistStatus, setWhitelistStatus] = useState<WhitelistStatus>('idle');
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Debounced whitelist check — fires 600ms after the user stops typing
+    const checkWhitelist = useCallback((email: string) => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        
+        const trimmed = email.trim().toLowerCase();
+        // Only check if format looks valid and is an NMIMS domain
+        const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+        const isNmimsEmail = trimmed.endsWith('@nmims.edu.in') || trimmed.endsWith('@nmims.edu');
+
+        if (!trimmed || !isValidFormat || !isNmimsEmail) {
+            setWhitelistStatus('idle');
+            return;
+        }
+
+        setWhitelistStatus('checking');
+        debounceRef.current = setTimeout(async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('student_whitelist')
+                    .select('id, is_used')
+                    .ilike('email', trimmed)
+                    .maybeSingle();
+
+                if (error || !data) {
+                    setWhitelistStatus('not_found');
+                } else if (data.is_used) {
+                    setWhitelistStatus('already_used');
+                } else {
+                    setWhitelistStatus('found');
+                }
+            } catch {
+                setWhitelistStatus('idle'); // silently fail — server will catch it on submit
+            }
+        }, 600);
+    }, []);
+
     const justRegistered = location.state?.registered === true;
 
     // Handle login (both student and admin)
@@ -222,7 +264,11 @@ export default function AuthPage() {
         setFormData(prev => ({ ...prev, [field]: value }));
         const error = validateField(field, value);
         setFieldErrors(prev => ({ ...prev, [field]: error }));
-    }, []);
+        if (field === 'email') {
+            setWhitelistStatus('idle');
+            checkWhitelist(value);
+        }
+    }, [checkWhitelist]);
 
     // Render mode selector tabs
     const renderModeSelector = () => (
@@ -507,12 +553,58 @@ export default function AuthPage() {
                         placeholder="yourname@nmims.edu.in"
                         value={formData.email}
                         onChange={e => updateField('email', e.target.value)}
-                        className={`w-full pl-10 pr-4 py-2.5 text-sm border rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 transition-all text-slate-900 placeholder:text-slate-400 ${
-                            fieldErrors.email ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : 'border-slate-200 focus:ring-[#8B1A1A]/20 focus:border-[#8B1A1A]'
+                        className={`w-full pl-10 pr-10 py-2.5 text-sm border rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 transition-all text-slate-900 placeholder:text-slate-400 ${
+                            whitelistStatus === 'found'
+                                ? 'border-green-400 focus:ring-green-200 focus:border-green-500'
+                                : whitelistStatus === 'not_found' || whitelistStatus === 'already_used'
+                                ? 'border-red-300 focus:ring-red-200 focus:border-red-400'
+                                : fieldErrors.email
+                                ? 'border-red-300 focus:ring-red-200 focus:border-red-400'
+                                : 'border-slate-200 focus:ring-[#8B1A1A]/20 focus:border-[#8B1A1A]'
                         }`}
                     />
+                    {/* Real-time status icon inside input */}
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+                        {whitelistStatus === 'checking' && (
+                            <Loader2 className="h-4 w-4 text-slate-400 animate-spin" />
+                        )}
+                        {whitelistStatus === 'found' && (
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        )}
+                        {(whitelistStatus === 'not_found' || whitelistStatus === 'already_used') && (
+                            <AlertCircle className="h-4 w-4 text-red-500" />
+                        )}
+                    </div>
                 </div>
-                {fieldErrors.email && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> {fieldErrors.email}</p>}
+
+                {/* Format / domain error takes priority */}
+                {fieldErrors.email && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" /> {fieldErrors.email}
+                    </p>
+                )}
+
+                {/* Whitelist status — only show when no format error */}
+                {!fieldErrors.email && whitelistStatus === 'checking' && (
+                    <p className="text-xs text-slate-400 flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Checking registration eligibility…
+                    </p>
+                )}
+                {!fieldErrors.email && whitelistStatus === 'found' && (
+                    <p className="text-xs text-green-600 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> Email verified — you're approved to register.
+                    </p>
+                )}
+                {!fieldErrors.email && whitelistStatus === 'not_found' && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" /> This email is not registered in our system. Contact your placement officer.
+                    </p>
+                )}
+                {!fieldErrors.email && whitelistStatus === 'already_used' && (
+                    <p className="text-xs text-amber-600 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" /> An account already exists for this email. Please sign in instead.
+                    </p>
+                )}
             </div>
 
             {/* Branch & Year */}

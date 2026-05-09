@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Upload, FileText, CheckCircle, Plus, X, ArrowUp, ArrowDown, Play, AlertTriangle, Sparkles } from 'lucide-react';
 import type { Difficulty, InterviewMode, InterviewRound, SessionConfig } from '../../types/interview';
-import { DIFFICULTY_INFO, ROUND_TEMPLATES, COMPANIES, CODE_LANGUAGES } from '../../lib/interviewEngine';
+import { DIFFICULTY_INFO, ROUND_TEMPLATES, COMPANIES, CODE_LANGUAGES, CODE_LANGUAGE_LABELS } from '../../lib/interviewEngine';
 import { extractTextFromLocalPDF } from '../../lib/pdfParser';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -196,7 +196,7 @@ export function InterviewLobby({ defaultRole, defaultResumeName, defaultResumeTe
               <p className="text-xs text-slate-500 uppercase tracking-widest">Code Language</p>
               <select value={codeLanguage} onChange={e => setCodeLanguage(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-primary">
-                {CODE_LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
+                {CODE_LANGUAGES.map(l => <option key={l} value={l}>{CODE_LANGUAGE_LABELS[l] ?? l}</option>)}
               </select>
             </div>
           </div>

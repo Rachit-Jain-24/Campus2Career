@@ -13,6 +13,7 @@ import { EligibilityRulesPage } from '../pages/admin/EligibilityRulesPage';
 import { ReportsPage } from '../pages/admin/ReportsPage';
 import { SettingsPage } from '../pages/admin/SettingsPage';
 import { AuditLogsPage } from '../pages/admin/AuditLogsPage';
+import { StudentWhitelistPage } from '../pages/admin/StudentWhitelistPage';
 
 const AdminShell: React.FC = () => (
     <RoleLayout
@@ -35,6 +36,7 @@ export const AdminPortalRoutes: React.FC = () => (
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="audit-logs" element={<AuditLogsPage />} />
+            <Route path="student-whitelist" element={<StudentWhitelistPage />} />
         </Route>
     </Routes>
 );

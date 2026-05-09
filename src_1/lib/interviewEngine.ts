@@ -60,7 +60,31 @@ export const COMPANIES = [
   'Startup (General)', 'MNC (General)', 'Service-based (TCS/Infosys/Wipro)',
 ];
 
-export const CODE_LANGUAGES = ['python', 'javascript', 'typescript', 'java', 'cpp', 'go', 'rust', 'sql'];
+export const CODE_LANGUAGES = [
+  'python', 'javascript', 'typescript', 'java', 'cpp', 'c',
+  'go', 'rust', 'kotlin', 'swift', 'csharp', 'php', 'ruby',
+  'scala', 'r', 'bash', 'sql'
+];
+
+export const CODE_LANGUAGE_LABELS: Record<string, string> = {
+  python:     'Python',
+  javascript: 'JavaScript',
+  typescript: 'TypeScript',
+  java:       'Java',
+  cpp:        'C++',
+  c:          'C',
+  go:         'Go',
+  rust:       'Rust',
+  kotlin:     'Kotlin',
+  swift:      'Swift',
+  csharp:     'C#',
+  php:        'PHP',
+  ruby:       'Ruby',
+  scala:      'Scala',
+  r:          'R',
+  bash:       'Bash',
+  sql:        'SQL',
+};
 
 // ── Answer method per mode ───────────────────────────────────────────────────
 export function getAnswerMethod(mode: InterviewMode): 'voice' | 'voice_and_code' | 'text' {

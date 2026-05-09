@@ -144,6 +144,13 @@ export const ADMIN_NAVIGATION: AdminNavItem[] = [
 
     // ─── System ───
     {
+        path: '/admin/student-whitelist',
+        label: 'Student Whitelist',
+        icon: ShieldCheck,
+        section: 'System',
+        allowedRoles: ['system_admin', 'dean', 'director', 'program_chair'],
+    },
+    {
         path: '/admin/settings',
         label: 'Platform Settings',
         icon: Settings,
