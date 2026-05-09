@@ -38,7 +38,7 @@ export const whitelistService = {
     return (data || []).map(mapRow);
   },
 
-  async addEntry(entry: Omit<WhitelistEntry, 'id' | 'addedAt' | 'isUsed' | 'usedAt'>, adminEmail: string): Promise<void> {
+  async addEntry(entry: Omit<WhitelistEntry, 'id' | 'addedAt' | 'isUsed' | 'usedAt' | 'addedBy'>, adminEmail: string): Promise<void> {
     const { error } = await supabase
       .from('student_whitelist')
       .insert({
