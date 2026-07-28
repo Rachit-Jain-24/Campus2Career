@@ -4,7 +4,7 @@ An AI-powered career guidance and placement management platform designed for stu
 
 ---
 
-## 🚀 Overview
+## Overview
 
 **Campus2Career** is a dual-portal platform that empowers students with personalized, data-driven career guidance while providing administrators with a robust system to track and manage placements.
 
@@ -13,14 +13,14 @@ An AI-powered career guidance and placement management platform designed for stu
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 ### For Students
-- **AI Career Advisor**: Real-time chat integration with OpenRouter (Gemini 2.0 Flash, Claude 3.5 Haiku, Llama 3.1) for career assessments and guidance.
+- **AI Career Advisor**: Real-time chat powered by OpenRouter (Gemini 2.0 Flash, Claude 3.5 Haiku, Llama 3.1) for career assessments and guidance.
 - **Skill Gap Analysis**: Compares student profiles against 6 industry-standard benchmarks (Full-Stack, AI/ML, DevOps, etc.).
 - **AI Interview Simulator**: Voice-enabled practice interviews with AI-generated technical and behavioral questions.
 - **Resume Analyzer**: ATS-based scoring and optimization suggestions using a Python NLP engine.
-- **Personalized Roadmaps**: 4-year prioritized action plans mapped to academic milestones.
+- **Personalized Roadmaps**: 4-year prioritized action plans mapped to NMIMS academic milestones.
 - **Study Kit Generation**: Comprehensive notes with theoretical foundations, algorithms, and academic references.
 - **Syllabus-Driven Learning**: Upload syllabus PDFs to generate personalized learning roadmaps.
 
@@ -32,26 +32,26 @@ An AI-powered career guidance and placement management platform designed for stu
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technologies |
 |---|---|
-| **Frontend** | React 19, TypeScript, Vite 6, Tailwind CSS 4, Recharts, Lucide React |
-| **Backend** | Node.js, Express 5, SQLite via Prisma ORM 6 |
-| **AI / NLP** | OpenRouter API via FastAPI proxy (Gemini 2.0 Flash, Claude 3.5 Haiku, Llama 3.1 70B), Python FastAPI |
-| **Database / Auth** | Supabase Auth, Supabase PostgreSQL, Supabase Storage |
-| **Infrastructure** | Firebase Hosting, Supabase Cloud |
+| **Frontend** | React 19, TypeScript 5.8, Vite 6, TailwindCSS 4, Recharts, Lucide React, Monaco Editor |
+| **Database / Auth** | Supabase PostgreSQL, Supabase Auth, Supabase Storage |
+| **AI / NLP Engine** | Python FastAPI, OpenRouter API (Gemini 2.0 Flash, Claude 3.5 Haiku, Llama 3.1 70B), scikit-learn |
+| **Monitoring** | Sentry (error tracking), PostHog (product analytics) |
+| **Hosting** | Firebase Hosting (frontend), Railway/Render (AI Engine) |
 
 ---
 
-## ⚙️ Installation & Setup
+## Installation & Setup
 
-### 1. Prerequisites
+### Prerequisites
 - Node.js 18+
 - Python 3.10+ (for AI Engine)
 - Git
 
-### 2. Global Setup (Frontend)
+### 1. Frontend Setup
 ```bash
 # Clone the repository
 git clone https://github.com/Rachit-Jain-24/Campus2Career.git
@@ -62,116 +62,115 @@ npm install
 
 # Setup environment variables
 cp .env.example .env
-# Edit .env with your Supabase and OpenRouter API keys
+# Edit .env with your Supabase URL and anon key
+
+# Start development server
+npm run dev   # http://localhost:5173
 ```
 
-### 3. Backend Setup (Optional but Recommended)
-```bash
-cd server
-npm install
-npx prisma generate
-npx prisma migrate dev
-npm run dev # Starts server on http://localhost:5000
-```
-
-### 4. AI Engine Setup (Optional)
+### 2. AI Engine Setup (Optional — required for AI features)
 ```bash
 cd ai-engine
 python -m venv venv
-# On Windows
+# Windows
 venv\Scripts\activate
-# On macOS/Linux
+# macOS/Linux
 source venv/bin/activate
 
 pip install -r requirements.txt
-python main.py # Starts AI engine on http://localhost:8000
+
+# Set your OpenRouter API key
+export OPENROUTER_API_KEY=sk-or-v1-your-key-here
+
+python main.py   # http://localhost:8000
 ```
 
-### 5. Start Development
+### 3. Run Tests
 ```bash
-# From the root directory
-npm run dev # Starts frontend on http://localhost:5173
+npm run test        # Run once
+npm run test:watch  # Watch mode
+```
+
+### 4. Production Build
+```bash
+npm run build        # Standard build
+npm run build:prod   # Production-env build
 ```
 
 ---
 
-## 🔑 Environment Variables
+## Environment Variables
 
-Create a `.env` file in the root with the following:
+See `.env.example` for the complete reference. Key variables:
 
-```env
-# Firebase Configuration (for auth compatibility)
-# Supabase Configuration (Auth + Primary Database)
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_DB_PROVIDER=supabase
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_SUPABASE_URL` | Yes | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Yes | Supabase public anon key |
+| `VITE_AI_BACKEND_URL` | Yes (prod) | URL of the Python AI Engine |
+| `VITE_SENTRY_DSN` | No | Sentry error tracking DSN |
+| `VITE_POSTHOG_API_KEY` | No | PostHog analytics key |
 
-# Judge0 Code Execution (Optional)
-VITE_JUDGE0_API_KEY=your_judge0_key
-VITE_JUDGE0_BASE_URL=https://judge0-ce.p.rapidapi.com
-
-# AI Backend URL (FastAPI proxy; keep OPENROUTER_API_KEY server-side)
-VITE_AI_BACKEND_URL=http://localhost:8000
-```
+**Server-side only** (set in Railway/Render dashboard, never in `.env`):
+- `OPENROUTER_API_KEY` — OpenRouter API key for AI models
+- `ONECOMPILER_API_KEY` — OneCompiler code execution API key
 
 ---
 
-## 🗝️ Portals & Demo Accounts
-
-### Portals
-- **Student**: `/login`
-- **Admin Portal Selector**: `/portal`
-- **Direct Admin Logins**: `/login/admin`, `/login/dean`, `/login/director`, `/login/program-chair`, `/login/faculty`, `/login/placement-officer`
-
-### Demo Access
-Use the unified auth page or portal selector for demos. Admin preview/mock login is available only where enabled for local demonstration and should remain disabled for production.
-
----
-
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 vpa-v2/
-├── src_1/                    # Core frontend code
-│   ├── components/           # Reusable UI components
-│   ├── pages/                # Page components (student, admin, auth)
-│   ├── lib/                  # Core logic engines
-│   │   ├── ai/               # AI services (chatbot, copilot, RAG)
-│   │   ├── openRouter.ts     # OpenRouter API integration
-│   │   └── supabase.ts       # Database client
-│   ├── services/             # API services
-│   ├── contexts/             # React contexts (Auth, Toast)
-│   └── hooks/                # Custom React hooks
-├── server/                   # Express backend and Prisma/SQLite
-├── ai-engine/                # Python FastAPI service for NLP
-├── public/                   # Static assets
-└── dist/                     # Production build
+├── src_1/                      # Frontend (React + TypeScript)
+│   ├── components/             # Reusable UI components
+│   │   ├── admin/              # Admin portal components
+│   │   ├── interview/          # Interview simulator UI
+│   │   ├── AICareerAdvisor/    # AI chatbot widget
+│   │   └── ui/                 # Base UI primitives
+│   ├── pages/                  # Route pages (student, admin, auth)
+│   ├── lib/                    # Core logic and integrations
+│   │   ├── ai/                 # AI services (chatbot, copilot, RAG)
+│   │   ├── openRouter.ts       # AI backend proxy client
+│   │   ├── supabase.ts         # Supabase client
+│   │   ├── errorHandler.ts     # Centralized error handling
+│   │   └── rateLimiter.ts      # Client-side rate limiting
+│   ├── services/               # Data services layer
+│   │   ├── admin/              # Admin feature services
+│   │   └── db/                 # Supabase adapter (database.service.ts)
+│   ├── contexts/               # React contexts (Auth, Toast)
+│   ├── hooks/                  # Custom React hooks
+│   └── types/                  # TypeScript type definitions
+├── ai-engine/                  # Python FastAPI AI service
+├── public/                     # Static assets
+└── scripts/                    # SQL reference migrations
 ```
 
 ---
 
-## 🤖 AI Features
+## AI Architecture
 
-### OpenRouter Integration
-The platform uses OpenRouter as the primary AI provider with multi-model fallback:
-- **Gemini 2.0 Flash** - Primary model for fast responses
-- **Claude 3.5 Haiku** - Fallback for complex reasoning
-- **Llama 3.1 70B** - Fallback for diverse tasks
+The platform uses a secure server-side proxy pattern for all AI operations:
 
-### RAG-Powered Chatbot
-- Retrieves relevant knowledge from curated career guidance content
-- Provides transparent citations for all AI-generated responses
-- Falls back gracefully when API is unavailable
+```
+Browser  -->  FastAPI AI Engine  -->  OpenRouter API
+                (keeps key secure)     (Gemini, Claude, Llama)
+```
 
-### Study Kit Generation
-- Comprehensive theoretical foundations with mathematical underpinnings
-- Academic references (IEEE, ACM, Stanford, MIT)
-- Industry applications and interview preparation
-- Algorithm complexity analysis
+- API keys never leave the server
+- In-memory IP-based rate limiting (30 req/min)
+- Multi-model fallback: Gemini 2.0 Flash → Claude 3.5 Haiku → Llama 3.1 70B
+- Resume analysis uses TF-IDF cosine similarity (scikit-learn)
+- Code execution proxied via OneCompiler API
 
 ---
 
-## 📄 License
+## Deployment
 
-Developed for **NMIMS Hyderabad** (B.Tech CSE - Data Science, Semester 8).  
+The frontend is hosted on **Firebase Hosting** and the AI engine on **Railway/Render**. Configure environment variables in your hosting dashboard — never commit secrets to the repo. See `.env.example` for the full list of required variables.
+
+---
+
+## License
+
+Developed for **NMIMS Hyderabad** (B.Tech CSE – Data Science, Semester 8).
 © 2025–2026 Rachit Jain, Prasad Kannawar, Venkatesh Mahindra.

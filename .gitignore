@@ -51,6 +51,26 @@ admin_updates_extracted/
 
 # Kiro internal / repowiki (auto-generated)
 .qoder/
+.kiro/specs/
+
+# Internal docs / deployment notes
+PRODUCTION_DEPLOYMENT_GUIDE.md
+REALTIME_LAUNCH_CHECKLIST.md
+SYSTEM_DESIGN_AND_DEPLOYMENT.md
+PROJECT_INFO.md
 
 # Curriculum reference files (PDFs/docs — tracked via public/curriculum/)
 public/curriculum/
+
+# Prevent accidental commits of personal/temp files
+*.xlsx
+*.db
+*.resolved
+*.sqlite
+
+# One-time migration/seed scripts (keep .sql reference files only)
+scripts/*.mjs
+scripts/*.cjs
+scripts/*.js
+!scripts/*.sql
+
