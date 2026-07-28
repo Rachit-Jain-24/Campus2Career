@@ -10,11 +10,9 @@
 
 ## Screenshots
 
-| Student Portal | Admin Portal | AI Career Advisor |
+| Login Portal | Student Portal | Admin Portal |
 |:-:|:-:|:-:|
-| ![Student Portal](docs/screenshots/student-portal.png) | ![Admin Portal](docs/screenshots/admin-portal.png) | ![AI Advisor](docs/screenshots/ai-advisor.png) |
-
-> **Note:** Add screenshots to `docs/screenshots/` to populate the table above.
+| ![Login Portal](docs/screenshots/login-portal.png) | ![Student Portal](docs/screenshots/student-portal.png) | ![Admin Portal](docs/screenshots/admin-portal.png) |
 
 ---
 
