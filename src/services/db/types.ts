@@ -1,0 +1,198 @@
+import type { AdminStudentProfile } from '../../types/studentAdmin';
+import type { AdminCompanyProfile, CompanyFormData } from '../../types/companyAdmin';
+import type { AdminDriveProfile, DriveFormData } from '../../types/driveAdmin';
+import type { AdminInterview, InterviewFormData } from '../../types/interviewAdmin';
+import type { AdminOffer, OfferFormData } from '../../types/offerAdmin';
+import type { PlatformSettings } from '../../types/settingsAdmin';
+import type { AuditLogEntry, AuditLogWritePayload } from '../../types/auditAdmin';
+
+export type Unsubscribe = () => void;
+
+/**
+ * Interface defining the standardized methods for Database Adapters.
+ * This allows swapping between Firestore and Supabase seamlessly.
+ */
+
+export interface PaginationParams {
+  page: number;
+  pageSize: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  filters?: Record<string, any>;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface StudentAdapter {
+  fetchAllStudents(): Promise<AdminStudentProfile[]>;
+  fetchStudentsPaginated(params: PaginationParams): Promise<PaginatedResult<AdminStudentProfile>>;
+  getStudentBySapId(sapId: string): Promise<AdminStudentProfile | null>;
+  createStudent(data: any): Promise<void>;
+  deleteStudent(sapId: string): Promise<void>;
+  onStudentsChange(callback: (students: AdminStudentProfile[]) => void): Unsubscribe;
+}
+
+export interface CompanyAdapter {
+  fetchAllCompanies(): Promise<AdminCompanyProfile[]>;
+  createCompany(data: CompanyFormData): Promise<AdminCompanyProfile>;
+  updateCompany(id: string, data: Partial<CompanyFormData>): Promise<void>;
+  onCompaniesChange(callback: (companies: AdminCompanyProfile[]) => void): Unsubscribe;
+}
+
+export interface DriveAdapter {
+  fetchAllDrives(): Promise<AdminDriveProfile[]>;
+  createDrive(data: DriveFormData): Promise<string>;
+  updateDrive(id: string, data: Partial<DriveFormData>): Promise<void>;
+  onDrivesChange(callback: (drives: AdminDriveProfile[]) => void): Unsubscribe;
+}
+
+export interface InterviewAdapter {
+  getAllInterviews(): Promise<AdminInterview[]>;
+  getStudentInterviews(studentId: string, sapId?: string): Promise<AdminInterview[]>;
+  createInterview(data: InterviewFormData): Promise<AdminInterview>;
+  updateInterview(id: string, data: Partial<InterviewFormData>): Promise<void>;
+  onInterviewsChange(callback: (interviews: AdminInterview[]) => void): Unsubscribe;
+}
+
+export interface OfferAdapter {
+  getAllOffers(): Promise<AdminOffer[]>;
+  createOffer(data: OfferFormData): Promise<AdminOffer>;
+  updateOffer(id: string, data: Partial<OfferFormData>): Promise<void>;
+  onOffersChange(callback: (offers: AdminOffer[]) => void): Unsubscribe;
+}
+
+export interface AuditAdapter {
+  getAllLogs(): Promise<AuditLogEntry[]>;
+  fetchLogs(count: number): Promise<AuditLogEntry[]>;
+  logAuditEvent(payload: AuditLogWritePayload): Promise<string>;
+  onAuditLogsChange(callback: (logs: AuditLogEntry[]) => void): Unsubscribe;
+}
+
+export interface SettingsAdapter {
+  getSettings(): Promise<PlatformSettings>;
+  saveSettings(settings: PlatformSettings, adminEmail?: string): Promise<void>;
+  saveSection(section: string, data: any, adminEmail?: string): Promise<void>;
+}
+export interface UserAdapter {
+  lookupUserProfileByEmail(email: string): Promise<any | null>;
+  getStudentDoc(sapId: string): Promise<any | null>;
+  updateUser(collection: string, docId: string, data: any): Promise<void>;
+  onProfileChange?(collection: string, docId: string, callback: (data: any) => void): Unsubscribe;
+}
+
+export interface EligibilityAdapter {
+  fetchAllRules(): Promise<any[]>;
+  createRule(data: any): Promise<any>;
+  updateRule(id: string, data: any): Promise<void>;
+  deleteRule(id: string): Promise<void>;
+}
+
+export interface AnalyticsAdapter {
+  getCollectionCount(collection: string): Promise<number>;
+  getDashboardStats(): Promise<any>;
+}
+
+export interface AdminUserAdapter {
+  fetchAllAdmins(): Promise<any[]>;
+  createAdmin(data: any): Promise<any>;
+  updateAdmin(email: string, data: any): Promise<void>;
+}
+
+export interface CurriculumSubjectEntry {
+  id?: string;
+  branch: string;
+  batch: string;
+  semester: number;
+  subjectCode: string;
+  subjectName: string;
+  description: string;
+  topics: string[];           // extracted from PDF
+  industrySkills: string[];   // AI-mapped industry skills
+  industryRelevance: 'high' | 'medium' | 'low';
+  isActive: boolean;
+  pdfUrl?: string;
+  uploadedBy?: string;
+  updatedAt?: string;
+}
+
+export interface CurriculumAdapter {
+  getCurriculum(branch: string, batch: string): Promise<any | null>;
+  saveCurriculum(data: any): Promise<void>;
+  // Knowledge base methods
+  getSubjects(branch: string, batch: string, semester?: number): Promise<CurriculumSubjectEntry[]>;
+  saveSubject(subject: CurriculumSubjectEntry): Promise<CurriculumSubjectEntry>;
+  updateSubject(id: string, data: Partial<CurriculumSubjectEntry>): Promise<void>;
+  toggleSubject(id: string, isActive: boolean): Promise<void>;
+  deleteSubject(id: string): Promise<void>;
+  getActiveSubjectsForRoadmap(branch: string, batch: string): Promise<Record<number, CurriculumSubjectEntry[]>>;
+}
+
+export interface SyllabusAdapter {
+  getSyllabusRecord(sapId: string, semester: number): Promise<any | null>;
+  saveSyllabusRecord(sapId: string, semester: number, data: any): Promise<void>;
+}
+
+export interface DriveApplication {
+  id: string;
+  driveId: string;
+  studentId: string;
+  status: 'applied' | 'shortlisted' | 'rejected' | 'selected';
+  appliedAt: string;
+  resumeUrl?: string;
+  matchScore?: number;
+  feedback?: string;
+}
+
+export interface ApplicationAdapter {
+  applyForDrive(data: Partial<DriveApplication>): Promise<void>;
+  getStudentApplications(studentId: string): Promise<DriveApplication[]>;
+  getDriveApplications(driveId: string): Promise<DriveApplication[]>;
+  updateApplicationStatus(id: string, status: string, feedback?: string): Promise<void>;
+  onApplicationsChange(callback: (apps: DriveApplication[]) => void): Unsubscribe;
+}
+
+export interface SystemNotification {
+  id: string;
+  userId: string;
+  role: string;
+  title: string;
+  message: string;
+  type: string;
+  link?: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface NotificationAdapter {
+  getNotifications(userId: string, role: string): Promise<SystemNotification[]>;
+  markAsRead(id: string): Promise<void>;
+  markAllAsRead(userId: string, role: string): Promise<void>;
+  sendNotification(data: Partial<SystemNotification>): Promise<void>;
+  onNotificationsChange(userId: string, role: string, callback: (notifications: SystemNotification[]) => void): Unsubscribe;
+}
+
+export interface DatabaseAdapter {
+  students: StudentAdapter;
+  companies: CompanyAdapter;
+  drives: DriveAdapter;
+  interviews: InterviewAdapter;
+  offers: OfferAdapter;
+  audit: AuditAdapter;
+  settings: SettingsAdapter;
+  user: UserAdapter;
+  eligibility: EligibilityAdapter;
+  analytics: AnalyticsAdapter;
+  admins: AdminUserAdapter;
+  curriculum: CurriculumAdapter;
+  syllabus: SyllabusAdapter;
+  applications: ApplicationAdapter;
+  notifications: NotificationAdapter;
+}

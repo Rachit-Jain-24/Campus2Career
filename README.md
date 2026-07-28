@@ -143,7 +143,7 @@ npm run build
 
 ```
 Campus2Career/
-├── src_1/                    # Frontend source (React + TypeScript)
+├── src/                      # Frontend source (React + TypeScript)
 │   ├── components/           # Reusable UI components
 │   │   ├── admin/            # Admin portal components
 │   │   ├── interview/        # Interview simulator UI
