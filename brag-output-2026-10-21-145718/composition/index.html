@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Campus2Career Brag</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script src="assets/audio-data.js"></script>
+    <style>
+      @font-face { font-family: "Inter"; font-weight: 500; src: url("assets/fonts/inter-500.ttf") format("truetype"); }
+      @font-face { font-family: "Inter"; font-weight: 600; src: url("assets/fonts/inter-600.ttf") format("truetype"); }
+      @font-face { font-family: "Inter"; font-weight: 800; src: url("assets/fonts/inter-800.ttf") format("truetype"); }
+      @font-face { font-family: "Inter"; font-weight: 900; src: url("assets/fonts/inter-900.ttf") format("truetype"); }
+
+      :root {
+        --red: hsl(348, 83%, 47%);
+        --red-dark: hsl(348, 83%, 35%);
+        --red-deep: hsl(348, 80%, 24%);
+        --ink: hsl(222, 47%, 11%);
+        --bg: hsl(210, 20%, 98%);
+        --muted: hsl(215, 16%, 40%);
+        --border: hsl(214, 32%, 91%);
+        --accent-bg: hsl(348, 100%, 96%);
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--red-dark); font-family: "Inter", system-ui, sans-serif; color: var(--ink); }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--red-dark); }
+      .clip { position: absolute; inset: 0; overflow: hidden; }
+      .abs { position: absolute; }
+      .redbg { background: linear-gradient(135deg, var(--red), var(--red-dark)); }
+      .w { display: inline-block; }
+
+      /* ---------- Scene 1 ---------- */
+      #s1 { background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 70%, var(--red-deep) 100%); }
+      #s1-glow { left: 1100px; top: -300px; width: 1100px; height: 1100px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(255,255,255,0.22), rgba(255,255,255,0) 65%); }
+      #s1-logo { left: 110px; top: 90px; width: 120px; height: 120px; border-radius: 26px; background: #fff; padding: 12px; }
+      #s1-logo img { width: 100%; height: 100%; object-fit: contain; }
+      #s1-campus { left: 260px; top: 135px; font-size: 30px; font-weight: 800; letter-spacing: 6px; color: rgba(255,255,255,0.85); }
+      #s1-l1 { left: 110px; top: 380px; font-size: 190px; line-height: 1; font-weight: 900; color: #fff; letter-spacing: -6px; white-space: nowrap; }
+      #s1-l2 { left: 114px; top: 600px; font-size: 120px; line-height: 1.05; font-weight: 800; color: #fff; letter-spacing: -3px; white-space: nowrap; }
+      #s1-l2 .hl { color: hsl(348, 100%, 88%); }
+
+      /* ---------- Scene 2 (login) ---------- */
+      #s2 { background: #fff; }
+      #s2-left { left: 0; top: 0; width: 960px; height: 1080px; background: linear-gradient(160deg, hsl(348,76%, 31%), hsl(348,80%,20%)); }
+      #s2-circle { left: 640px; top: -200px; width: 560px; height: 560px; border-radius: 50%; background: rgba(255,255,255,0.08); }
+      #s2-pill { left: 90px; top: 250px; padding: 14px 30px; border-radius: 40px; background: rgba(255,255,255,0.14); color: #fff; font-weight: 700; font-size: 28px; display: flex; align-items: center; gap: 16px; }
+      #s2-pill i { width: 16px; height: 16px; border-radius: 50%; background: #22c55e; display: block; }
+      #s2-h { left: 90px; top: 340px; font-size: 116px; line-height: 1.04; font-weight: 900; color: #fff; letter-spacing: -3px; white-space: nowrap; }
+      #s2-h .dim { color: rgba(255,255,255,0.5); }
+      #s2-sub { left: 90px; top: 700px; width: 720px; font-size: 32px; line-height: 1.4; font-weight: 500; color: rgba(255,255,255,0.88); }
+      .chip { position: absolute; top: 880px; height: 64px; padding: 0 28px; border-radius: 40px; background: rgba(255,255,255,0.14); border: 2px solid rgba(255,255,255,0.28); color: #fff; font-weight: 700; font-size: 26px; display: flex; align-items: center; white-space: nowrap; }
+      #c1 { left: 90px; } #c2 { left: 450px; } #c3 { left: 90px; top: 960px; } #c4 { left: 400px; top: 960px; }
+      #s2-welcome { left: 1100px; top: 250px; font-size: 76px; font-weight: 900; letter-spacing: -2px; }
+      #s2-wsub { left: 1100px; top: 350px; font-size: 32px; font-weight: 500; color: var(--muted); }
+      #s2-tabs { left: 1100px; top: 420px; width: 680px; height: 76px; border-radius: 16px; background: hsl(210,20%,94%); display: flex; padding: 8px; gap: 8px; }
+      #s2-tabs div { flex: 1; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 26px; color: var(--muted); border-radius: 12px; }
+      #s2-tabs div.on { background: #fff; color: hsl(348,83%,30%); }
+      .lbl { position: absolute; left: 1100px; font-size: 22px; font-weight: 800; letter-spacing: 2px; color: hsl(222,30%,30%); }
+      .inp { position: absolute; left: 1100px; width: 680px; height: 80px; border-radius: 16px; background: hsl(210,20%,98%); border: 2px solid var(--border); padding: 0 28px; display: flex; align-items: center; font-size: 28px; color: hsl(215,16%,55%); font-weight: 500; }
+      #s2-btn { left: 1100px; top: 800px; width: 680px; height: 88px; border-radius: 18px; background: var(--red-dark); color: #fff; font-size: 32px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 30px rgba(120,10,30,0.28); }
+
+      /* ---------- Scene 3 (dashboard) ---------- */
+      #s3 { background: var(--bg); }
+      #s3-goal { left: 120px; top: 90px; height: 84px; padding: 0 36px; border-radius: 22px; background: var(--accent-bg); border: 2px solid hsl(348,80%,86%); display: flex; align-items: center; gap: 18px; font-size: 34px; font-weight: 600; color: var(--ink); }
+      #s3-goal b { color: var(--red); font-weight: 800; }
+      #s3-banner { left: 120px; top: 215px; width: 1680px; height: 400px; border-radius: 44px; padding: 56px 72px; color: #fff; box-shadow: 0 24px 50px rgba(150,15,40,0.28); }
+      #s3-eyebrow { font-size: 30px; font-weight: 800; letter-spacing: 4px; opacity: 0.92; }
+      #s3-hi { margin-top: 28px; font-size: 118px; line-height: 1; font-weight: 900; letter-spacing: -3px; white-space: nowrap; }
+      #s3-mode { margin-top: 30px; font-size: 40px; font-weight: 500; }
+      #s3-mode b { font-weight: 800; }
+      .stat { position: absolute; top: 665px; width: 396px; height: 300px; border-radius: 32px; background: #fff; border: 2px solid var(--border); box-shadow: 0 10px 30px rgba(20,30,60,0.08); padding: 40px 44px; }
+      .stat .k { font-size: 22px; font-weight: 800; letter-spacing: 1px; color: hsl(215,16%,42%); }
+      .stat .v { margin-top: 28px; font-size: 104px; line-height: 1; font-weight: 900; letter-spacing: -3px; }
+      .stat .v small { font-size: 52px; color: hsl(215,16%,48%); letter-spacing: -1px; }
+      .stat .ic { position: absolute; right: 28px; top: 28px; width: 56px; height: 56px; border-radius: 16px; }
+      #st1 { left: 120px; } #st2 { left: 546px; } #st3 { left: 972px; } #st4 { left: 1398px; }
+
+      /* ---------- Scene 4 (skill gap) ---------- */
+      #s4 { background: var(--bg); }
+      #s4-goal { left: 860px; top: 150px; height: 84px; padding: 0 36px; border-radius: 22px; background: var(--accent-bg); border: 2px solid hsl(348,80%,86%); display: flex; align-items: center; font-size: 34px; font-weight: 600; }
+      #s4-goal b { color: var(--red); font-weight: 800; margin-left: 10px; }
+      #s4-side { left: 120px; top: 150px; width: 640px; height: 780px; border-radius: 36px; background: #fff; border: 2px solid var(--border); box-shadow: 0 10px 30px rgba(20,30,60,0.08); }
+      #s4-sidehead { left: 170px; top: 190px; font-size: 26px; font-weight: 800; letter-spacing: 3px; color: hsl(215,16%,42%); }
+      .nav { position: absolute; left: 150px; width: 580px; height: 96px; border-radius: 22px; display: flex; align-items: center; padding: 0 32px; font-size: 36px; font-weight: 600; color: hsl(222,30%,25%); }
+      .nav .bg { position: absolute; inset: 0; border-radius: 22px; background: var(--accent-bg); border: 2px solid hsl(348,80%,86%); opacity: 0; }
+      .nav .t { position: relative; }
+      .nav .dot { position: relative; width: 26px; height: 26px; border-radius: 8px; background: hsl(215,16%,70%); margin-right: 26px; }
+      #n1 { top: 250px; } #n2 { top: 360px; } #n3 { top: 470px; } #n4 { top: 580px; } #n5 { top: 690px; }
+      #s4-card { left: 860px; top: 290px; width: 940px; height: 400px; border-radius: 40px; background: linear-gradient(135deg, hsl(348,90%,95%), hsl(348,70%,88%)); border: 2px solid hsl(348,70%,84%); padding: 56px 60px; }
+      #s4-card h3 { margin: 0; font-size: 58px; font-weight: 900; letter-spacing: -1.5px; }
+      #s4-card p { margin: 24px 0 0; width: 700px; font-size: 38px; line-height: 1.35; font-weight: 500; color: hsl(222,30%,25%); }
+      #s4-btn { left: 1470px; top: 580px; width: 270px; height: 76px; border-radius: 20px; background: var(--red); color: #fff; font-size: 30px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px rgba(200,20,60,0.35); }
+      #s4-note { left: 860px; top: 740px; width: 940px; font-size: 40px; line-height: 1.3; font-weight: 800; color: var(--ink); }
+      #s4-note span { color: var(--red); }
+
+      /* ---------- Scene 5 (ATS) ---------- */
+      #s5 { background: var(--bg); }
+      #s5-eyebrow { left: 120px; top: 80px; font-size: 28px; font-weight: 800; letter-spacing: 4px; color: var(--red); }
+      #s5-title { left: 120px; top: 120px; font-size: 84px; font-weight: 900; letter-spacing: -2.5px; }
+      .doc { position: absolute; left: 120px; width: 860px; height: 320px; border-radius: 32px; background: #fff; border: 2px solid var(--border); box-shadow: 0 10px 30px rgba(20,30,60,0.08); padding: 34px 44px; }
+      .doc .dl { font-size: 22px; font-weight: 800; letter-spacing: 2px; color: hsl(215,16%,42%); }
+      .doc .dt { margin-top: 22px; font-size: 38px; line-height: 1.4; font-weight: 600; color: var(--ink); }
+      .doc .dp { color: hsl(215,16%,60%); font-weight: 500; }
+      #d1 { top: 290px; } #d2 { top: 650px; }
+      #s5-ring { left: 1190px; top: 250px; width: 560px; height: 560px; }
+      #s5-ring svg { position: absolute; inset: 0; }
+      #s5-pct { left: 1190px; top: 430px; width: 560px; text-align: center; font-size: 170px; line-height: 1; font-weight: 900; letter-spacing: -6px; color: var(--ink); }
+      #s5-pct small { font-size: 80px; color: hsl(215,16%,48%); letter-spacing: -2px; }
+      #s5-pl { left: 1190px; top: 640px; width: 560px; text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 2px; color: var(--red); }
+      #s5-comp { left: 1150px; top: 840px; width: 640px; text-align: center; font-size: 32px; line-height: 1.35; font-weight: 600; color: hsl(222,30%,25%); }
+      #s5-pill { left: 1275px; top: 150px; padding: 16px 34px; border-radius: 40px; background: var(--accent-bg); border: 2px solid hsl(348,80%,86%); color: var(--red); font-size: 30px; font-weight: 800; }
+
+      /* ---------- Scene 6 (roadmap) ---------- */
+      #s6 { background: var(--bg); }
+      #s6-h { left: 120px; top: 100px; font-size: 104px; font-weight: 900; letter-spacing: -3.5px; white-space: nowrap; }
+      #s6-h span { color: var(--red); }
+      .pill { position: absolute; top: 250px; height: 72px; padding: 0 34px; border-radius: 40px; background: var(--accent-bg); border: 2px solid hsl(348,80%,86%); color: var(--red); font-size: 32px; font-weight: 800; display: flex; align-items: center; white-space: nowrap; }
+      #p1 { left: 120px; } #p2 { left: 560px; }
+      .stage { position: absolute; top: 380px; width: 520px; height: 420px; border-radius: 36px; background: #fff; border: 2px solid var(--border); box-shadow: 0 14px 36px rgba(20,30,60,0.1); padding: 40px 44px; }
+      .stage .num { font-size: 120px; line-height: 1; font-weight: 900; letter-spacing: -4px; color: var(--red); }
+      .stage .st { margin-top: 18px; font-size: 48px; line-height: 1.12; font-weight: 800; letter-spacing: -1px; }
+      .stage .tag { position: absolute; left: 44px; bottom: 36px; padding: 8px 24px; border-radius: 30px; background: hsl(210,20%,94%); font-size: 26px; font-weight: 800; color: var(--muted); }
+      #g1 { left: 120px; } #g2 { left: 700px; } #g3 { left: 1280px; }
+      #s6-track { left: 120px; top: 850px; width: 1680px; height: 14px; border-radius: 8px; background: hsl(210,20%,92%); }
+      #s6-fill { left: 120px; top: 850px; width: 1680px; height: 14px; border-radius: 8px; background: linear-gradient(90deg, var(--red), var(--red-dark)); transform-origin: left center; }
+      #s6-cap { left: 120px; top: 920px; width: 1680px; font-size: 42px; font-weight: 600; color: hsl(222,30%,25%); }
+
+      /* ---------- Scene 7 / 8 ---------- */
+      #s7, #s8 { background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 70%, var(--red-deep) 100%); }
+      #s7-glow, #s8-glow { left: 500px; top: 100px; width: 1000px; height: 1000px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.26), rgba(255,255,255,0) 62%); }
+      #s7-ph { left: 0; width: 1920px; top: 270px; text-align: center; font-size: 104px; font-weight: 900; color: #fff; letter-spacing: -3px; }
+      .role { position: absolute; height: 100px; padding: 0 44px; border-radius: 28px; background: rgba(255,255,255,0.14); border: 2px solid rgba(255,255,255,0.34); color: #fff; font-size: 44px; font-weight: 800; display: flex; align-items: center; white-space: nowrap; }
+      #r1 { left: 205px; top: 520px; } #r2 { left: 535px; top: 520px; } #r3 { left: 855px; top: 520px; } #r4 { left: 1215px; top: 520px; }
+      #r5 { left: 530px; top: 680px; } #r6 { left: 960px; top: 680px; }
+      #s8-logo { left: 810px; top: 190px; width: 300px; height: 300px; border-radius: 64px; background: #fff; padding: 30px; }
+      #s8-logo img { width: 100%; height: 100%; object-fit: contain; }
+      #s8-name { left: 0; width: 1920px; top: 540px; text-align: center; font-size: 168px; line-height: 1; font-weight: 900; color: #fff; letter-spacing: -6px; }
+      #s8-tag { left: 0; width: 1920px; top: 745px; text-align: center; font-size: 48px; font-weight: 600; color: rgba(255,255,255,0.92); }
+      #s8-sub { left: 0; width: 1920px; top: 830px; text-align: center; font-size: 30px; font-weight: 800; letter-spacing: 6px; color: hsl(348,100%,88%); }
+
+      /* wipe + cursor */
+      #wipe { left: 0; top: 0; width: 1920px; height: 1080px; background: linear-gradient(135deg, var(--red), var(--red-dark)); z-index: 50; }
+      #cursor { left: 0; top: 0; width: 56px; height: 56px; z-index: 60; opacity: 0; filter: drop-shadow(0 6px 8px rgba(0,0,0,0.3)); }
+      #ripple { left: 0; top: 0; width: 80px; height: 80px; margin: -40px 0 0 -40px; border-radius: 50%; border: 5px solid var(--red); z-index: 55; opacity: 0; }
+      #vignette { left: 0; top: 0; width: 1920px; height: 1080px; z-index: 40; pointer-events: none; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, rgba(60,0,15,0.28) 100%); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="30">
+
+      <!-- Scene 1: Hook 0-3 -->
+      <section id="s1" class="clip" data-start="0" data-duration="3">
+        <div id="s1-glow" class="abs"></div>
+        <div id="s1-logo" class="abs"><img src="assets/img/nmims-logo.png" alt="NMIMS" /></div>
+        <div id="s1-campus" class="abs">HYDERABAD CAMPUS</div>
+        <div id="s1-l1" class="abs"><span class="w" id="w1">Placement</span> <span class="w" id="w2">season.</span></div>
+        <div id="s1-l2" class="abs"><span class="w" id="w3">Where</span> <span class="w" id="w4">do</span> <span class="w hl" id="w5">you</span> <span class="w" id="w6">stand?</span></div>
+      </section>
+
+      <!-- Scene 2: Login 3-6.5 -->
+      <section id="s2" class="clip" data-start="3" data-duration="3.5">
+        <div id="s2-left" class="abs">
+          <div id="s2-circle" class="abs" data-layout-allow-overflow></div>
+          <div id="s2-pill" class="abs"><i></i>Campus2Career Portal — Live</div>
+          <div id="s2-h" class="abs">Virtual<br /><span class="dim">Placement</span><br />Assistant</div>
+          <div id="s2-sub" class="abs">Your intelligent academic and career companion — built exclusively for NMIMS Hyderabad students.</div>
+          <div id="c1" class="chip">Placement Tracking</div>
+          <div id="c2" class="chip">AI Insights</div>
+          <div id="c3" class="chip">Career Roadmap</div>
+          <div id="c4" class="chip">LeetCode Analytics</div>
+        </div>
+        <div id="s2-welcome" class="abs">Welcome back</div>
+        <div id="s2-wsub" class="abs">Sign in to access your student portal</div>
+        <div id="s2-tabs" class="abs"><div class="on">Student Login</div><div>New Student</div><div>Staff/Admin</div></div>
+        <div class="lbl" style="top: 540px">EMAIL OR SAP ID</div>
+        <div class="inp" style="top: 580px">email@nmims.edu.in or SAP ID</div>
+        <div class="lbl" style="top: 690px">PASSWORD</div>
+        <div class="inp" style="top: 730px">Enter your password</div>
+        <div id="s2-btn" class="abs">Sign In</div>
+      </section>
+
+      <!-- Scene 3: Dashboard 6.5-11.5 -->
+      <section id="s3" class="clip" data-start="6.5" data-duration="5">
+        <div id="s3-goal" class="abs">Goal: <b>Full-Stack Developer</b></div>
+        <div id="s3-banner" class="abs redbg">
+          <div id="s3-eyebrow">B.TECH CSDS • 1ST YEAR</div>
+          <div id="s3-hi">Good afternoon, Aarav!</div>
+          <div id="s3-mode">MODE: <b>FOUNDATION MODE</b></div>
+        </div>
+        <div id="st1" class="stat"><div class="ic" style="background:hsl(40,100%,94%)"></div><div class="k">ACTIVE DRIVES</div><div class="v" data-to="3">0</div></div>
+        <div id="st2" class="stat"><div class="ic" style="background:hsl(348,100%,95%)"></div><div class="k">LEETCODE SOLVED</div><div class="v" data-to="142">0</div></div>
+        <div id="st3" class="stat"><div class="ic" style="background:hsl(217,100%,94%)"></div><div class="k">FOUNDATION SCORE</div><div class="v"><span data-to="85">0</span><small>/100</small></div></div>
+        <div id="st4" class="stat"><div class="ic" style="background:hsl(270,100%,95%)"></div><div class="k">CORE SUBJECT GPA</div><div class="v" data-to="8.7" data-dec="1">0</div></div>
+      </section>
+
+      <!-- Scene 4: Skill gap 11.5-16 -->
+      <section id="s4" class="clip" data-start="11.5" data-duration="4.5">
+        <div id="s4-side" class="abs"></div>
+        <div id="s4-sidehead" class="abs">PLACEMENT PREP</div>
+        <div id="n1" class="nav"><div class="bg"></div><div class="dot"></div><div class="t">AI Skill Gap</div></div>
+        <div id="n2" class="nav"><div class="bg"></div><div class="dot"></div><div class="t">AI Roadmap</div></div>
+        <div id="n3" class="nav"><div class="bg"></div><div class="dot"></div><div class="t">AI Mock Interview</div></div>
+        <div id="n4" class="nav"><div class="bg"></div><div class="dot"></div><div class="t">Resume Analyzer</div></div>
+        <div id="n5" class="nav"><div class="bg"></div><div class="dot"></div><div class="t">LeetCode Tracker</div></div>
+        <div id="s4-goal" class="abs">Goal:<b>Full-Stack Developer</b></div>
+        <div id="s4-card" class="abs">
+          <h3>AI Skill Gap Analysis</h3>
+          <p>Compare your profile against Full-Stack Developer benchmarks.</p>
+        </div>
+        <div id="s4-btn" class="abs">View Analysis →</div>
+        <div id="s4-note" class="abs">Skill gaps, roadmap, mock interviews — <span>one student portal.</span></div>
+      </section>
+
+      <!-- Scene 5: ATS 16-20.5 -->
+      <section id="s5" class="clip" data-start="16" data-duration="4.5">
+        <div id="s5-eyebrow" class="abs">RESUME ANALYZER</div>
+        <div id="s5-title" class="abs">ATS Intelligence</div>
+        <div id="d1" class="doc"><div class="dl">RESUME</div><div class="dt"><span id="t1"></span><span class="dp" id="p-resume">Paste your resume text here...</span></div></div>
+        <div id="d2" class="doc"><div class="dl">JOB DESCRIPTION</div><div class="dt"><span id="t2"></span><span class="dp" id="p-jd">Paste the job description here...</span></div></div>
+        <div id="s5-pill" class="abs">Comparing Ontology...</div>
+        <div id="s5-ring" class="abs">
+          <svg viewBox="0 0 560 560">
+            <circle cx="280" cy="280" r="240" fill="none" stroke="hsl(210,20%,90%)" stroke-width="34" />
+            <circle id="ringfill" cx="280" cy="280" r="240" fill="none" stroke="hsl(348,83%,47%)" stroke-width="34" stroke-linecap="round" stroke-dasharray="1508" stroke-dashoffset="1508" transform="rotate(-90 280 280)" />
+          </svg>
+        </div>
+        <div id="s5-pct" class="abs"><span id="pctv">0</span><small>%</small></div>
+        <div id="s5-pl" class="abs">ATS MATCH PROBABILITY</div>
+        <div id="s5-comp" class="abs">Matching keywords, semantic structures, and hard skills constraints.</div>
+      </section>
+
+      <!-- Scene 6: Roadmap 20.5-24.5 -->
+      <section id="s6" class="clip" data-start="20.5" data-duration="4">
+        <div id="s6-h" class="abs">Smart <span>Algorithmic</span> Roadmap</div>
+        <div id="p1" class="pill">8-Semester Journey</div>
+        <div id="p2" class="pill">4-Year Academic Plan</div>
+        <div id="g1" class="stage"><div class="num">01</div><div class="st">Build Fundamentals</div><div class="tag">Easy</div></div>
+        <div id="g2" class="stage"><div class="num">02</div><div class="st">Level Up to Intermediate</div><div class="tag">Med</div></div>
+        <div id="g3" class="stage"><div class="num">03</div><div class="st">Master Advanced Patterns</div><div class="tag">Hard</div></div>
+        <div id="s6-track" class="abs"></div>
+        <div id="s6-fill" class="abs"></div>
+        <div id="s6-cap" class="abs">Systematic problem-solving roadmap tailored for your current level.</div>
+      </section>
+
+      <!-- Scene 7: Portals 24.5-27 -->
+      <section id="s7" class="clip" data-start="24.5" data-duration="2.5">
+        <div id="s7-glow" class="abs"></div>
+        <div id="s7-ph" class="abs">6 distinct role portals</div>
+        <div id="r1" class="role">Admin</div>
+        <div id="r2" class="role">Dean</div>
+        <div id="r3" class="role">Director</div>
+        <div id="r4" class="role">Program Chair</div>
+        <div id="r5" class="role">Faculty</div>
+        <div id="r6" class="role">Placement Officer</div>
+      </section>
+
+      <!-- Scene 8: Outro 27-30 -->
+      <section id="s8" class="clip" data-start="27" data-duration="3">
+        <div id="s8-glow" class="abs"></div>
+        <div id="s8-logo" class="abs"><img src="assets/img/nmims-logo.png" alt="NMIMS" /></div>
+        <div id="s8-name" class="abs">Campus2Career</div>
+        <div id="s8-tag" class="abs">Built exclusively for NMIMS Hyderabad students.</div>
+        <div id="s8-sub" class="abs">VIRTUAL PLACEMENT ASSISTANT</div>
+      </section>
+
+      <div id="vignette" class="abs"></div>
+      <div id="wipe" class="abs"></div>
+      <div id="ripple" class="abs"></div>
+      <svg id="cursor" class="abs" viewBox="0 0 56 56"><path d="M4 2 L4 40 L14 31 L21 47 L29 43 L22 28 L36 28 Z" fill="#111" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></svg>
+
+      <!-- Audio -->
+      <audio id="music" data-start="0" data-duration="30" data-track-index="10" data-volume="0.34"
+        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":1.2,"v":1},{"t":27.5,"v":1},{"t":30,"v":0}]}]}'
+        src="assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3"></audio>
+      <audio id="sfx-hook" data-start="0.45" data-duration="1" data-track-index="11" data-volume="0.5" src="assets/sfx/drop_002.ogg"></audio>
+      <audio id="sfx-l2" data-start="1.4" data-duration="1" data-track-index="12" data-volume="0.5" src="assets/sfx/drop_001.ogg"></audio>
+      <audio id="sfx-head" data-start="3.35" data-duration="1" data-track-index="13" data-volume="0.6" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx-chip1" data-start="4.2" data-duration="1" data-track-index="14" data-volume="0.45" src="assets/sfx/drop_001.ogg"></audio>
+      <audio id="sfx-chip4" data-start="4.95" data-duration="1" data-track-index="15" data-volume="0.45" src="assets/sfx/drop_002.ogg"></audio>
+      <audio id="sfx-click1" data-start="5.88" data-duration="1" data-track-index="16" data-volume="0.7" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="sfx-card1" data-start="7.5" data-duration="1" data-track-index="17" data-volume="0.55" src="assets/sfx/card-place-1.ogg"></audio>
+      <audio id="sfx-card2" data-start="8.0" data-duration="1" data-track-index="18" data-volume="0.55" src="assets/sfx/card-place-2.ogg"></audio>
+      <audio id="sfx-card3" data-start="8.5" data-duration="1" data-track-index="19" data-volume="0.55" src="assets/sfx/card-place-1.ogg"></audio>
+      <audio id="sfx-card4" data-start="9.0" data-duration="1" data-track-index="20" data-volume="0.55" src="assets/sfx/card-place-2.ogg"></audio>
+      <audio id="sfx-click2" data-start="13.03" data-duration="1" data-track-index="21" data-volume="0.7" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="sfx-sel1" data-start="13.25" data-duration="1" data-track-index="22" data-volume="0.45" src="assets/sfx/select_008.ogg"></audio>
+      <audio id="sfx-sel5" data-start="14.85" data-duration="1" data-track-index="23" data-volume="0.45" src="assets/sfx/select_008.ogg"></audio>
+      <audio id="sfx-doc" data-start="16.4" data-duration="1" data-track-index="24" data-volume="0.5" src="assets/sfx/card-place-3.ogg"></audio>
+      <audio id="sfx-ats" data-start="18.88" data-duration="1" data-track-index="25" data-volume="0.6" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="sfx-glass" data-start="19.85" data-duration="1" data-track-index="26" data-volume="0.65" src="assets/sfx/impactGlass_light_001.ogg"></audio>
+      <audio id="sfx-g1" data-start="21.5" data-duration="1" data-track-index="27" data-volume="0.55" src="assets/sfx/card-place-1.ogg"></audio>
+      <audio id="sfx-g2" data-start="22.0" data-duration="1" data-track-index="28" data-volume="0.55" src="assets/sfx/card-place-2.ogg"></audio>
+      <audio id="sfx-g3" data-start="22.5" data-duration="1" data-track-index="29" data-volume="0.55" src="assets/sfx/card-place-3.ogg"></audio>
+      <audio id="sfx-role" data-start="24.95" data-duration="1" data-track-index="30" data-volume="0.5" src="assets/sfx/card-slide-1.ogg"></audio>
+      <audio id="sfx-name" data-start="27.0" data-duration="2" data-track-index="31" data-volume="0.7" src="assets/sfx/impactBell_heavy_000.ogg"></audio>
+      <audio id="sfx-name2" data-start="27.0" data-duration="1" data-track-index="32" data-volume="0.5" src="assets/sfx/impactSoft_medium_003.ogg"></audio>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      const E = "power3.out";
+
+      // alternating-direction wipes; hard cut hidden under the sweep
+      function wipe(t, dir) {
+        tl.fromTo("#wipe", { x: -1920 * dir }, { x: 0, duration: 0.3, ease: "power2.in", immediateRender: t === 3 }, t - 0.3);
+        tl.to("#wipe", { x: 1920 * dir, duration: 0.3, ease: "power2.out" }, t);
+      }
+      wipe(3, 1); wipe(6.5, -1); wipe(11.5, 1); wipe(16, -1); wipe(20.5, 1); wipe(24.5, -1);
+
+      // ---- Scene 1 (0-3) ----
+      tl.from("#s1-logo", { y: -30, opacity: 0, duration: 0.5, ease: E }, 0.1);
+      tl.from("#s1-campus", { x: -30, opacity: 0, duration: 0.5, ease: E }, 0.2);
+      tl.from("#w1", { y: 90, opacity: 0, duration: 0.5, ease: "back.out(1.5)" }, 0.45);
+      tl.from("#w2", { y: 90, opacity: 0, duration: 0.5, ease: "back.out(1.5)" }, 0.7);
+      ["#w3", "#w4", "#w5", "#w6"].forEach((s, i) =>
+        tl.from(s, { y: 60, opacity: 0, duration: 0.4, ease: E }, 1.4 + i * 0.12));
+      tl.fromTo("#s1-glow", { scale: 0.85 }, { scale: 1.1, duration: 3, ease: "none" }, 0);
+
+      // ---- Scene 2 (3-6.5) ----
+      tl.from("#s2-pill", { y: 30, opacity: 0, duration: 0.4, ease: E }, 3.25);
+      tl.from("#s2-h", { y: 60, opacity: 0, duration: 0.5, ease: "back.out(1.3)" }, 3.35);
+      tl.from("#s2-sub", { y: 24, opacity: 0, duration: 0.45, ease: E }, 3.8);
+      [["#c1", 4.2], ["#c2", 4.45], ["#c3", 4.7], ["#c4", 4.95]].forEach(([s, t]) =>
+        tl.from(s, { scale: 0.7, opacity: 0, duration: 0.3, ease: "back.out(2)" }, t));
+      ["#s2-welcome", "#s2-wsub", "#s2-tabs"].forEach((s, i) =>
+        tl.from(s, { x: 50, opacity: 0, duration: 0.45, ease: E }, 3.3 + i * 0.12));
+      tl.from(".lbl, .inp", { y: 20, opacity: 0, duration: 0.4, stagger: 0.07, ease: E }, 3.7);
+      tl.from("#s2-btn", { y: 24, opacity: 0, duration: 0.4, ease: E }, 4.2);
+      tl.set("#cursor", { x: 1750, y: 520 }, 4.5);
+      tl.to("#cursor", { opacity: 1, duration: 0.2 }, 4.5);
+      tl.to("#cursor", { x: 1440, y: 836, duration: 1.3, ease: "power2.inOut" }, 4.6);
+      tl.to("#s2-btn", { scale: 0.96, duration: 0.08 }, 5.9);
+      tl.to("#s2-btn", { scale: 1, duration: 0.14 }, 5.98);
+      tl.to("#cursor", { opacity: 0, duration: 0.15 }, 6.1);
+
+      // ---- Scene 3 (6.5-11.5) ----
+      tl.from("#s3-goal", { x: -60, opacity: 0, duration: 0.5, ease: E }, 6.8);
+      tl.from("#s3-banner", { y: 60, opacity: 0, duration: 0.6, ease: E }, 6.9);
+      tl.from("#s3-hi", { x: -40, opacity: 0, duration: 0.5, ease: E }, 7.2);
+      ["#st1", "#st2", "#st3", "#st4"].forEach((s, i) => {
+        const t = 7.52 + i * 0.5; // beat-grid: 7.52, 8.02, 8.52, 9.02
+        tl.from(s, { y: 80, opacity: 0, duration: 0.45, ease: "back.out(1.5)" }, t);
+        const el = document.querySelector(s + " [data-to]");
+        const to = parseFloat(el.dataset.to), dec = parseInt(el.dataset.dec || "0", 10);
+        const o = { v: 0 };
+        tl.to(o, { v: to, duration: 1.1, ease: "power2.out", onUpdate: () => { el.textContent = o.v.toFixed(dec); } }, t + 0.15);
+      });
+
+      // ---- Scene 4 (11.5-16) ----
+      tl.from("#s4-side", { x: -80, opacity: 0, duration: 0.5, ease: E }, 11.8);
+      tl.from("#s4-sidehead", { opacity: 0, duration: 0.4 }, 11.95);
+      tl.from(".nav", { x: -40, opacity: 0, duration: 0.4, stagger: 0.07, ease: E }, 12.0);
+      tl.from("#s4-goal", { y: -30, opacity: 0, duration: 0.45, ease: E }, 11.9);
+      tl.from("#s4-card", { y: 50, opacity: 0, duration: 0.55, ease: E }, 12.0);
+      tl.from("#s4-btn", { scale: 0.8, opacity: 0, duration: 0.4, ease: "back.out(1.8)" }, 12.4);
+      tl.set("#cursor", { x: 1250, y: 880 }, 12.2);
+      tl.to("#cursor", { opacity: 1, duration: 0.2 }, 12.2);
+      tl.to("#cursor", { x: 1605, y: 612, duration: 0.8, ease: "power2.inOut" }, 12.25);
+      tl.to("#s4-btn", { scale: 0.94, duration: 0.08 }, 13.05);
+      tl.to("#s4-btn", { scale: 1, duration: 0.15 }, 13.13);
+      tl.set("#ripple", { x: 1605, y: 618 }, 13.05);
+      tl.fromTo("#ripple", { scale: 0.3, opacity: 0.9 }, { scale: 2.4, opacity: 0, duration: 0.55, ease: "power2.out" }, 13.05);
+      tl.to("#cursor", { opacity: 0, duration: 0.2 }, 13.4);
+      ["#n1", "#n2", "#n3", "#n4", "#n5"].forEach((s, i) => {
+        const t = 13.25 + i * 0.4;
+        tl.to(s + " .bg", { opacity: 1, duration: 0.18 }, t);
+        tl.to(s + " .dot", { backgroundColor: "hsl(348, 83%, 47%)", duration: 0.18 }, t);
+        tl.fromTo(s, { scale: 1 }, { scale: 1.03, duration: 0.16, yoyo: true, repeat: 1, ease: "power2.out" }, t);
+      });
+      tl.from("#s4-note", { y: 30, opacity: 0, duration: 0.5, ease: E }, 13.6);
+
+      // ---- Scene 5 (16-20.5): ATS Intelligence ----
+      tl.from("#s5-eyebrow", { x: -30, opacity: 0, duration: 0.4, ease: E }, 16.3);
+      tl.from("#s5-title", { y: 40, opacity: 0, duration: 0.5, ease: E }, 16.4);
+      tl.from("#d1", { x: -60, opacity: 0, duration: 0.5, ease: E }, 16.5);
+      tl.from("#d2", { x: -60, opacity: 0, duration: 0.5, ease: E }, 16.65);
+      function typeInto(id, ph, text, t0, dur) {
+        const el = document.getElementById(id), p = document.getElementById(ph);
+        const o = { n: 0 };
+        tl.set(p, { opacity: 1 }, 0);
+        tl.set(p, { opacity: 0 }, t0);
+        tl.to(o, { n: text.length, duration: dur, ease: "none", onUpdate: () => { el.textContent = text.slice(0, Math.round(o.n)); } }, t0);
+      }
+      typeInto("t1", "p-resume", "React · TypeScript · FastAPI · Supabase", 16.9, 1.1);
+      typeInto("t2", "p-jd", "Full-Stack Developer: React, TypeScript, REST APIs, SQL", 17.7, 1.1);
+      tl.from("#s5-pill", { y: -20, opacity: 0, duration: 0.4, ease: E }, 18.5);
+      tl.to("#s5-pill", { opacity: 0, duration: 0.2 }, 19.75);
+      tl.from("#s5-ring", { scale: 0.85, opacity: 0, duration: 0.5, ease: E }, 18.6);
+      const ring = { v: 0 };
+      tl.to("#ringfill", { strokeDashoffset: 1508 * (1 - 0.87), duration: 1.0, ease: "power2.out" }, 18.9);
+      tl.to(ring, { v: 87, duration: 1.0, ease: "power2.out", onUpdate: () => { document.getElementById("pctv").textContent = Math.round(ring.v); } }, 18.9);
+      tl.from("#s5-pct", { opacity: 0, duration: 0.3 }, 18.7);
+      tl.from("#s5-pl", { y: 20, opacity: 0, duration: 0.4, ease: E }, 18.9);
+      tl.from("#s5-comp", { y: 30, opacity: 0, duration: 0.5, ease: E }, 19.1);
+      tl.fromTo("#s5-pct", { scale: 1 }, { scale: 1.08, duration: 0.14, yoyo: true, repeat: 1, ease: "power2.out" }, 19.9);
+
+      // ---- Scene 6 (20.5-24.5): roadmap ----
+      tl.from("#s6-h", { y: 50, opacity: 0, duration: 0.5, ease: E }, 20.75);
+      tl.from("#p1", { x: -40, opacity: 0, duration: 0.4, ease: E }, 21.0);
+      tl.from("#p2", { x: -40, opacity: 0, duration: 0.4, ease: E }, 21.15);
+      ["#g1", "#g2", "#g3"].forEach((s, i) =>
+        tl.from(s, { y: 90, opacity: 0, duration: 0.45, ease: "back.out(1.4)" }, 21.52 + i * 0.5)); // beat-grid 21.52, 22.02, 22.52
+      tl.fromTo("#s6-fill", { scaleX: 0 }, { scaleX: 1, duration: 1.4, ease: "power2.inOut" }, 21.6);
+      tl.from("#s6-cap", { y: 30, opacity: 0, duration: 0.5, ease: E }, 22.9);
+
+      // ---- Scene 7 (24.5-27): portals ----
+      tl.fromTo("#s7-glow", { scale: 0.8 }, { scale: 1.15, duration: 2.5, ease: "none" }, 24.5);
+      tl.from("#s7-ph", { y: 50, opacity: 0, duration: 0.45, ease: E }, 24.75);
+      ["#r1", "#r2", "#r3", "#r4", "#r5", "#r6"].forEach((s, i) =>
+        tl.from(s, { y: 40, opacity: 0, scale: 0.9, duration: 0.35, ease: "back.out(1.6)" }, 25.0 + i * 0.18));
+
+      // ---- Scene 8 (27-30): outro ----
+      tl.fromTo("#s8-glow", { scale: 0.8 }, { scale: 1.15, duration: 3, ease: "none" }, 27);
+      // beat-locked: 27.02s (strong cue 0.99)
+      tl.from("#s8-logo", { scale: 0.4, opacity: 0, duration: 0.5, ease: "back.out(1.8)" }, 27.02);
+      tl.from("#s8-name", { scale: 1.25, opacity: 0, duration: 0.5, ease: "power3.out" }, 27.02);
+      tl.from("#s8-tag", { y: 30, opacity: 0, duration: 0.5, ease: E }, 27.6);
+      tl.from("#s8-sub", { opacity: 0, duration: 0.5 }, 28.2);
+
+      // ---- Audio-reactive (subtle): bass lifts glows, treble warms the banner shadow ----
+      for (let f = 0; f < AUDIO_DATA.length; f++) {
+        const [bass, treb] = AUDIO_DATA[f];
+        tl.call(() => {
+          const g = 0.65 + 0.35 * bass;
+          gsap.set("#s1-glow, #s7-glow, #s8-glow", { opacity: g });
+          gsap.set("#s3-banner", { boxShadow: `0 24px ${50 + 40 * treb}px rgba(150,15,40,${0.26 + 0.22 * treb})` });
+          gsap.set("#vignette", { opacity: 0.85 + 0.15 * bass });
+        }, [], f / 30);
+      }
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,1 @@
+Campus2Career is the Virtual Placement Assistant built exclusively for NMIMS Hyderabad students: AI skill-gap analysis, ATS resume matching, an algorithmic DSA roadmap, and six role portals for the people running placements.
